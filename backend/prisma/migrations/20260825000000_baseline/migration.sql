@@ -35,6 +35,7 @@ CREATE TABLE "member_profiles" (
     "business_category" TEXT,
     "business_description" TEXT,
     "business_location" TEXT,
+    "products_services" TEXT,
     "website" TEXT,
     "instagram" TEXT,
     "facebook" TEXT,
@@ -70,6 +71,10 @@ CREATE TABLE "memberships" (
     "amount" DECIMAL(10,2) NOT NULL,
     "payment_status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "payment_reference" TEXT,
+    "razorpay_order_id" TEXT,
+    "razorpay_payment_id" TEXT,
+    "razorpay_signature" TEXT,
+    "paid_at" TIMESTAMP(3),
     "joined_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -85,9 +90,44 @@ CREATE TABLE "business_certificates" (
     "file_name" TEXT NOT NULL,
     "file_size_bytes" INTEGER NOT NULL,
     "mime_type" TEXT NOT NULL,
+    "is_verified" BOOLEAN NOT NULL DEFAULT false,
     "uploaded_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "business_certificates_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "events" (
+    "id" UUID NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "about_event" TEXT,
+    "image_url" TEXT,
+    "tags" JSONB NOT NULL DEFAULT '[]',
+    "event_date" TIMESTAMP(3) NOT NULL,
+    "start_time" TEXT,
+    "end_time" TEXT,
+    "location" TEXT NOT NULL,
+    "registration_amount" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "highlights" JSONB NOT NULL DEFAULT '[]',
+    "status" TEXT NOT NULL DEFAULT 'PUBLISHED',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "events_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "event_registrations" (
+    "id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
+    "event_id" UUID NOT NULL,
+    "registration_status" TEXT NOT NULL DEFAULT 'REGISTERED',
+    "payment_status" TEXT NOT NULL DEFAULT 'PENDING',
+    "attendance_status" TEXT NOT NULL DEFAULT 'NOT_MARKED',
+    "registered_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "event_registrations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -106,7 +146,7 @@ CREATE UNIQUE INDEX "memberships_user_id_key" ON "memberships"("user_id");
 CREATE UNIQUE INDEX "memberships_member_id_key" ON "memberships"("member_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "business_certificates_user_id_key" ON "business_certificates"("user_id");
+CREATE UNIQUE INDEX "event_registrations_user_id_event_id_key" ON "event_registrations"("user_id", "event_id");
 
 -- AddForeignKey
 ALTER TABLE "member_profiles" ADD CONSTRAINT "member_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -116,3 +156,10 @@ ALTER TABLE "memberships" ADD CONSTRAINT "memberships_user_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "business_certificates" ADD CONSTRAINT "business_certificates_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "event_registrations" ADD CONSTRAINT "event_registrations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "event_registrations" ADD CONSTRAINT "event_registrations_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

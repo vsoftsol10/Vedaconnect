@@ -18,6 +18,10 @@ export const loginUser = async ({ email, password, hub }) => {
     throw new AppError("Your account is not active yet.", 403);
   }
 
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured.");
+  }
+
   const token = jwt.sign(
     { userId: user.id, role: user.role },
     process.env.JWT_SECRET,
