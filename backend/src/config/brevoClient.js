@@ -13,7 +13,7 @@ if (!BREVO_API_KEY) {
  * Sends a single transactional email via Brevo's REST API.
  * Uses Node's built-in fetch (Node 18+), no extra package needed.
  */
-export const sendBrevoEmail = async ({ to, subject, htmlContent }) => {
+export const sendBrevoEmail = async ({ to, subject, htmlContent, attachment = [] }) => {
   const response = await fetch(BREVO_API_URL, {
     method: "POST",
     headers: {
@@ -29,6 +29,7 @@ export const sendBrevoEmail = async ({ to, subject, htmlContent }) => {
       to: [{ email: to }],
       subject,
       htmlContent,
+      ...(attachment.length ? { attachment } : {}),
     }),
   });
 

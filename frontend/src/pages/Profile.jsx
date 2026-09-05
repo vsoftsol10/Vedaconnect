@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, Eye, Download, X, Check } from "lucide-react";
+import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, Eye, Download, X, Check, Loader2 } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import { getMyFullProfile, updateMyProfile } from "../services/memberService";
+
+const PHONE_ERROR = "Enter a valid 10-digit phone number";
+const normalizePhone = (value = "") => {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+};
 
 const EDITABLE_FIELDS = [
   { key: "fullName", label: "Full Name" },
@@ -19,33 +25,98 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
 
-  const load = () => getMyFullProfile().then((data) => {
+  const load = async () => {
+    setLoadError("");
+    const data = await getMyFullProfile();
     setProfile(data);
     setForm(data);
-  });
+  };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load()
+      .catch((err) => setLoadError(err.message || "Couldn't load your profile. Please try logging in again."))
+      .finally(() => setIsLoading(false));
+  }, []);
 
-  const handleChange = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const handleChange = (key) => (e) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: null }));
+    if (saveError) setSaveError("");
+  };
 
   const handleSave = async () => {
+    const nextErrors = {};
+    if (!form.phone?.trim()) nextErrors.phone = "Phone number is required";
+    else if (normalizePhone(form.phone).length !== 10) nextErrors.phone = PHONE_ERROR;
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     setIsSaving(true);
+    setSaveError("");
     try {
       await updateMyProfile(form);
       await load();
       setIsEditing(false);
+    } catch (err) {
+      setSaveError(err.response?.data?.message || err.message || "Could not save profile.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (!profile) return null;
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-stone-50">
+        <Sidebar />
+        <div className="flex-1">
+          <DashboardHeader />
+          <main className="p-8">
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Loading profile
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
-  const validUntilLabel = profile.billingCycle === "LIFETIME"
+  if (loadError || !profile) {
+    return (
+      <div className="flex min-h-screen bg-stone-50">
+        <Sidebar />
+        <div className="flex-1">
+          <DashboardHeader />
+          <main className="p-8">
+            <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">
+              {loadError || "Couldn't load your profile. Please try logging in again."}
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  const isLifetime = profile.billingCycle?.toUpperCase().includes("LIFETIME");
+
+  const renewalDateLabel = isLifetime
     ? "Lifetime"
-    : profile.joinedAt
+    : profile.expiresAt
+      ? new Date(profile.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+      : "-";
+
+  const validUntilLabel = isLifetime
+    ? "Lifetime"
+    : profile.expiresAt
+      ? new Date(profile.expiresAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+      : profile.joinedAt
       ? new Date(new Date(profile.joinedAt).setFullYear(new Date(profile.joinedAt).getFullYear() + 1)).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
       : "-";
 
@@ -115,7 +186,7 @@ const Profile = () => {
               <div className="space-y-3">
                 <InfoRow icon={Pencil} label="Full Name" value={profile.fullName} editable={isEditing} field="fullName" form={form} onChange={handleChange} />
                 <InfoRow icon={Mail} label="Email" value={profile.email} />
-                <InfoRow icon={Phone} label="Phone" value={profile.phone} editable={isEditing} field="phone" form={form} onChange={handleChange} />
+                <InfoRow icon={Phone} label="Phone" value={profile.phone} editable={isEditing} field="phone" form={form} onChange={handleChange} error={errors.phone} />
                 <InfoRow icon={MapPin} label="Location" value={profile.location} editable={isEditing} field="location" form={form} onChange={handleChange} />
               </div>
             </div>
@@ -170,12 +241,17 @@ const Profile = () => {
                 <span className="text-xs text-gray-400 uppercase">Valid Until</span>
                 <span className="font-semibold text-gray-900">{validUntilLabel}</span>
               </div>
+              <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between mb-3">
+                <span className="text-xs text-gray-400 uppercase">Renewal Date</span>
+                <span className="font-semibold text-gray-900">{renewalDateLabel}</span>
+              </div>
               <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between">
                 <span className="text-xs text-gray-400 uppercase">Member Since</span>
                 <span className="font-semibold text-gray-900">{memberSinceLabel}</span>
               </div>
             </div>
           </div>
+          {saveError && <p className="mt-4 text-sm text-red-500">{saveError}</p>}
 
           {/* Business Certificate */}
           {profile.certificates?.length > 0 && (
@@ -210,7 +286,7 @@ const Profile = () => {
   );
 };
 
-const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange }) => (
+const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, error }) => (
   <div className="flex items-start gap-3">
     <span className="h-9 w-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
       <Icon className="h-4 w-4 text-gray-400" />
@@ -218,8 +294,15 @@ const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange }) 
     <div className="flex-1">
       <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-0.5">{label}</p>
       {editable ? (
-        <input value={form[field] || ""} onChange={onChange(field)}
-          className="w-full rounded-lg border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 px-2 py-1 text-sm outline-none" />
+        <>
+          <input value={form[field] || ""} onChange={onChange(field)}
+            className={`w-full rounded-lg border px-2 py-1 text-sm outline-none ${
+              error
+                ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                : "border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+            }`} />
+          {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        </>
       ) : (
         <p className="font-semibold text-gray-900">{value}</p>
       )}

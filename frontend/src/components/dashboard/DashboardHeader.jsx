@@ -1,19 +1,24 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, User, Calendar, LogOut } from "lucide-react";
+import { ChevronDown, User, Calendar, LogOut } from "lucide-react";
 import { getMyProfile } from "../../services/memberService";
 import { useAuth } from "../../context/AuthContext";
+import NotificationBell from "../notifications/NotificationBell";
 
 const DashboardHeader = () => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
-    getMyProfile().then(setProfile).finally(() => setIsLoading(false));
+    getMyProfile()
+      .then(setProfile)
+      .catch((err) => setError(err.message || "Couldn't load your profile."))
+      .finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -31,10 +36,7 @@ const DashboardHeader = () => {
 
   return (
     <header className="flex items-center justify-end gap-6 px-8 py-5 border-b border-gray-100 bg-white relative">
-      <button className="relative text-gray-500 hover:text-green-600 transition-colors">
-        <Bell className="h-5 w-5" />
-        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-400" />
-      </button>
+      <NotificationBell />
 
       {isLoading ? (
         <div className="flex items-center gap-3">
@@ -43,6 +45,10 @@ const DashboardHeader = () => {
             <div className="h-3 w-24 bg-gray-100 rounded animate-pulse" />
             <div className="h-2.5 w-16 bg-gray-100 rounded animate-pulse" />
           </div>
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
         </div>
       ) : (
         <div className="relative" ref={menuRef}>

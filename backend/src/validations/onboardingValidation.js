@@ -1,9 +1,18 @@
 import { z } from "zod";
 
+const normalizePhone = (value) => {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+};
+
 export const personalDetailsSchema = z.object({
   fullName: z.string().trim().min(2, "Full name is required"),
   email: z.string().trim().email("Enter a valid email"),
-  phone: z.string().trim().min(8, "Enter a valid phone number"),
+  phone: z
+    .string()
+    .trim()
+    .transform(normalizePhone)
+    .refine((value) => value.length === 10, "Phone number must be exactly 10 digits"),
   location: z.string().trim().min(1, "Location is required"),
 });
 

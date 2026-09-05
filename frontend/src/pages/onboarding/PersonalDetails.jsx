@@ -7,6 +7,12 @@ import OnboardingCard from "../../components/onboarding/OnboardingCard";
 import { useOnboarding } from "../../context/OnboardingContext";
 import { submitPersonalDetails } from "../../services/onboardingService";
 
+const PHONE_ERROR = "Enter a valid 10-digit phone number";
+const normalizePhone = (value) => {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+};
+
 const PersonalDetails = () => {
   const navigate = useNavigate();
   const { setUserId } = useOnboarding();
@@ -32,6 +38,7 @@ const PersonalDetails = () => {
     if (!form.email.trim()) next.email = "Email is required";
     else if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = "Enter a valid email";
     if (!form.phone.trim()) next.phone = "Phone number is required";
+    else if (normalizePhone(form.phone).length !== 10) next.phone = PHONE_ERROR;
     if (!form.location.trim()) next.location = "Location is required";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -55,7 +62,7 @@ const PersonalDetails = () => {
 
   return (
     <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-xl">
+      <div className="w-full max-w-2xl">
         <OnboardingHeader />
         <OnboardingProgress currentStep={1} />
 

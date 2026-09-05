@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ArrowLeft, MessageCircle, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
 import OnboardingHeader from "../../components/onboarding/OnboardingHeader";
@@ -7,21 +7,24 @@ import OnboardingCard from "../../components/onboarding/OnboardingCard";
 import { useOnboarding } from "../../context/OnboardingContext";
 import {
   createRazorpayOrder,
+  getMembershipPlans,
   verifyRazorpayPayment,
 } from "../../services/onboardingService";
 
-// TODO (backend): pull from the onboarding session created in earlier
-// steps (GET /api/admin/members/:id draft) instead of hardcoding.
 const SUMMARY = {
-  membershipPlan: "Founder Member",
-  membershipFee: 7000,
-  gst: 1260,
-  totalAmount: 8260,
   whatsappNumber: "+91 63851 22237",
 };
 
 const WHATSAPP_CHAT_URL = "https://wa.me/916385122237";
-const formatCurrency = (amount) => new Intl.NumberFormat("en-IN").format(amount);
+const formatCurrency = (amount) => new Intl.NumberFormat("en-IN").format(Number(amount || 0));
+const getPriceBreakdown = (plan) => {
+  const baseAmount = Number(plan?.baseAmount || 0);
+  const gstPercent = Number(plan?.gstPercent || 0);
+  const totalAmount = Number(plan?.amount || 0);
+  const gstAmount = totalAmount - baseAmount;
+
+  return { baseAmount, gstPercent, gstAmount, totalAmount };
+};
 const RAZORPAY_CHECKOUT_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 
 const loadRazorpayCheckout = () =>
@@ -50,14 +53,37 @@ const loadRazorpayCheckout = () =>
 const CompleteMembership = () => {
   const navigate = useNavigate();
   const { userId } = useOnboarding();
+  const [plans, setPlans] = useState([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const formattedTotalAmount = formatCurrency(SUMMARY.totalAmount);
+  const paymentCompletedRef = useRef(false);
+  const selectedPlan = plans.find((plan) => plan.planCode === "FOUNDING_MEMBER") || plans[0];
+  const price = getPriceBreakdown(selectedPlan);
+  const formattedTotalAmount = formatCurrency(price.totalAmount);
 
   useEffect(() => {
-    if (!userId) navigate("/onboarding/personal-details", { replace: true });
+    if (!userId) {
+      navigate("/onboarding/personal-details", { replace: true });
+      return;
+    }
+
+    const loadPlans = async () => {
+      setIsLoadingPlans(true);
+      setError("");
+      try {
+        const result = await getMembershipPlans();
+        setPlans(result || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoadingPlans(false);
+      }
+    };
+
+    loadPlans();
   }, [navigate, userId]);
 
   const handleOpenWhatsApp = () => {
@@ -87,23 +113,34 @@ const CompleteMembership = () => {
         theme: { color: "#16a34a" },
         handler: async (response) => {
           try {
-            await verifyRazorpayPayment({
+            const verifiedPayment = await verifyRazorpayPayment({
               userId,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
+
+            if (verifiedPayment?.paymentStatus !== "PAID") {
+              throw new Error("Payment was processed, but verification did not complete. Please contact support.");
+            }
+
+            paymentCompletedRef.current = true;
             setPaymentVerified(true);
             setError("");
+            navigate("/login", { replace: true });
           } catch (err) {
             setPaymentVerified(false);
-            setError(err.message);
+            setError(err.message || "Payment verification failed. Please contact support before retrying.");
           } finally {
             setIsPaymentLoading(false);
           }
         },
         modal: {
           ondismiss: () => {
+            if (paymentCompletedRef.current) {
+              return;
+            }
+
             setIsPaymentLoading(false);
             setError("Payment was cancelled. Please try again when you are ready.");
           },
@@ -131,7 +168,7 @@ const CompleteMembership = () => {
     }
 
     setIsSubmitting(true);
-    navigate("/login");  
+    navigate("/login");
   };
   const handleBack = () => navigate("/onboarding/membership");
 
@@ -153,17 +190,17 @@ const CompleteMembership = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-4">
               <span className="text-gray-500">Membership Plan</span>
-              <span className="font-bold text-gray-900">{SUMMARY.membershipPlan}</span>
+              <span className="font-bold text-gray-900">{selectedPlan?.name || "Membership Plan"}</span>
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-4">
-              <span className="text-gray-500">Membership Fee</span>
-              <span className="font-bold text-gray-900">&#8377;{formatCurrency(SUMMARY.membershipFee)}</span>
+              <span className="text-gray-500">Base Amount</span>
+              <span className="font-bold text-gray-900">&#8377;{formatCurrency(price.baseAmount)}</span>
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-4">
-              <span className="text-gray-500">GST (18%)</span>
-              <span className="font-bold text-gray-900">&#8377;{formatCurrency(SUMMARY.gst)}</span>
+              <span className="text-gray-500">GST ({formatCurrency(price.gstPercent)}%)</span>
+              <span className="font-bold text-gray-900">&#8377;{formatCurrency(price.gstAmount)}</span>
             </div>
 
             <div className="flex items-center justify-between rounded-xl border-2 border-amber-400 bg-amber-50/60 px-5 py-4">
@@ -194,10 +231,15 @@ const CompleteMembership = () => {
               <button
                 type="button"
                 onClick={handlePay}
-                disabled={isPaymentLoading || paymentVerified}
+                disabled={isPaymentLoading || paymentVerified || isLoadingPlans || !selectedPlan}
                 className="w-full inline-flex items-center justify-center gap-2 bg-amber-400 hover:bg-green-600 text-gray-900 hover:text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-green-200 ring-2 ring-transparent hover:ring-green-100"
               >
-                {isPaymentLoading ? (
+                {isLoadingPlans ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading plan
+                  </>
+                ) : isPaymentLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Opening Razorpay
@@ -220,7 +262,7 @@ const CompleteMembership = () => {
                   <p className="font-bold text-green-700">Payment Successful</p>
                   <p className="text-sm text-gray-600 mt-1">
                     Your &#8377;{formattedTotalAmount} membership payment has been verified
-                    successfully.
+                    successfully. Redirecting you to login...
                   </p>
                 </div>
               </div>

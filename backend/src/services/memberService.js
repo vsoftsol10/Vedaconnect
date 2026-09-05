@@ -1,6 +1,11 @@
 import { prisma } from "../config/prismaClient.js";
 import { AppError } from "../middleware/errorHandler.js";
 
+const normalizePhone = (value) => {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+};
+
 export const getMyProfile = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -18,20 +23,23 @@ export const getMyProfile = async (userId) => {
     membershipType: user.membership?.membershipType || null,
     membershipStatus: user.membership?.membershipStatus || null,
     joinedAt: user.membership?.joinedAt || null,
+    expiresAt: user.membership?.expiresAt || null,
   };
 };
 
 export const getMyStats = async (userId) => {
-  const membership = await prisma.membership.findUnique({ where: { userId } });
-  const eventsJoined = await prisma.eventRegistration.count({ where: { userId } });
+  const [membership, eventsJoined, referralsGiven, businessReceived] = await Promise.all([
+    prisma.membership.findUnique({ where: { userId } }),
+    prisma.eventRegistration.count({ where: { userId } }),
+    prisma.referralGiven.count({ where: { giverId: userId } }),
+    prisma.businessReceived.count({ where: { receiverId: userId } }),
+  ]);
 
-  // TODO: referralsGiven/Received require a `referrals` table that doesn't
-  // exist yet. Stubbed until that table is built.
   return {
     membershipStatus: membership?.membershipStatus || "PENDING_PAYMENT",
     eventsJoined,
-    referralsGiven: 0,
-    referralsReceived: 0,
+    referralsGiven,
+    referralsReceived: businessReceived,
   };
 };
 
@@ -156,6 +164,7 @@ export const getMyFullProfile = async (userId) => {
   return {
     fullName: user.memberProfile.fullName,
     email: user.email,
+    registeredAt: user.createdAt,
     phone: user.memberProfile.phone,
     location: user.memberProfile.location,
     profilePhoto: user.memberProfile.profilePhoto,
@@ -164,10 +173,19 @@ export const getMyFullProfile = async (userId) => {
     businessLocation: user.memberProfile.businessLocation,
     businessDescription: user.memberProfile.businessDescription,
     productsServices: user.memberProfile.productsServices,
+    memberId: user.membership?.memberId || null,
     membershipType: user.membership?.membershipType,
     membershipStatus: user.membership?.membershipStatus,
+    membershipPlanName: plan?.name || null,
+    membershipAmount: user.membership?.amount ?? null,
+    membershipBaseAmount: plan?.baseAmount ?? null,
+    membershipGstPercent: plan?.gstPercent ?? null,
+    paymentStatus: user.membership?.paymentStatus || null,
+    paymentReference: user.membership?.paymentReference || null,
+    paidAt: user.membership?.paidAt || null,
     billingCycle: plan?.billingCycle || null,
     joinedAt: user.membership?.joinedAt,
+    expiresAt: user.membership?.expiresAt || null,
     certificates,
   };
 };
@@ -182,6 +200,14 @@ export const updateMyProfile = async (userId, data) => {
   const updateData = {};
   for (const key of allowedFields) {
     if (data[key] !== undefined) updateData[key] = data[key];
+  }
+
+  if (updateData.phone !== undefined) {
+    const normalizedPhone = normalizePhone(String(updateData.phone).trim());
+    if (normalizedPhone.length !== 10) {
+      throw new AppError("Phone number must be exactly 10 digits", 400);
+    }
+    updateData.phone = normalizedPhone;
   }
 
   return prisma.memberProfile.update({ where: { userId }, data: updateData });

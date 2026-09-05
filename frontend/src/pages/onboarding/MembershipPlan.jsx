@@ -7,6 +7,22 @@ import OnboardingCard from "../../components/onboarding/OnboardingCard";
 import { useOnboarding } from "../../context/OnboardingContext";
 import { getMembershipPlans, submitMembershipSelection } from "../../services/onboardingService";
 
+const formatCurrency = (amount) => new Intl.NumberFormat("en-IN").format(Number(amount || 0));
+const formatBillingCycle = (billingCycle) => {
+  if (!billingCycle) return "";
+  if (/^12\s*months?$/i.test(billingCycle)) return "1 Year";
+  return billingCycle.toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase());
+};
+
+const getPriceBreakdown = (plan) => {
+  const baseAmount = Number(plan?.baseAmount || 0);
+  const gstPercent = Number(plan?.gstPercent || 0);
+  const totalAmount = Number(plan?.amount || 0);
+  const gstAmount = totalAmount - baseAmount;
+
+  return { baseAmount, gstPercent, gstAmount, totalAmount };
+};
+
 const MembershipPlan = () => {
   const navigate = useNavigate();
   const { userId } = useOnboarding();
@@ -41,10 +57,8 @@ const MembershipPlan = () => {
     () => plans.find((plan) => plan.planCode === "FOUNDING_MEMBER") || plans[0],
     [plans]
   );
-  const formattedPrice = new Intl.NumberFormat("en-IN").format(Number(selectedPlan?.amount || 0));
-  const billingCycle = selectedPlan?.billingCycle
-    ? selectedPlan.billingCycle.toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase())
-    : "";
+  const price = getPriceBreakdown(selectedPlan);
+  const billingCycle = formatBillingCycle(selectedPlan?.billingCycle);
 
   const handleContinue = async () => {
     if (!userId || !selectedPlan) return;
@@ -64,7 +78,7 @@ const MembershipPlan = () => {
 
   return (
     <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-xl">
+      <div className="w-full max-w-2xl">
         <OnboardingHeader />
         <OnboardingProgress currentStep={4} />
 
@@ -96,9 +110,26 @@ const MembershipPlan = () => {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-2xl font-extrabold text-gray-900 leading-tight">
-                    &#8377;{formattedPrice}
+                    &#8377;{formatCurrency(price.totalAmount)}
                   </p>
                   <p className="text-sm text-gray-500">{billingCycle}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-white/80 border border-amber-100 px-5 py-4 mb-5 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Base Amount</span>
+                  <span className="font-semibold text-gray-900">&#8377;{formatCurrency(price.baseAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">GST ({formatCurrency(price.gstPercent)}%)</span>
+                  <span className="font-semibold text-gray-900">&#8377;{formatCurrency(price.gstAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-amber-100 pt-2">
+                  <span className="font-bold text-gray-900">Total Amount</span>
+                  <span className="text-lg font-extrabold text-green-700">
+                    &#8377;{formatCurrency(price.totalAmount)}
+                  </span>
                 </div>
               </div>
 

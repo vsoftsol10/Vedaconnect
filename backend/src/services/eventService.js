@@ -1,5 +1,6 @@
 import { prisma } from "../config/prismaClient.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { notifyAdmins } from "./notificationService.js";
 
 export const getUpcomingEvents = async () => {
   return prisma.event.findMany({
@@ -44,7 +45,24 @@ export const registerForEvent = async ({ userId, eventId }) => {
   });
   if (existing) throw new AppError("You're already registered for this event.", 409);
 
-  return prisma.eventRegistration.create({
+  const registration = await prisma.eventRegistration.create({
     data: { userId, eventId, registrationStatus: "REGISTERED", paymentStatus: "PENDING" },
+    include: { user: { include: { memberProfile: true } }, event: true },
   });
+
+  try {
+    await notifyAdmins({
+      type: "EVENT_PAYMENT_SUBMITTED",
+      title: "Event payment submitted",
+      message: `${registration.user.memberProfile?.fullName || registration.user.email} submitted payment for ${registration.event.title}.`,
+      link: "/admin/payment-history",
+    });
+  } catch (error) {
+    console.error("[EVENT_PAYMENT_NOTIFICATION_FAILED]", {
+      message: error?.message,
+      registrationId: registration.id,
+    });
+  }
+
+  return registration;
 };

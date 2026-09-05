@@ -12,8 +12,8 @@ export class AppError extends Error {
 
 // eslint-disable-next-line no-unused-vars
 export const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
   const isOperational = err.isOperational || false;
+  const statusCode = isOperational ? err.statusCode || 500 : 500;
 
   if (!isOperational) {
     // Unexpected error - log full detail server-side, don't leak internals to client

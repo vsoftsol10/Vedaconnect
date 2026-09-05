@@ -34,19 +34,35 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum NetworkingPartyType {
+  MEMBER   @map("member")
+  EXTERNAL @map("external")
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
+  fullName     String?    @map("full_name")
+  profilePhoto String?    @map("profile_photo")
   email        String     @unique
   passwordHash String?    @map("password_hash")
   role         UserRole   @default(MEMBER)
   status       UserStatus @default(PENDING)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
-
+    
   memberProfile       MemberProfile?
   membership          Membership?
   businessCertificates BusinessCertificate[]
   eventRegistrations   EventRegistration[]
+  notifications         Notification[]
+  relatedNotifications  Notification[] @relation("NotificationRelatedUser")
+  referralsGiven        ReferralGiven[] @relation("ReferralGiver")
+  referralsReceived     ReferralGiven[] @relation("ReferralReceiver")
+  businessReceivedAsReceiver BusinessReceived[] @relation("BusinessReceiver")
+  businessReceivedAsReferrer BusinessReceived[] @relation("BusinessReferrer")
+  meetingAttendance     MeetingAttendance[]
+  meetingFeePayments    MeetingFeePayment[]
+  invoices              PaymentInvoice[]
 
   @@map("users")
 }
@@ -59,7 +75,9 @@ model MemberProfile {
   location            String?
   profilePhoto        String?  @map("profile_photo")
   businessName        String?  @map("business_name")
+  hubId               String?  @map("hub_id") @db.Uuid 
   businessCategory    String?  @map("business_category")
+  businessType        String?  @map("business_type")
   businessDescription String?  @map("business_description")
   businessLocation    String?  @map("business_location")
   productsServices    String?  @map("products_services")
@@ -69,26 +87,32 @@ model MemberProfile {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
  
-
+  hub       Hub?    @relation(fields: [hubId], references: [id])
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("member_profiles")
 }
 
 model MembershipPlan {
-  id           String   @id @default(uuid()) @db.Uuid
-  planCode     String   @unique @map("plan_code")
+  id           String    @id @default(uuid()) @db.Uuid
+  planCode     String    @unique @map("plan_code")
   name         String
   badge        String?
-  amount       Decimal  @db.Decimal(10, 2)
-  billingCycle String   @default("LIFETIME") @map("billing_cycle")
-  benefits     Json     @default("[]")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  description  String?
+  baseAmount   Decimal   @db.Decimal(10, 2) @map("base_amount")
+  gstPercent   Decimal   @default(18.00) @db.Decimal(5, 2) @map("gst_percent")
+  amount       Decimal   @db.Decimal(10, 2)
+  billingCycle String    @default("LIFETIME") @map("billing_cycle")
+  benefits     Json      @default("[]")
+  isActive     Boolean   @default(true) @map("is_active")
+  activeFrom   DateTime? @map("active_from")
+  activeUntil  DateTime? @map("active_until")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@map("membership_plans")
 }
+
 
 model Membership {
   id               String           @id @default(uuid()) @db.Uuid
@@ -104,6 +128,7 @@ model Membership {
   razorpaySignature String?         @map("razorpay_signature")
   paidAt           DateTime?        @map("paid_at")
   joinedAt         DateTime?        @map("joined_at")
+  expiresAt        DateTime?        @map("expires_at")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
@@ -126,8 +151,9 @@ model BusinessCertificate {
 
   @@map("business_certificates")
 }
+
 model Event {
-  id                 String   @id @default(uuid()) @db.Uuid
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title              String
   description        String?
   aboutEvent         String?  @map("about_event")
@@ -141,7 +167,7 @@ model Event {
   highlights         Json     @default("[]")
   status             String   @default("PUBLISHED")
   createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
 
   registrations EventRegistration[]
 
@@ -149,7 +175,7 @@ model Event {
 }
 
 model EventRegistration {
-  id                 String   @id @default(uuid()) @db.Uuid
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId             String   @map("user_id") @db.Uuid
   eventId            String   @map("event_id") @db.Uuid
   registrationStatus String   @default("REGISTERED") @map("registration_status")
@@ -162,4 +188,139 @@ model EventRegistration {
 
   @@unique([userId, eventId])
   @@map("event_registrations")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  audience  String   @default("MEMBER")
+  type      String
+  title     String
+  message   String
+  link      String?
+  relatedUserId String? @map("related_user_id") @db.Uuid
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedUser User? @relation("NotificationRelatedUser", fields: [relatedUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+model ReferralGiven {
+  id               String              @id @default(uuid()) @db.Uuid
+  giverId          String              @map("giver_id") @db.Uuid
+  receiverType     NetworkingPartyType @default(MEMBER) @map("receiver_type")
+  receiverId       String?             @map("receiver_id") @db.Uuid
+  externalName     String?             @map("external_name")
+  externalBusiness String?             @map("external_business")
+  externalContact  String?             @map("external_contact")
+  amount           Decimal             @db.Decimal(10, 2)
+  description      String?
+  weekStart        DateTime            @map("week_start")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  giver    User  @relation("ReferralGiver", fields: [giverId], references: [id], onDelete: Cascade)
+  receiver User? @relation("ReferralReceiver", fields: [receiverId], references: [id], onDelete: SetNull)
+
+  @@index([giverId, weekStart])
+  @@index([receiverId, weekStart])
+  @@index([receiverType, createdAt])
+  @@map("referrals_given")
+}
+
+model BusinessReceived {
+  id               String              @id @default(uuid()) @db.Uuid
+  receiverId       String              @map("receiver_id") @db.Uuid
+  referrerType     NetworkingPartyType @default(MEMBER) @map("referrer_type")
+  referrerId       String?             @map("referrer_id") @db.Uuid
+  externalName     String?             @map("external_name")
+  externalBusiness String?             @map("external_business")
+  externalContact  String?             @map("external_contact")
+  amount           Decimal             @db.Decimal(10, 2)
+  description      String?
+  weekStart        DateTime            @map("week_start")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  receiver User  @relation("BusinessReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  referrer User? @relation("BusinessReferrer", fields: [referrerId], references: [id], onDelete: SetNull)
+
+  @@index([receiverId, weekStart])
+  @@index([referrerId, weekStart])
+  @@index([referrerType, createdAt])
+  @@map("business_received")
+}
+
+model MeetingAttendance {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  weekStart   DateTime @map("week_start")
+  status      String   @default("PENDING")
+  respondedAt DateTime? @map("responded_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([weekStart, status])
+  @@map("meeting_attendance")
+}
+
+model MeetingFeePayment {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  month             String
+  amount            Decimal  @default(1800.00) @db.Decimal(10, 2)
+  paymentStatus     String   @default("PENDING") @map("payment_status")
+  razorpayOrderId   String?  @map("razorpay_order_id")
+  razorpayPaymentId String?  @map("razorpay_payment_id")
+  razorpaySignature String?  @map("razorpay_signature")
+  paidAt            DateTime? @map("paid_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+  @@index([month, paymentStatus])
+  @@map("meeting_fee_payments")
+}
+
+model PaymentInvoice {
+  id                  String   @id @default(uuid()) @db.Uuid
+  invoiceNumber       String   @unique @map("invoice_number")
+  userId              String   @map("user_id") @db.Uuid
+  paymentType         String   @map("payment_type")
+  paymentRecordId     String   @map("payment_record_id") @db.Uuid
+  itemName            String   @map("item_name")
+  baseAmount          Decimal  @db.Decimal(10, 2) @map("base_amount")
+  gstPercent          Decimal  @default(18.00) @db.Decimal(5, 2) @map("gst_percent")
+  gstAmount           Decimal  @db.Decimal(10, 2) @map("gst_amount")
+  totalAmount         Decimal  @db.Decimal(10, 2) @map("total_amount")
+  paymentMethod       String   @map("payment_method")
+  transactionId       String?  @map("transaction_id")
+  htmlSnapshot        String   @map("html_snapshot")
+  emailedAt           DateTime? @map("emailed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, paymentType, createdAt])
+  @@map("payment_invoices")
+}
+
+model Hub {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String   @unique
+  location        String?
+  description     String?
+  coordinatorName String?  @map("coordinator_name")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  memberProfiles MemberProfile[]
+
+  @@map("hubs")
 }

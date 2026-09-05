@@ -5,9 +5,12 @@ import { HUB_OPTIONS } from "../../utils/hubs";
 const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
   const [form, setForm] = useState({ email: "", password: "", hub: HUB_OPTIONS[0] });
   const [showPassword, setShowPassword] = useState(false);
+  const [allowInput, setAllowInput] = useState(false);
 
   const handleChange = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const enableInput = () => setAllowInput(true);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -15,7 +18,7 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} autoComplete="new-password" className="space-y-6">
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">Email Address</label>
         <div className="relative">
@@ -25,6 +28,11 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
             required
             value={form.email}
             onChange={handleChange("email")}
+            onFocus={enableInput}
+            onPointerDown={enableInput}
+            readOnly={!allowInput}
+            autoComplete="new-password"
+            name="vc-member-identity"
             placeholder="you@example.com"
             className="w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-4 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
           />
@@ -40,6 +48,11 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
             required
             value={form.password}
             onChange={handleChange("password")}
+            onFocus={enableInput}
+            onPointerDown={enableInput}
+            readOnly={!allowInput}
+            autoComplete="new-password"
+            name="vc-member-secret"
             placeholder="Enter your password"
             className="w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-11 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
           />

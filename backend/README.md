@@ -4,7 +4,7 @@
 https://supabase.com -> New project. Save the database password you set — you'll need it below.
 
 ## 2. Create the tables — run this in Supabase SQL Editor (in order)
-1. `sql/schema.sql` — creates `users`, `member_profiles`, `memberships`, `membership_plans` (seeded with your ₹7,500 Founder plan), `business_certificates`
+1. `sql/schema.sql` — creates `users`, `member_profiles`, `memberships`, `membership_plans` (seeded with the ₹7,000 + 18% GST Founder plan), `business_certificates`
 2. `sql/functions.sql` — creates `next_member_id()`, used later for admin-side Member ID generation
 
 You can see all of these afterward in **Table Editor** in your Supabase dashboard.

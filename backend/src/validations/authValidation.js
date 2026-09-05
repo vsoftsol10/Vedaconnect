@@ -3,5 +3,5 @@ import { z } from "zod";
 export const loginSchema = z.object({
   email: z.string().trim().email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
-  hub: z.string().trim().min(1, "Please select your hub"),
+  hub: z.string().trim().optional(),
 });

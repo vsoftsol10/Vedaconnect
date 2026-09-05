@@ -1,30 +1,19 @@
 import crypto from "crypto";
-import Razorpay from "razorpay";
+import bcrypt from "bcrypt";
 import { prisma } from "../config/prismaClient.js";
 import { supabaseStorage } from "../config/supabaseStorageClient.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { sendWelcomeCredentialsEmail } from "./emailService.js";
+import { getMyFullProfile } from "./memberService.js";
+import { generateMemberId } from "../utils/generateMemberId.js";
+import { generateTemporaryPassword } from "../utils/generatePassword.js";
+import { generateMembershipInvoice } from "./invoiceService.js";
+import { notifyAdmins } from "./notificationService.js";
+import { createRazorpayOrder as createRazorpayApiOrder } from "../utils/razorpayUtils.js";
+import { calculateExpiryDate } from "../utils/membershipDates.js";
 
 const CERTIFICATES_BUCKET = "business-certificates";
-const FOUNDER_MEMBER_PRICING = {
-  membershipFee: 7000,
-  gst: 1260,
-  totalAmount: 8260,
-  totalAmountPaise: 826000,
-  currency: "INR",
-};
-
-const getRazorpayClient = () => {
-  const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = process.env;
-
-  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-    throw new AppError("Razorpay credentials are not configured.", 500);
-  }
-
-  return new Razorpay({
-    key_id: RAZORPAY_KEY_ID,
-    key_secret: RAZORPAY_KEY_SECRET,
-  });
-};
+const CURRENCY = "INR";
 
 const sanitizeStorageFilename = (filename) => {
   const normalizedName = filename.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
@@ -42,6 +31,21 @@ const sanitizeStorageFilename = (filename) => {
   const safeExtension = rawExtension.replace(/[^A-Za-z0-9.]/g, "");
 
   return `${safeBaseName}${safeExtension}`;
+};
+
+const getPlanPriceBreakdown = (plan) => {
+  const baseAmount = Number(plan.baseAmount);
+  const gstPercent = Number(plan.gstPercent);
+  const totalAmount = Number(plan.amount);
+  const gstAmount = totalAmount - baseAmount;
+
+  return {
+    baseAmount,
+    gstPercent,
+    gstAmount,
+    totalAmount,
+    totalAmountPaise: Math.round(totalAmount * 100),
+  };
 };
 
 /**
@@ -177,16 +181,20 @@ export const removeBusinessCertificate = async (certificateId) => {
  * Pricing always read from the DB — never trusted from the frontend.
  */
 export const getActiveMembershipPlans = async () => {
+  const now = new Date();
+
   const plans = await prisma.membershipPlan.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      AND: [
+        { OR: [{ activeFrom: null }, { activeFrom: { lte: now } }] },
+        { OR: [{ activeUntil: null }, { activeUntil: { gte: now } }] },
+      ],
+    },
     orderBy: { amount: "asc" },
     select: {
-      planCode: true,
-      name: true,
-      badge: true,
-      amount: true,
-      billingCycle: true,
-      benefits: true,
+      planCode: true, name: true, badge: true, amount: true,
+      baseAmount: true, gstPercent: true, billingCycle: true, benefits: true,
     },
   });
 
@@ -237,24 +245,33 @@ export const createRazorpayMembershipOrder = async ({ userId }) => {
     throw new AppError("Membership not found for this user. Complete Step 4 first.", 404);
   }
 
-  const razorpay = getRazorpayClient();
-  const order = await razorpay.orders.create({
-    amount: FOUNDER_MEMBER_PRICING.totalAmountPaise,
-    currency: FOUNDER_MEMBER_PRICING.currency,
+  const plan = await prisma.membershipPlan.findFirst({
+    where: { planCode: membership.membershipType, isActive: true },
+  });
+  if (!plan) {
+    throw new AppError("Selected membership plan does not exist.", 404);
+  }
+
+  const pricing = getPlanPriceBreakdown(plan);
+
+  const order = await createRazorpayApiOrder({
+    amount: pricing.totalAmountPaise,
+    currency: CURRENCY,
     receipt: `vc_${Date.now()}`,
     notes: {
       userId,
       planCode: membership.membershipType,
-      membershipFee: String(FOUNDER_MEMBER_PRICING.membershipFee),
-      gst: String(FOUNDER_MEMBER_PRICING.gst),
-      totalAmount: String(FOUNDER_MEMBER_PRICING.totalAmount),
+      baseAmount: String(pricing.baseAmount),
+      gstPercent: String(pricing.gstPercent),
+      gstAmount: String(pricing.gstAmount),
+      totalAmount: String(pricing.totalAmount),
     },
   });
 
   await prisma.membership.update({
     where: { userId },
     data: {
-      amount: FOUNDER_MEMBER_PRICING.totalAmount,
+      amount: plan.amount,
       paymentStatus: "PENDING",
       membershipStatus: "PENDING_PAYMENT",
       razorpayOrderId: order.id,
@@ -291,6 +308,21 @@ export const verifyRazorpayMembershipPayment = async ({
     throw new AppError("Membership not found for this user. Complete Step 4 first.", 404);
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { memberProfile: true },
+  });
+  if (!user || !user.memberProfile) {
+    throw new AppError("Member profile not found for this user.", 404);
+  }
+
+  const plan = await prisma.membershipPlan.findUnique({
+    where: { planCode: membership.membershipType },
+  });
+  if (!plan) {
+    throw new AppError("Selected membership plan does not exist.", 404);
+  }
+
   if (membership.razorpayOrderId !== razorpay_order_id) {
     throw new AppError("Payment order does not match this membership.", 400);
   }
@@ -312,30 +344,123 @@ export const verifyRazorpayMembershipPayment = async ({
     throw new AppError("Payment verification failed. Please try again.", 400);
   }
 
-  const updated = await prisma.membership.update({
-    where: { userId },
-    data: {
-      amount: FOUNDER_MEMBER_PRICING.totalAmount,
-      paymentStatus: "PAID",
-      membershipStatus: "ACTIVE",
-      paymentReference: razorpay_payment_id,
-      razorpayPaymentId: razorpay_payment_id,
-      razorpaySignature: razorpay_signature,
-      paidAt: new Date(),
-      joinedAt: new Date(),
-    },
-    select: {
-      userId: true,
-      membershipStatus: true,
-      paymentStatus: true,
-      paymentReference: true,
-      razorpayOrderId: true,
-      razorpayPaymentId: true,
-      paidAt: true,
-    },
+  const shouldSendWelcomeEmail = membership.membershipStatus !== "ACTIVE" || !membership.memberId || !user.passwordHash;
+  const memberId = membership.memberId || (await generateMemberId());
+  const tempPassword = user.passwordHash ? null : generateTemporaryPassword();
+  const passwordHash = tempPassword ? await bcrypt.hash(tempPassword, 10) : user.passwordHash;
+  const now = new Date();
+  const joinedAt = membership.joinedAt || now;
+  const expiresAt = calculateExpiryDate(joinedAt, plan.billingCycle);
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        status: "ACTIVE",
+        passwordHash,
+      },
+    });
+
+    return tx.membership.update({
+      where: { userId },
+      data: {
+        memberId,
+        amount: plan.amount,
+        paymentStatus: "PAID",
+        membershipStatus: "ACTIVE",
+        paymentReference: razorpay_payment_id,
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+        paidAt: membership.paidAt || now,
+        joinedAt,
+        expiresAt,
+      },
+      select: {
+        userId: true,
+        memberId: true,
+        membershipStatus: true,
+        paymentStatus: true,
+        paymentReference: true,
+        razorpayOrderId: true,
+        razorpayPaymentId: true,
+        paidAt: true,
+        expiresAt: true,
+      },
+    });
   });
 
-  return updated;
+  if (shouldSendWelcomeEmail) {
+    try {
+      const profile = await getMyFullProfile(userId);
+      await sendWelcomeCredentialsEmail({
+        toEmail: user.email,
+        fullName: user.memberProfile.fullName,
+        memberId,
+        tempPassword: tempPassword || "Already set",
+        profile,
+        paymentMethod: "Razorpay",
+        paymentReference: razorpay_payment_id,
+      });
+    } catch (error) {
+      console.error("[WELCOME_EMAIL_FAILED]", {
+        message: error?.message,
+        userId,
+        memberId,
+      });
+    }
+  }
+
+  try {
+    await generateMembershipInvoice(membership.id, "Razorpay");
+    await notifyAdmins({
+      type: "MEMBERSHIP_PAYMENT_PAID",
+      title: "Membership payment received",
+      message: `${user.memberProfile.fullName} paid ${plan.name}.`,
+      link: "/admin/payment-history",
+    });
+  } catch (error) {
+    console.error("[PAYMENT_POST_PROCESSING_FAILED]", {
+      message: error?.message,
+      stack: error?.stack,
+      userId,
+      membershipId: membership.id,
+    });
+  }
+
+  try {
+    return {
+      userId: updated.userId,
+      memberId: updated.memberId,
+      membershipStatus: updated.membershipStatus,
+      paymentStatus: updated.paymentStatus,
+      paymentReference: updated.paymentReference,
+      razorpayOrderId: updated.razorpayOrderId,
+      razorpayPaymentId: updated.razorpayPaymentId,
+      paidAt: updated.paidAt,
+      expiresAt: updated.expiresAt,
+    };
+  } catch (error) {
+    console.error("[RAZORPAY VERIFY POST_EMAIL_RESPONSE_ERROR]", {
+      message: error?.message,
+      stack: error?.stack,
+      userId,
+      memberId,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+    });
+
+    return {
+      userId,
+      memberId,
+      membershipStatus: "ACTIVE",
+      paymentStatus: "PAID",
+      paymentReference: razorpay_payment_id,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      paidAt: now,
+      expiresAt,
+    };
+  }
 };
 
 /**
@@ -344,7 +469,10 @@ export const verifyRazorpayMembershipPayment = async ({
  * verifies the WhatsApp payment first (next phase).
  */
 export const confirmPaymentSubmitted = async ({ userId, paymentReference }) => {
-  const membership = await prisma.membership.findUnique({ where: { userId } });
+  const membership = await prisma.membership.findUnique({
+    where: { userId },
+    include: { user: { include: { memberProfile: true } } },
+  });
   if (!membership) {
     throw new AppError("Membership not found for this user. Complete Step 4 first.", 404);
   }
@@ -354,6 +482,21 @@ export const confirmPaymentSubmitted = async ({ userId, paymentReference }) => {
     data: { paymentReference: paymentReference || null },
     select: { userId: true, membershipStatus: true, paymentStatus: true },
   });
+
+  try {
+    await notifyAdmins({
+      type: "MEMBERSHIP_PAYMENT_SUBMITTED",
+      title: "Membership payment submitted",
+      message: `${membership.user.memberProfile?.fullName || membership.user.email} submitted membership payment for verification.`,
+      link: "/admin/payment-history",
+    });
+  } catch (error) {
+    console.error("[MEMBERSHIP_PAYMENT_NOTIFICATION_FAILED]", {
+      message: error?.message,
+      userId,
+      membershipId: membership.id,
+    });
+  }
 
   return updated;
 };
