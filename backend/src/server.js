@@ -19,9 +19,14 @@ import meetingFeeRoutes from "./routes/meetingFeeRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 const allowedOrigins = new Set([
-  process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+  ...(process.env.FRONTEND_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean),
+  process.env.FRONTEND_ORIGIN?.trim().replace(/\/$/, ""),
   "http://localhost:5173",
   "http://localhost:5174",
+  "https://member.vedacraftscommunity.in",
 ]);
 
 // Middleware
