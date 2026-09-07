@@ -1,10 +1,19 @@
 import axios from "axios";
 
+const AUTH_TOKEN_STORAGE_KEY = "vedaconnect_token";
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 const normalizedBaseUrl = configuredBaseUrl.replace(/\/+$/, "");
 const apiBaseUrl = normalizedBaseUrl.endsWith("/api")
   ? normalizedBaseUrl
   : `${normalizedBaseUrl}/api`;
+
+let accessToken = null;
+
+export const setAccessToken = (token) => {
+  accessToken = typeof token === "string" && token.trim() ? token.trim() : null;
+};
+
+const getAccessToken = () => accessToken || localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
 
 const api = axios.create({
   baseURL: apiBaseUrl,
@@ -12,9 +21,13 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("vedaconnect_token");
+  const token = getAccessToken();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    if (typeof config.headers?.set === "function") {
+      config.headers.set("Authorization", `Bearer ${token}`);
+    } else {
+      config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+    }
   }
   return config;
 });

@@ -1,24 +1,29 @@
 import { createContext, useContext, useState } from "react";
+import { setAccessToken } from "../services/api";
 
 const AuthContext = createContext(null);
+const AUTH_TOKEN_STORAGE_KEY = "vedaconnect_token";
+const AUTH_USER_STORAGE_KEY = "vedaconnect_user";
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem("vedaconnect_token"));
+  const [token, setToken] = useState(() => localStorage.getItem(AUTH_TOKEN_STORAGE_KEY));
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("vedaconnect_user");
+    const stored = localStorage.getItem(AUTH_USER_STORAGE_KEY);
     return stored ? JSON.parse(stored) : null;
   });
 
   const login = (newToken, newUser) => {
-    localStorage.setItem("vedaconnect_token", newToken);
-    localStorage.setItem("vedaconnect_user", JSON.stringify(newUser));
+    setAccessToken(newToken);
+    localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, newToken);
+    localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = () => {
-    localStorage.removeItem("vedaconnect_token");
-    localStorage.removeItem("vedaconnect_user");
+    setAccessToken(null);
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    localStorage.removeItem(AUTH_USER_STORAGE_KEY);
     setToken(null);
     setUser(null);
   };
@@ -26,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updates) => {
     setUser((current) => {
       const next = { ...(current || {}), ...updates };
-      localStorage.setItem("vedaconnect_user", JSON.stringify(next));
+      localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
   };
