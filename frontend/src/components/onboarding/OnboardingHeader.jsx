@@ -10,7 +10,7 @@ const OnboardingHeader = () => {
       />
 
       <span className="mt-2 text-center text-[10px] font-semibold tracking-[0.18em] text-green-600 uppercase sm:text-xs sm:tracking-[0.25em]">
-        Founding Member Onboarding
+         Member Onboarding
       </span>
     </div>
   );
