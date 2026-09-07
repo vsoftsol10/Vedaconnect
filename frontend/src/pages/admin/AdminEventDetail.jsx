@@ -175,7 +175,7 @@ export default function AdminEventDetail() {
                 </div>
               )}
               <p className="text-xs text-gray-400 mt-4">
-                {event.registrationCount} of {event.maxMembers ?? '∞'} members registered
+                {event.registrationCount} member{event.registrationCount === 1 ? '' : 's'} registered
               </p>
             </div>
 

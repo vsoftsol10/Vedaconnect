@@ -16,14 +16,14 @@ export async function getEvent(req, res, next) {
 
 export async function postEvent(req, res, next) {
   try {
-    const event = await eventService.createEvent(req.validatedBody);
+    const event = await eventService.createEvent(req.validatedBody, req.file);
     res.status(201).json({ success: true, data: event });
   } catch (err) { next(err); }
 }
 
 export async function putEvent(req, res, next) {
   try {
-    const event = await eventService.updateEvent(req.params.id, req.validatedBody);
+    const event = await eventService.updateEvent(req.params.id, req.validatedBody, req.file);
     res.json({ success: true, data: event });
   } catch (err) { next(err); }
 }

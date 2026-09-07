@@ -83,7 +83,7 @@ export default function AdminEvents() {
                       </td>
                       <td className="px-6 py-4 text-gray-600">{ev.hubName || '—'}</td>
                       <td className="px-6 py-4 text-gray-600">
-                        {ev.registrationCount}/{ev.maxMembers ?? '∞'}
+                        {ev.registrationCount}
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900">
                         {Number(ev.registrationAmount) > 0 ? `₹${ev.registrationAmount}` : 'Free'}

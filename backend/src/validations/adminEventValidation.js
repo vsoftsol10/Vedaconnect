@@ -17,7 +17,6 @@ const eventSchema = z.object({
   hubId: z.string().uuid("Select a hub").optional(),
   schedule: z.array(scheduleItemSchema).optional().default([]),
   registrationDeadline: z.coerce.date(),
-  maxMembers: z.coerce.number().int().positive().optional().nullable(),
   isPaid: z.boolean().default(true),
   registrationAmount: z.coerce.number().nonnegative().optional().default(0),
 });

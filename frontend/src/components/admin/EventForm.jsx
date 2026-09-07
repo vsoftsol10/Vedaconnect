@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Trash2, Plus, Info, Clock, Users, CreditCard } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Trash2, Plus, Info, Clock, Users, CreditCard, UploadCloud } from 'lucide-react';
 import { getHubs } from '../../services/hubService';
 
 const emptyForm = {
   title: '', description: '', aboutEvent: '', eventDate: '', timeRange: '',
   location: '', hubId: '', schedule: [{ time: '', item: '' }],
-  registrationDeadline: '', maxMembers: '', isPaid: true, registrationAmount: '',
+  registrationDeadline: '', isPaid: true, registrationAmount: '',
 };
 
 export default function EventForm({ initialValues, onSubmit, submitting, submitLabel, footerLabel }) {
   const [formData, setFormData] = useState(emptyForm);
   const [hubs, setHubs] = useState([]);
   const [errors, setErrors] = useState({});
+  const [poster, setPoster] = useState(null);
+  const [posterPreview, setPosterPreview] = useState('');
+  const [posterError, setPosterError] = useState('');
+  const posterInputRef = useRef(null);
 
   useEffect(() => {
     getHubs().then(setHubs).catch((err) => console.error('Failed to load hubs', err));
@@ -31,12 +35,33 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
         schedule: initialValues.schedule?.length ? initialValues.schedule : [{ time: '', item: '' }],
         registrationDeadline: initialValues.registrationDeadline
           ? initialValues.registrationDeadline.slice(0, 10) : '',
-        maxMembers: initialValues.maxMembers ?? '',
         isPaid: Number(initialValues.registrationAmount) > 0,
         registrationAmount: initialValues.registrationAmount || '',
       });
+      setPoster(null);
+      setPosterPreview(initialValues.imageUrl || '');
     }
   }, [initialValues]);
+
+  useEffect(() => () => {
+    if (posterPreview.startsWith('blob:')) URL.revokeObjectURL(posterPreview);
+  }, [posterPreview]);
+
+  const selectPoster = (file) => {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setPosterError('Please select a JPG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setPosterError('Event poster must be under 5MB.');
+      return;
+    }
+    if (posterPreview.startsWith('blob:')) URL.revokeObjectURL(posterPreview);
+    setPoster(file);
+    setPosterPreview(URL.createObjectURL(file));
+    setPosterError('');
+  };
 
   const handleChange = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
 
@@ -84,7 +109,7 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
       hubId: formData.hubId || undefined,
       schedule: formData.schedule.filter((s) => s.time.trim() || s.item.trim()),
       registrationDeadline: formData.registrationDeadline,
-      maxMembers: formData.maxMembers === '' ? null : Number(formData.maxMembers),
+      poster,
       isPaid: formData.isPaid,
       registrationAmount: formData.isPaid ? Number(formData.registrationAmount) : 0,
     });
@@ -113,6 +138,33 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1.5">Event Poster</label>
+            <input ref={posterInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => selectPoster(e.target.files?.[0])} className="hidden" />
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => posterInputRef.current?.click()}
+              onKeyDown={(e) => e.key === 'Enter' && posterInputRef.current?.click()}
+              className="rounded-xl border-2 border-dashed border-gray-200 px-6 py-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-green-300 hover:bg-green-50/20 transition-colors"
+            >
+              {posterPreview ? (
+                <div className="w-full flex flex-col items-center gap-3">
+                  <img src={posterPreview} alt="Event poster preview" className="h-40 w-64 rounded-xl object-cover border border-gray-100" />
+                  <p className="font-semibold text-gray-900">{poster ? poster.name : 'Current event poster'}</p>
+                  <p className="text-sm text-gray-400">Click to replace</p>
+                </div>
+              ) : (
+                <>
+                  <div className="h-14 w-14 rounded-xl bg-gray-100 flex items-center justify-center mb-3"><UploadCloud className="h-6 w-6 text-gray-400" /></div>
+                  <p className="font-semibold text-gray-900 mb-1">Click to upload an event poster</p>
+                  <p className="text-sm text-gray-400">JPG, PNG, or WebP up to 5MB.</p>
+                </>
+              )}
+            </div>
+            {posterError && <p className="text-xs text-red-500 mt-1">{posterError}</p>}
           </div>
 
           <div>
@@ -252,7 +304,7 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
           <h3 className="text-xs font-semibold text-gray-500 tracking-wide uppercase">Registration</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1.5">
               Registration Deadline <span className="text-amber-500">*</span>
@@ -264,18 +316,6 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
             {errors.registrationDeadline && <p className="text-xs text-red-500 mt-1">{errors.registrationDeadline}</p>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1.5">Maximum Members</label>
-            <input
-              type="number"
-              min="1"
-              value={formData.maxMembers}
-              onChange={(e) => handleChange('maxMembers', e.target.value)}
-              placeholder="50"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
-            <p className="text-xs text-gray-400 mt-1">Leave empty for unlimited</p>
           </div>
         </div>
       </div>

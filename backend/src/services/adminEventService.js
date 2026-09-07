@@ -1,4 +1,5 @@
 import { prisma } from "../config/prismaClient.js";
+import { supabaseStorage } from "../config/supabaseStorageClient.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { notifyActiveMembersAboutEvent } from "./notificationService.js";
 
@@ -15,7 +16,6 @@ function toAdminEventListItem(event) {
     hubId: null,
     hubName: null,
     registrationCount: event._count?.registrations ?? 0,
-    maxMembers: null,
     registrationAmount: Number(event.registrationAmount),
     isPast: isPastEvent(event.eventDate),
   };
@@ -53,7 +53,6 @@ export async function getEventById(id) {
     hubName: null,
     isPast: isPastEvent(event.eventDate),
     registrationCount: event.registrations.length,
-    maxMembers: null,
     schedule: [],
     registrationDeadline: event.eventDate,
     attendees: event.registrations.map((registration) => ({
@@ -73,7 +72,6 @@ function buildEventData(input) {
     hubId,
     schedule,
     registrationDeadline,
-    maxMembers,
     ...eventData
   } = input;
 
@@ -83,18 +81,48 @@ function buildEventData(input) {
   };
 }
 
-export async function createEvent(input) {
-  const event = await prisma.event.create({ data: buildEventData(input) });
+const POSTERS_BUCKET = "event-posters";
+
+const sanitizePosterFilename = (filename) => {
+  const normalizedName = filename.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  const extensionIndex = normalizedName.lastIndexOf(".");
+  const rawBaseName = extensionIndex > 0 ? normalizedName.slice(0, extensionIndex) : normalizedName;
+  const rawExtension = extensionIndex > 0 ? normalizedName.slice(extensionIndex) : "";
+  const safeBaseName = rawBaseName
+    .replace(/[^A-Za-z0-9.-]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^[._-]+|[._-]+$/g, "") || "poster";
+  const safeExtension = rawExtension.replace(/[^A-Za-z0-9.]/g, "");
+  return `${safeBaseName}${safeExtension}`;
+};
+
+const uploadPoster = async (eventId, poster) => {
+  const filePath = `${eventId}/${Date.now()}-${sanitizePosterFilename(poster.originalname)}`;
+  const { error } = await supabaseStorage.storage
+    .from(POSTERS_BUCKET)
+    .upload(filePath, poster.buffer, { contentType: poster.mimetype, upsert: false });
+  if (error) throw new AppError(`Could not upload event poster: ${error.message}`, 500);
+  return supabaseStorage.storage.from(POSTERS_BUCKET).getPublicUrl(filePath).data.publicUrl;
+};
+
+export async function createEvent(input, poster) {
+  let event = await prisma.event.create({ data: buildEventData(input) });
+  if (poster) {
+    const imageUrl = await uploadPoster(event.id, poster);
+    event = await prisma.event.update({ where: { id: event.id }, data: { imageUrl } });
+  }
   await notifyActiveMembersAboutEvent(event);
   return event;
 }
 
-export async function updateEvent(id, input) {
+export async function updateEvent(id, input, poster) {
   const event = await prisma.event.findUnique({ where: { id } });
   if (!event) {
     throw new AppError("Event not found", 404);
   }
-  return prisma.event.update({ where: { id }, data: buildEventData(input) });
+  const data = buildEventData(input);
+  if (poster) data.imageUrl = await uploadPoster(id, poster);
+  return prisma.event.update({ where: { id }, data });
 }
 
 export async function deleteEvent(id) {

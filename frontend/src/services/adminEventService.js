@@ -11,11 +11,23 @@ export const getAdminEventById = async (id) => {
 };
 
 export const createEvent = async (payload) => {
-  const res = await api.post("/admin/events", payload);
+  const formData = new FormData();
+  const { poster, ...eventData } = payload;
+  formData.append("data", JSON.stringify(eventData));
+  if (poster) formData.append("poster", poster);
+  const res = await api.post("/admin/events", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return res.data.data;
 };
 
 export const updateEvent = async (id, payload) => {
-  const res = await api.put(`/admin/events/${id}`, payload);
+  const formData = new FormData();
+  const { poster, ...eventData } = payload;
+  formData.append("data", JSON.stringify(eventData));
+  if (poster) formData.append("poster", poster);
+  const res = await api.put(`/admin/events/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return res.data.data;
 };
