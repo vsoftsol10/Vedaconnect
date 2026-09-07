@@ -113,13 +113,13 @@ const MeetingFeePayment = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <DashboardHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Meeting Fee</h1>
           <p className="text-gray-500 mb-6">Pay your monthly VedaConnect meeting fee.</p>
 
-          <div className="max-w-xl bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div className="max-w-xl bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
             {isLoading ? (
               <div className="flex items-center gap-2 text-gray-500">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -127,7 +127,7 @@ const MeetingFeePayment = () => {
               </div>
             ) : (
               <>
-                <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:justify-between sm:gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Current Month</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">{status?.month}</p>

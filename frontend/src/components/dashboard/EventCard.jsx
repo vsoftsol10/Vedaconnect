@@ -14,14 +14,14 @@ const EventCard = ({ event }) => (
         ))}
       </div>
     </div>
-    <div className="p-5">
+    <div className="p-4 sm:p-5">
       <h3 className="font-bold text-gray-900 mb-3">{event.title}</h3>
       <div className="space-y-1.5 text-sm text-gray-500 mb-4">
         <p className="flex items-center gap-2"><Calendar className="h-4 w-4 text-green-600" />{event.date}</p>
         <p className="flex items-center gap-2"><Clock className="h-4 w-4 text-green-600" />{event.time}</p>
-        <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-green-600" />{event.location}</p>
+        <p className="flex items-center gap-2 break-words"><MapPin className="h-4 w-4 flex-shrink-0 text-green-600" />{event.location}</p>
       </div>
-      <button className="w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 text-gray-900 font-medium px-4 py-2.5 rounded-xl transition-colors">
+      <button className="flex min-h-11 w-full items-center justify-between bg-gray-50 px-4 py-2.5 font-medium text-gray-900 transition-colors hover:bg-gray-100 rounded-xl">
         View Event <span>→</span>
       </button>
     </div>

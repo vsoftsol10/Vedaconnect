@@ -40,18 +40,18 @@ const Events = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <DashboardHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Events</h1>
           <p className="text-gray-500 mb-6">Discover and participate in community events.</p>
 
-          <div className="inline-flex bg-white border border-gray-100 rounded-2xl p-1.5 mb-6 shadow-sm">
+          <div className="flex w-full flex-col bg-white border border-gray-100 rounded-2xl p-1.5 mb-6 shadow-sm sm:inline-flex sm:w-auto sm:flex-row">
             {TABS.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                className={`flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                   activeTab === key ? "bg-amber-400 text-gray-900" : "text-gray-500 hover:text-gray-900"
                 }`}
               >

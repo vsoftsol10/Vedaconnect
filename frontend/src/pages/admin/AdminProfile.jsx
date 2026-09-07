@@ -26,9 +26,9 @@ const AdminProfile = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader title="Profile" />
-        <main className="p-8 max-w-3xl">
+        <main className="max-w-3xl px-4 py-6 sm:px-6 md:p-8">
           <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden mb-6 shadow-sm">
             <div className="h-24 bg-gradient-to-r from-amber-100 to-green-50" />
             <div className="px-6 pb-6 -mt-10 flex items-end justify-between flex-wrap gap-4">
@@ -52,7 +52,7 @@ const AdminProfile = () => {
 
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm mb-6">
             <h3 className="font-bold text-gray-900 mb-4">Account Information</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Full Name</p>
                 <p className="font-medium text-gray-900">{profile.fullName || "-"}</p>
@@ -147,8 +147,8 @@ const EditProfileModal = ({ profile, onClose, onSaved }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4">
+      <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white sm:max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">Edit Profile</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-gray-400 hover:text-gray-600" /></button>
@@ -220,8 +220,8 @@ const ChangePasswordModal = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4">
+      <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white sm:max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">Change Password</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-gray-400 hover:text-gray-600" /></button>

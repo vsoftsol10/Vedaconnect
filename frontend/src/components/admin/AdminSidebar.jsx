@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutGrid, Users, Building2, Calendar, CreditCard, Receipt, CircleUser, LogOut, Trophy } from "lucide-react";
+import { LayoutGrid, Users, Building2, Calendar, CreditCard, Receipt, CircleUser, LogOut, Trophy, Menu, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/images/vedaconnect-logo.png";
 
@@ -17,6 +18,7 @@ const MENU_ITEMS = [
 const AdminSidebar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -29,14 +31,20 @@ const AdminSidebar = () => {
     }`;
 
   return (
-    <aside className="w-64 flex-shrink-0 h-screen sticky top-0 border-r border-gray-100 bg-white flex flex-col px-4 py-6">
+    <>
+      <button type="button" onClick={() => setIsOpen(true)} className="fixed left-3 top-3 z-30 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 shadow-sm md:hidden" aria-label="Open admin navigation" aria-expanded={isOpen}>
+        <Menu className="h-5 w-5" />
+      </button>
+      {isOpen && <button type="button" onClick={() => setIsOpen(false)} className="fixed inset-0 z-30 bg-black/40 md:hidden" aria-label="Close admin navigation" />}
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-100 bg-white px-4 py-6 shadow-xl transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:flex-shrink-0 md:translate-x-0 md:shadow-none ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
       <div className="flex items-center gap-2 px-2 mb-8">
         <img src={logo} alt="VedaConnect" className="h-14 w-auto object-contain" />
+        <button type="button" onClick={() => setIsOpen(false)} className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 md:hidden" aria-label="Close admin navigation"><X className="h-5 w-5" /></button>
       </div>
 
       <nav className="space-y-1 flex-1">
         {MENU_ITEMS.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} className={linkClasses}>
+          <NavLink key={to} to={to} className={linkClasses} onClick={() => setIsOpen(false)}>
             <Icon className="h-4.5 w-4.5" />
             {label}
           </NavLink>
@@ -65,7 +73,8 @@ const AdminSidebar = () => {
           </div>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

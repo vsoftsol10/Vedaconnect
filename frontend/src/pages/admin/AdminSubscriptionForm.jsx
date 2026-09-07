@@ -81,9 +81,9 @@ const AdminSubscriptionForm = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader title="Edit Subscription" />
-        <main className="p-8 max-w-2xl">
+        <main className="max-w-2xl px-4 py-6 sm:px-6 md:p-8">
           <button onClick={() => navigate("/admin/subscriptions")} className="flex items-center gap-2 text-gray-500 hover:text-green-600 font-medium mb-4">
             <ArrowLeft className="h-4 w-4" /> Back to Subscriptions
           </button>
@@ -98,7 +98,7 @@ const AdminSubscriptionForm = () => {
                 <input required value={form.name} onChange={handleChange("name")}
                   className="w-full rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 px-4 py-3 outline-none" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">Base Price *</label>
                   <div className="relative">
@@ -113,7 +113,7 @@ const AdminSubscriptionForm = () => {
                     className="w-full rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 px-4 py-3 outline-none" />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3 rounded-xl bg-green-50 px-4 py-3">
+              <div className="grid grid-cols-1 gap-3 rounded-xl bg-green-50 px-4 py-3 sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-green-700">Base</p>
                   <p className="font-bold text-gray-900">₹{basePrice.toLocaleString("en-IN")}</p>
@@ -147,7 +147,7 @@ const AdminSubscriptionForm = () => {
                   <option>Inactive</option>
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">Active From (optional)</label>
                   <input type="date" value={form.activeFrom} onChange={handleChange("activeFrom")}
@@ -209,7 +209,7 @@ const AdminSubscriptionForm = () => {
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button type="button" onClick={() => navigate("/admin/subscriptions")} className="border border-gray-200 text-gray-600 font-medium px-6 py-3 rounded-xl hover:bg-gray-50">
                 Cancel
               </button>

@@ -75,9 +75,9 @@ const Profile = () => {
     return (
       <div className="flex min-h-screen bg-stone-50">
         <Sidebar />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <DashboardHeader />
-          <main className="p-8">
+          <main className="px-4 py-6 sm:px-6 md:p-8">
             <div className="flex items-center gap-2 text-gray-500">
               <Loader2 className="h-5 w-5 animate-spin" />
               Loading profile
@@ -92,9 +92,9 @@ const Profile = () => {
     return (
       <div className="flex min-h-screen bg-stone-50">
         <Sidebar />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <DashboardHeader />
-          <main className="p-8">
+          <main className="px-4 py-6 sm:px-6 md:p-8">
             <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">
               {loadError || "Couldn't load your profile. Please try logging in again."}
             </div>
@@ -127,17 +127,17 @@ const Profile = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <DashboardHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Profile</h1>
           <p className="text-gray-500 mb-6">Manage your personal and business information.</p>
 
           {/* Banner */}
           <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden mb-6 shadow-sm">
             <div className="h-24 bg-gradient-to-r from-green-50 to-amber-100" />
-            <div className="px-6 pb-6 -mt-10 flex items-end justify-between flex-wrap gap-4">
-              <div className="flex items-end gap-4">
+            <div className="flex flex-col items-start gap-4 px-4 pb-4 -mt-10 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-6">
+              <div className="flex min-w-0 items-end gap-3 sm:gap-4">
                 {profile.profilePhoto ? (
                   <img src={profile.profilePhoto} alt={profile.fullName} className="h-20 w-20 rounded-2xl object-cover border-4 border-white" />
                 ) : (
@@ -146,8 +146,8 @@ const Profile = () => {
                   </div>
                 )}
                 <div className="pb-1">
-                  <h2 className="text-xl font-bold text-gray-900">{profile.fullName}</h2>
-                  <p className="flex items-center gap-1 text-sm text-gray-500">
+                  <h2 className="break-words text-xl font-bold text-gray-900">{profile.fullName}</h2>
+                  <p className="flex items-center gap-1 text-sm text-gray-500 break-words">
                     <MapPin className="h-3.5 w-3.5" /> {profile.location}
                   </p>
                 </div>
@@ -155,22 +155,22 @@ const Profile = () => {
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 border border-gray-200 hover:border-green-400 hover:text-green-600 text-gray-700 font-medium px-4 py-2 rounded-xl transition-colors"
+                  className="flex min-h-11 items-center gap-2 border border-gray-200 hover:border-green-400 hover:text-green-600 text-gray-700 font-medium px-4 py-2 rounded-xl transition-colors"
                 >
                   <Pencil className="h-4 w-4" /> Edit Profile
                 </button>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex w-full gap-2 sm:w-auto">
                   <button
                     onClick={() => { setForm(profile); setIsEditing(false); }}
-                    className="flex items-center gap-2 border border-gray-200 text-gray-500 font-medium px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="flex min-h-11 flex-1 items-center justify-center gap-2 border border-gray-200 text-gray-500 font-medium px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors sm:flex-none"
                   >
                     <X className="h-4 w-4" /> Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-amber-400 hover:bg-green-600 hover:text-white text-gray-900 font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-60"
+                    className="flex min-h-11 flex-1 items-center justify-center gap-2 bg-amber-400 hover:bg-green-600 hover:text-white text-gray-900 font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-60 sm:flex-none"
                   >
                     <Check className="h-4 w-4" /> {isSaving ? "Saving..." : "Save"}
                   </button>
@@ -181,7 +181,7 @@ const Profile = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Personal Details */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
               <h3 className="font-bold text-gray-900 mb-4">Personal Details</h3>
               <div className="space-y-3">
                 <InfoRow icon={Pencil} label="Full Name" value={profile.fullName} editable={isEditing} field="fullName" form={form} onChange={handleChange} />
@@ -192,7 +192,7 @@ const Profile = () => {
             </div>
 
             {/* Business Information */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
               <h3 className="font-bold text-gray-900 mb-4">Business Information</h3>
               <div className="space-y-3">
                 <InfoRow icon={Building2} label="Business Name" value={profile.businessName} editable={isEditing} field="businessName" form={form} onChange={handleChange} />
@@ -211,7 +211,7 @@ const Profile = () => {
             </div>
 
             {/* Products / Services */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
               <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-4">
                 <Package className="h-5 w-5 text-green-600" /> Products / Services
               </h3>
@@ -224,30 +224,30 @@ const Profile = () => {
             </div>
 
             {/* Membership */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
               <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-4">
                 <ShieldCheck className="h-5 w-5 text-green-600" /> Membership
               </h3>
-              <div className="bg-green-50 rounded-xl px-4 py-3 flex items-center justify-between mb-3">
-                <div>
+              <div className="mb-3 flex flex-col gap-2 rounded-xl bg-green-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-xs text-gray-400 uppercase">Plan</p>
-                  <p className="font-bold text-gray-900">{profile.membershipType?.replace("_", " ")}</p>
+                  <p className="break-words font-bold text-gray-900">{profile.membershipType?.replace("_", " ")}</p>
                 </div>
-                <span className="flex items-center gap-1.5 text-sm font-medium text-green-600">
+                <span className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-green-600">
                   <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> {profile.membershipStatus}
                 </span>
               </div>
-              <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between mb-3">
+              <div className="flex flex-col gap-1 rounded-xl bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="text-xs text-gray-400 uppercase">Valid Until</span>
-                <span className="font-semibold text-gray-900">{validUntilLabel}</span>
+                <span className="break-words font-semibold text-gray-900 sm:text-right">{validUntilLabel}</span>
               </div>
-              <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between mb-3">
+              <div className="flex flex-col gap-1 rounded-xl bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="text-xs text-gray-400 uppercase">Renewal Date</span>
-                <span className="font-semibold text-gray-900">{renewalDateLabel}</span>
+                <span className="break-words font-semibold text-gray-900 sm:text-right">{renewalDateLabel}</span>
               </div>
-              <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div className="flex flex-col gap-1 rounded-xl bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="text-xs text-gray-400 uppercase">Member Since</span>
-                <span className="font-semibold text-gray-900">{memberSinceLabel}</span>
+                <span className="break-words font-semibold text-gray-900 sm:text-right">{memberSinceLabel}</span>
               </div>
             </div>
           </div>
@@ -255,7 +255,7 @@ const Profile = () => {
 
           {/* Business Certificate */}
           {profile.certificates?.length > 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm mt-6">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm mt-6 sm:p-6">
               <h3 className="font-bold text-gray-900 mb-4">Business Certificate</h3>
               {profile.certificates.map((cert) => (
                 <div key={cert.id} className="bg-gray-50 rounded-xl p-4 flex items-center gap-3 mb-3">
@@ -268,13 +268,13 @@ const Profile = () => {
                   </div>
                 </div>
               ))}
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <a href={profile.certificates[0]?.signedUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-green-400 rounded-xl py-2.5 font-medium text-gray-700 transition-colors">
+                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 py-2.5 font-medium text-gray-700 transition-colors hover:border-green-400">
                   <Eye className="h-4 w-4" /> View
                 </a>
                 <a href={profile.certificates[0]?.signedUrl} download
-                  className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-green-400 rounded-xl py-2.5 font-medium text-gray-700 transition-colors">
+                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 py-2.5 font-medium text-gray-700 transition-colors hover:border-green-400">
                   <Download className="h-4 w-4" /> Download
                 </a>
               </div>
@@ -304,7 +304,7 @@ const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, er
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </>
       ) : (
-        <p className="font-semibold text-gray-900">{value}</p>
+        <p className="break-words font-semibold text-gray-900">{value}</p>
       )}
     </div>
   </div>

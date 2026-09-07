@@ -42,7 +42,7 @@ const weekLabel = (weekStart) => {
 };
 
 const RankedList = ({ title, rows }) => (
-  <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+  <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
     <h3 className="font-bold text-gray-900 mb-4">{title}</h3>
     <div className="space-y-3">
       {rows.length ? (
@@ -100,19 +100,19 @@ const Leaderboard = () => {
 
   return (
     <section className="mb-10">
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-amber-500" />
           <h2 className="text-lg font-bold text-gray-900">Leaderboard</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2 justify-end">
-          <div className="flex rounded-xl bg-white border border-gray-100 p-1">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="flex w-full rounded-xl bg-white border border-gray-100 p-1 sm:w-auto">
             {["week", "month", "year"].map((key) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => handlePeriodChange(key)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-colors ${
+                className={`min-h-11 flex-1 px-3 py-2 rounded-lg text-sm font-semibold capitalize transition-colors sm:flex-none sm:px-4 ${
                   period === key ? "bg-amber-400 text-gray-900" : "text-gray-500 hover:text-gray-900"
                 }`}
               >
@@ -121,12 +121,12 @@ const Leaderboard = () => {
             ))}
           </div>
           {period === "week" && (
-            <div className="flex items-center rounded-xl bg-white border border-gray-100 p-1">
-              <button type="button" onClick={() => setValue((current) => shiftWeek(current, -7))} className="p-2 text-gray-500 hover:text-gray-900">
+            <div className="flex w-full items-center justify-between rounded-xl bg-white border border-gray-100 p-1 sm:w-auto">
+              <button type="button" onClick={() => setValue((current) => shiftWeek(current, -7))} className="inline-flex h-11 w-11 items-center justify-center text-gray-500 hover:text-gray-900">
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="min-w-32 px-2 text-center text-sm font-semibold text-gray-700">{weekLabel(value)}</span>
-              <button type="button" onClick={() => setValue((current) => shiftWeek(current, 7))} className="p-2 text-gray-500 hover:text-gray-900">
+              <span className="px-2 text-center text-sm font-semibold text-gray-700">{weekLabel(value)}</span>
+              <button type="button" onClick={() => setValue((current) => shiftWeek(current, 7))} className="inline-flex h-11 w-11 items-center justify-center text-gray-500 hover:text-gray-900">
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>

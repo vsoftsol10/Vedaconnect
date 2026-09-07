@@ -43,9 +43,9 @@ export default function AdminEditEvent() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-8 max-w-3xl">
+        <main className="max-w-3xl px-4 py-6 sm:px-6 md:p-8">
           <button
             onClick={() => navigate('/admin/events')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium mb-6"

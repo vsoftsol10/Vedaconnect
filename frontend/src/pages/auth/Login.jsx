@@ -27,7 +27,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen w-full items-center justify-center bg-stone-50 px-4 py-6 sm:py-12">
       <div className="w-full max-w-md">
         <OnboardingHeader />
         <OnboardingCard>

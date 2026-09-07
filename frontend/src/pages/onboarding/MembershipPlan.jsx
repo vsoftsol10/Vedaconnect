@@ -77,7 +77,7 @@ const MembershipPlan = () => {
   const handleBack = () => navigate("/onboarding/business-certificate");
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen w-full items-center justify-center bg-stone-50 px-4 py-6 sm:py-12">
       <div className="w-full max-w-2xl">
         <OnboardingHeader />
         <OnboardingProgress currentStep={4} />
@@ -96,19 +96,19 @@ const MembershipPlan = () => {
             </div>
           ) : selectedPlan ? (
             <div className="rounded-2xl border-2 border-amber-400 bg-amber-50/60 p-6 sm:p-7">
-              <div className="flex items-start justify-between gap-4 mb-5">
-                <div className="flex items-center gap-3">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                <div className="flex min-w-0 items-center gap-3">
                   <span className="h-7 w-7 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
                     <Check className="h-4 w-4 text-gray-900" strokeWidth={3} />
                   </span>
-                  <h2 className="text-lg font-bold text-gray-900">{selectedPlan.name}</h2>
+                  <h2 className="break-words text-lg font-bold text-gray-900">{selectedPlan.name}</h2>
                   {selectedPlan.badge && (
                     <span className="text-[11px] font-bold tracking-wide bg-green-600 text-white px-2.5 py-1 rounded-full">
                       {selectedPlan.badge}
                     </span>
                   )}
                 </div>
-                <div className="text-right flex-shrink-0">
+                <div className="text-left sm:text-right">
                   <p className="text-2xl font-extrabold text-gray-900 leading-tight">
                     &#8377;{formatCurrency(price.totalAmount)}
                   </p>
@@ -117,15 +117,15 @@ const MembershipPlan = () => {
               </div>
 
               <div className="rounded-xl bg-white/80 border border-amber-100 px-5 py-4 mb-5 space-y-2">
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-gray-500">Base Amount</span>
                   <span className="font-semibold text-gray-900">&#8377;{formatCurrency(price.baseAmount)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-gray-500">GST ({formatCurrency(price.gstPercent)}%)</span>
                   <span className="font-semibold text-gray-900">&#8377;{formatCurrency(price.gstAmount)}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-amber-100 pt-2">
+                <div className="flex flex-col gap-1 border-t border-amber-100 pt-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="font-bold text-gray-900">Total Amount</span>
                   <span className="text-lg font-extrabold text-green-700">
                     &#8377;{formatCurrency(price.totalAmount)}
@@ -149,11 +149,11 @@ const MembershipPlan = () => {
           )}
           {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
 
-          <div className="flex items-center justify-between mt-9">
+          <div className="mt-9 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={handleBack}
-              className="group inline-flex items-center gap-2 text-gray-500 hover:text-green-600 font-semibold px-2 py-3.5 rounded-xl transition-colors duration-300"
+              className="group inline-flex min-h-11 items-center justify-center gap-2 text-gray-500 hover:text-green-600 font-semibold px-2 py-3.5 rounded-xl transition-colors duration-300 sm:justify-start"
             >
               <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
               Back
@@ -163,7 +163,7 @@ const MembershipPlan = () => {
               type="button"
               onClick={handleContinue}
               disabled={!selectedPlan || isSubmitting || isLoadingPlans}
-              className="group inline-flex items-center gap-2 bg-amber-400 hover:bg-green-600 text-gray-900 hover:text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-green-200 ring-2 ring-transparent hover:ring-green-100"
+              className="group inline-flex min-h-11 w-full items-center justify-center gap-2 bg-amber-400 hover:bg-green-600 text-gray-900 hover:text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-green-200 ring-2 ring-transparent hover:ring-green-100 sm:w-auto"
             >
               {isSubmitting ? (
                 <>

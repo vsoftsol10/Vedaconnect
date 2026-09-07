@@ -44,7 +44,7 @@ const NotificationBell = ({ badgeClass = "bg-amber-400 text-gray-900" }) => {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="relative text-gray-500 hover:text-green-600 transition-colors"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-50 hover:text-green-600"
       >
         <Bell className="h-5 w-5" />
         {notifications.unreadCount > 0 && (
@@ -55,7 +55,7 @@ const NotificationBell = ({ badgeClass = "bg-amber-400 text-gray-900" }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-3 w-80 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
+        <div className="absolute right-0 top-full z-50 mt-3 w-[calc(100vw-2rem)] max-w-80 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg sm:w-80">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <p className="font-semibold text-gray-900">Notifications</p>
             <button
@@ -67,7 +67,7 @@ const NotificationBell = ({ badgeClass = "bg-amber-400 text-gray-900" }) => {
               Mark all read
             </button>
           </div>
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-[min(20rem,calc(100vh-9rem))] overflow-y-auto">
             {notifications.items.length ? (
               notifications.items.map((item) => (
                 <button

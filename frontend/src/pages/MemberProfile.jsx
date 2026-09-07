@@ -24,9 +24,9 @@ const MemberProfile = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <DashboardHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <button
             onClick={() => navigate("/members")}
             className="mb-5 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-green-600 transition-colors"
@@ -45,8 +45,8 @@ const MemberProfile = () => {
             <>
               <section className="mb-6 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
                 <div className="h-28 bg-gradient-to-r from-amber-100 via-stone-50 to-green-50" />
-                <div className="-mt-12 flex flex-wrap items-end justify-between gap-4 px-6 pb-6">
-                  <div className="flex items-end gap-4">
+                <div className="-mt-12 flex flex-col items-start gap-4 px-4 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:px-6 sm:pb-6">
+                  <div className="flex min-w-0 items-end gap-3 sm:gap-4">
                     {member.profilePhoto ? (
                       <img
                         src={member.profilePhoto}
@@ -60,7 +60,7 @@ const MemberProfile = () => {
                     )}
                     <div className="pb-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="text-2xl font-bold text-gray-900">{member.fullName}</h1>
+                        <h1 className="break-words text-2xl font-bold text-gray-900">{member.fullName}</h1>
                         {member.isVerified && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
                             <ShieldCheck className="h-3.5 w-3.5" />

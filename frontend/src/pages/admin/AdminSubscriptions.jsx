@@ -20,10 +20,10 @@ const AdminSubscriptions = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader title="Subscriptions" />
-        <main className="p-8">
-          <div className="flex items-center justify-between mb-6">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Subscriptions</h2>
               <p className="text-gray-500">Manage membership plans available to members.</p>
@@ -38,7 +38,7 @@ const AdminSubscriptions = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {plans.map((plan) => (
-              <div key={plan.id} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col">
+              <div key={plan.id} className="flex flex-col rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                 <div className="flex items-start justify-between mb-1">
                   <h3 className="font-bold text-gray-900">{plan.name}</h3>
                   <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${plan.isActive ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>

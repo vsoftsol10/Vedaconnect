@@ -24,13 +24,13 @@ const Members = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <DashboardHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Members</h1>
           <p className="text-gray-500 mb-6">Connect with members of the VedaConnect community.</p>
 
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -41,7 +41,7 @@ const Members = () => {
                 className="w-full rounded-xl border border-gray-200 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
               />
             </div>
-            <button className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 text-gray-700 hover:border-green-300 transition-colors">
+            <button className="flex min-h-11 items-center justify-center gap-2 border border-gray-200 rounded-xl px-4 py-3 text-gray-700 hover:border-green-300 transition-colors sm:justify-start">
               <SlidersHorizontal className="h-4 w-4" />
               Filters
             </button>

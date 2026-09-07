@@ -57,9 +57,9 @@ const AdminPaymentHistory = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader title="Payment History" />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Payment History</h2>
           <p className="text-gray-500 mb-6">Verify and manage payments made through WhatsApp.</p>
 
@@ -143,8 +143,8 @@ const AdminPaymentHistory = () => {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4">
+          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white sm:max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900">Payment Details</h2>
               <button onClick={() => setSelected(null)}><X className="h-5 w-5 text-gray-400 hover:text-gray-600" /></button>
@@ -157,7 +157,7 @@ const AdminPaymentHistory = () => {
                   <p className="text-xs text-gray-500">Payment made through WhatsApp</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Member" value={selected.memberName} />
                 <Field label="Payment Type" value={tab === "membership" ? "Membership" : "Event"} />
                 <Field label={tab === "membership" ? "Package" : "Event"} value={tab === "membership" ? selected.packageName : selected.eventTitle} />

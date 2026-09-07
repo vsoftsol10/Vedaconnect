@@ -28,25 +28,25 @@ export default function AdminEvents() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-8">
-          <div className="flex items-center justify-between mb-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Events</h1>
               <p className="text-gray-500 mt-1">Manage all community events.</p>
             </div>
             <button
               onClick={() => navigate('/admin/events/create')}
-              className="flex items-center gap-2 bg-amber-400 hover:bg-green-600 hover:text-white transition-all duration-300 font-medium px-5 py-2.5 rounded-xl"
+              className="flex min-h-11 items-center justify-center gap-2 bg-amber-400 hover:bg-green-600 hover:text-white transition-all duration-300 font-medium px-5 py-2.5 rounded-xl"
             >
               <Plus size={18} />
               Create Event
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <table className="min-w-[760px] w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">
                   <th className="px-6 py-4">Event</th>

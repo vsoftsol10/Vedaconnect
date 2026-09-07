@@ -35,13 +35,13 @@ const DashboardHeader = () => {
   };
 
   return (
-    <header className="flex items-center justify-end gap-6 px-8 py-5 border-b border-gray-100 bg-white relative">
+    <header className="relative flex min-h-[68px] items-center justify-end gap-3 border-b border-gray-100 bg-white px-4 py-3 pl-16 sm:px-6 sm:pl-16 md:gap-6 md:px-8 md:py-5">
       <NotificationBell />
 
       {isLoading ? (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="h-10 w-10 rounded-full bg-gray-100 animate-pulse" />
-          <div className="space-y-1.5">
+            <div className="hidden space-y-1.5 sm:block">
             <div className="h-3 w-24 bg-gray-100 rounded animate-pulse" />
             <div className="h-2.5 w-16 bg-gray-100 rounded animate-pulse" />
           </div>
@@ -52,7 +52,7 @@ const DashboardHeader = () => {
         </div>
       ) : (
         <div className="relative" ref={menuRef}>
-          <button onClick={() => setIsMenuOpen((prev) => !prev)} className="flex items-center gap-3 group">
+          <button onClick={() => setIsMenuOpen((prev) => !prev)} className="flex min-w-0 items-center gap-2 sm:gap-3 group" aria-expanded={isMenuOpen}>
             {profile?.profilePhoto ? (
               <img src={profile.profilePhoto} alt={profile.fullName} className="h-10 w-10 rounded-full object-cover" />
             ) : (
@@ -60,15 +60,15 @@ const DashboardHeader = () => {
                 {profile?.fullName?.[0] || "?"}
               </div>
             )}
-            <div className="text-left">
-              <p className="text-sm font-semibold text-gray-900">{profile?.fullName}</p>
+            <div className="hidden min-w-0 text-left sm:block">
+              <p className="truncate text-sm font-semibold text-gray-900">{profile?.fullName}</p>
               <p className="text-xs text-gray-400">{profile?.location}</p>
             </div>
-            <ChevronDown className={`h-4 w-4 text-gray-400 group-hover:text-green-600 transition-transform ${isMenuOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className={`hidden h-4 w-4 text-gray-400 transition-transform group-hover:text-green-600 sm:block ${isMenuOpen ? "rotate-180" : ""}`} />
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden z-50">
+            <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-64 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg sm:w-64">
               <div className="px-4 py-3 border-b border-gray-100">
                 <p className="font-semibold text-gray-900">{profile?.fullName}</p>
                 <p className="text-sm text-gray-400 truncate">{user?.email}</p>

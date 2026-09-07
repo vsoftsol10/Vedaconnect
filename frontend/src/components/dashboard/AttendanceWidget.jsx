@@ -41,7 +41,7 @@ const AttendanceWidget = () => {
   const status = attendance?.status || "PENDING";
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm mb-10">
+    <div className="mb-10 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-gray-900">Weekly Meeting Attendance</h2>
@@ -62,12 +62,12 @@ const AttendanceWidget = () => {
             Loading
           </div>
         ) : status === "PENDING" ? (
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() => respond("confirm")}
               disabled={isSaving}
-              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               Confirm
@@ -76,7 +76,7 @@ const AttendanceWidget = () => {
               type="button"
               onClick={() => respond("decline")}
               disabled={isSaving}
-              className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:border-red-200 hover:text-red-600 disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:border-red-200 hover:text-red-600 disabled:opacity-60"
             >
               <XCircle className="h-4 w-4" />
               Decline

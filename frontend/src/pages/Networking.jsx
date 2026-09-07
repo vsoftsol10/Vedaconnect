@@ -153,7 +153,7 @@ const EntryForm = ({ members, activeTab, form, setForm, isSaving, onSubmit }) =>
         <button
           type="submit"
           disabled={isSaving}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-green-600 hover:text-white disabled:opacity-60"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-green-600 hover:text-white disabled:opacity-60 sm:w-auto"
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           Save Entry
@@ -261,15 +261,15 @@ const Networking = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <DashboardHeader />
-        <main className="p-8">
-          <div className="flex items-center justify-between mb-6">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
+          <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Networking</h1>
               <p className="text-gray-500 mt-1">Track referrals and business shared across the community.</p>
             </div>
-            <div className="flex rounded-xl bg-white border border-gray-100 p-1">
+            <div className="flex w-full rounded-xl bg-white border border-gray-100 p-1 sm:w-auto">
               {tabs.map(([key, label]) => (
                 <button
                   key={key}
@@ -278,7 +278,7 @@ const Networking = () => {
                     setActiveTab(key);
                     setForm(emptyForm);
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  className={`min-h-11 flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-colors sm:flex-none ${
                     activeTab === key ? "bg-amber-400 text-gray-900" : "text-gray-500 hover:text-gray-900"
                   }`}
                 >

@@ -43,9 +43,9 @@ const Dashboard = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <DashboardHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           {isLoading ? (
             <div className="flex items-center gap-2 text-gray-500">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -95,7 +95,7 @@ const Dashboard = () => {
               <AttendanceWidget />
               <Leaderboard />
 
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between gap-3 mb-4">
                 <h2 className="text-lg font-bold text-gray-900">Upcoming Events</h2>
                 <button className="text-sm font-medium text-green-600 hover:text-green-700">View All</button>
               </div>

@@ -60,9 +60,9 @@ const AdminMemberDetail = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader title="Member Details" />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <button onClick={() => navigate("/admin/members")} className="flex items-center gap-2 text-gray-500 hover:text-green-600 font-medium mb-4">
             <ArrowLeft className="h-4 w-4" /> Back to Members
           </button>
@@ -96,7 +96,7 @@ const AdminMemberDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
               <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-4"><User className="h-5 w-5 text-green-600" /> Personal Details</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Name" value={member.fullName} />
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Hub</p>
@@ -116,7 +116,7 @@ const AdminMemberDetail = () => {
 
             <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
               <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-4"><Building2 className="h-5 w-5 text-green-600" /> Business Details</h3>
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Business Name" value={member.businessName} />
                 <Field label="Category" value={member.businessCategory} />
               </div>
@@ -129,7 +129,7 @@ const AdminMemberDetail = () => {
             <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
               <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-4"><Crown className="h-5 w-5 text-amber-500" /> Membership</h3>
               <Field label="Plan" value={member.membershipType?.replace("_", " ")} bold />
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Joined Date</p>
                   <input

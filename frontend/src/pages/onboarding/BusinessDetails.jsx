@@ -59,7 +59,7 @@ const BusinessDetails = () => {
   const handleBack = () => navigate("/onboarding/personal-details");
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen w-full items-center justify-center bg-stone-50 px-4 py-6 sm:py-12">
       <div className="w-full max-w-2xl">
         <OnboardingHeader />
         <OnboardingProgress currentStep={2} />
@@ -143,11 +143,11 @@ const BusinessDetails = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between mt-9">
+          <div className="mt-9 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={handleBack}
-              className="group inline-flex items-center gap-2 text-gray-500 hover:text-green-600 font-semibold px-2 py-3.5 rounded-xl transition-colors duration-300"
+              className="group inline-flex min-h-11 items-center justify-center gap-2 text-gray-500 hover:text-green-600 font-semibold px-2 py-3.5 rounded-xl transition-colors duration-300 sm:justify-start"
             >
               <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
               Back
@@ -157,7 +157,7 @@ const BusinessDetails = () => {
               type="button"
               onClick={handleContinue}
               disabled={isSubmitting}
-              className="group inline-flex items-center gap-2 bg-amber-400 hover:bg-green-600 text-gray-900 hover:text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-green-200 ring-2 ring-transparent hover:ring-green-100"
+              className="group inline-flex min-h-11 w-full items-center justify-center gap-2 bg-amber-400 hover:bg-green-600 text-gray-900 hover:text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-green-200 ring-2 ring-transparent hover:ring-green-100 sm:w-auto"
             >
               {isSubmitting ? (
                 <>
@@ -172,7 +172,7 @@ const BusinessDetails = () => {
               )}
             </button>
           </div>
-          {submitError && <p className="mt-4 text-sm text-red-500 text-right">{submitError}</p>}
+          {submitError && <p className="mt-4 text-sm text-red-500 sm:text-right">{submitError}</p>}
         </OnboardingCard>
 
         <p className="text-center text-xs text-gray-400 mt-6">

@@ -30,9 +30,9 @@ const AdminDashboard = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Dashboard</h2>
           <p className="text-gray-500 mb-6">Community overview at a glance.</p>
 
@@ -44,7 +44,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
               <h3 className="font-bold text-gray-900 mb-1">Members by Hub</h3>
               <p className="text-sm text-gray-400 mb-4">Distribution across active hubs</p>
               <div className="flex items-end gap-6 flex-wrap">
@@ -57,7 +57,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
               <h3 className="font-bold text-gray-900 mb-4">Recently Joined Members</h3>
               <table className="w-full text-sm">
                 <thead>
@@ -87,7 +87,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
+          <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
             <h3 className="font-bold text-gray-900 mb-1">Event Registrations</h3>
             <p className="text-sm text-gray-400 mb-4">Upcoming events and registration counts</p>
             <table className="w-full text-sm">

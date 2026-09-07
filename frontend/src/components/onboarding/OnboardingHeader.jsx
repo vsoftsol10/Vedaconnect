@@ -2,14 +2,14 @@ import logo from "../../assets/images/vedaconnect-logo.png";
 
 const OnboardingHeader = () => {
   return (
-    <div className="flex flex-col items-center mb-10">
+    <div className="mb-6 flex flex-col items-center sm:mb-10">
       <img
         src={logo}
         alt="VedaConnect"
-        className="w-56 h-auto object-contain"
+        className="h-auto w-44 max-w-full object-contain sm:w-56"
       />
 
-      <span className="mt-2 text-xs font-semibold tracking-[0.25em] text-green-600 uppercase">
+      <span className="mt-2 text-center text-[10px] font-semibold tracking-[0.18em] text-green-600 uppercase sm:text-xs sm:tracking-[0.25em]">
         Founding Member Onboarding
       </span>
     </div>

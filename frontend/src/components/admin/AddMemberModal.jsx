@@ -55,17 +55,17 @@ const AddMemberModal = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4">
+      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col rounded-2xl bg-white sm:max-h-[85vh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">Add Member</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-gray-400 hover:text-gray-600" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto px-4 py-5 sm:px-6">
           <div>
             <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">Personal Details</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input label="Full Name" required value={form.fullName} onChange={handleChange("fullName")} placeholder="e.g. Priya Kumar" />
               <Input label="Email" required type="email" value={form.email} onChange={handleChange("email")} placeholder="priya@example.com" />
             </div>
@@ -76,11 +76,11 @@ const AddMemberModal = ({ onClose, onSuccess }) => {
 
           <div>
             <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">Business Details</p>
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 gap-4 mb-4 sm:grid-cols-2">
               <Input label="Business Name" required value={form.businessName} onChange={handleChange("businessName")} placeholder="e.g. Priya Crafts" />
               <Select label="Business Type" required value={form.businessType} onChange={handleChange("businessType")} options={BUSINESS_TYPES} placeholder="Select type" />
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 gap-4 mb-4 sm:grid-cols-2">
               <Select label="Business Category" required value={form.businessCategory} onChange={handleChange("businessCategory")} options={BUSINESS_CATEGORIES} placeholder="Select category" />
               <Select label="Location" required value={form.location} onChange={handleChange("location")} options={HUB_OPTIONS} placeholder="Select location" />
             </div>
@@ -120,7 +120,7 @@ const AddMemberModal = ({ onClose, onSuccess }) => {
 
           <div>
             <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">Hub & Membership</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Select label="Select Hub" required value={form.hubId} onChange={handleChange("hubId")}
                 options={hubs.map((h) => ({ value: h.id, label: h.name }))} placeholder="Select hub" />
               <Select label="Select Membership Plan" required value={form.planCode} onChange={handleChange("planCode")}

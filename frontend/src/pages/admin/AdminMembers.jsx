@@ -29,24 +29,24 @@ const AdminMembers = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader title="Members" />
-        <main className="p-8">
-          <div className="flex items-center justify-between mb-6">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Members</h2>
               <p className="text-gray-500">Manage all VedaConnect community members.</p>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 bg-amber-400 hover:bg-green-600 hover:text-white text-gray-900 font-semibold px-4 py-2.5 rounded-xl transition-colors"
+              className="flex min-h-11 items-center justify-center gap-2 bg-amber-400 hover:bg-green-600 hover:text-white text-gray-900 font-semibold px-4 py-2.5 rounded-xl transition-colors"
             >
               <Plus className="h-4 w-4" /> Add Member
             </button>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 mb-6 shadow-sm">
-            <div className="relative flex-1 min-w-[200px]">
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap">
+            <div className="relative w-full flex-1 sm:min-w-[200px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 value={search}
@@ -55,11 +55,11 @@ const AdminMembers = () => {
                 className="w-full rounded-xl border border-gray-200 pl-11 pr-4 py-2.5 text-sm outline-none focus:border-green-500"
               />
             </div>
-            <select value={hubId} onChange={(e) => setHubId(e.target.value)} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none">
+            <select value={hubId} onChange={(e) => setHubId(e.target.value)} className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none sm:w-auto">
               <option value="">All Hubs</option>
               {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none">
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none sm:w-auto">
               <option value="">All Status</option>
               {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
             </select>

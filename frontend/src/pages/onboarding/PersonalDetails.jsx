@@ -61,7 +61,7 @@ const PersonalDetails = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen w-full items-center justify-center bg-stone-50 px-4 py-6 sm:py-12">
       <div className="w-full max-w-2xl">
         <OnboardingHeader />
         <OnboardingProgress currentStep={1} />
@@ -171,15 +171,15 @@ const PersonalDetails = () => {
             </div>
           </div>
 
-          <div className="flex justify-end mt-9">
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             {submitError && (
-              <p className="mr-4 self-center text-sm text-red-500">{submitError}</p>
+              <p className="text-sm text-red-500 sm:mr-4 sm:self-center">{submitError}</p>
             )}
             <button
               type="button"
               onClick={handleContinue}
               disabled={isSubmitting}
-              className="group inline-flex items-center gap-2 bg-amber-400 hover:bg-green-600 text-gray-900 hover:text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-green-200 ring-2 ring-transparent hover:ring-green-100"
+              className="group inline-flex min-h-11 w-full items-center justify-center gap-2 bg-amber-400 hover:bg-green-600 text-gray-900 hover:text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-green-200 ring-2 ring-transparent hover:ring-green-100 sm:w-auto"
             >
               {isSubmitting ? (
                 <>

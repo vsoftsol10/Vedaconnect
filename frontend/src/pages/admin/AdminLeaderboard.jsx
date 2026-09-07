@@ -135,10 +135,10 @@ const AdminLeaderboard = () => {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader title="Awards" />
-        <main className="p-8">
-          <div className="flex items-center justify-between mb-6">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
+          <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <Trophy className="h-6 w-6 text-amber-500" />
@@ -146,14 +146,14 @@ const AdminLeaderboard = () => {
               </div>
               <p className="text-gray-500 mt-1">Leaderboard, attendance, and meeting fee status.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 justify-end">
-              <div className="flex rounded-xl bg-white border border-gray-100 p-1">
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              <div className="flex w-full rounded-xl bg-white border border-gray-100 p-1 sm:w-auto">
                 {["week", "month", "year"].map((key) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handlePeriodChange(key)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-colors ${
+                    className={`min-h-11 flex-1 px-3 py-2 rounded-lg text-sm font-semibold capitalize transition-colors sm:flex-none sm:px-4 ${
                       period === key ? "bg-amber-400 text-gray-900" : "text-gray-500 hover:text-gray-900"
                     }`}
                   >
@@ -162,11 +162,11 @@ const AdminLeaderboard = () => {
                 ))}
               </div>
               {period === "week" && (
-                <div className="flex items-center rounded-xl bg-white border border-gray-100 p-1">
+                <div className="flex w-full items-center justify-between rounded-xl bg-white border border-gray-100 p-1 sm:w-auto">
                   <button type="button" onClick={() => setValue((current) => shiftWeek(current, -7))} className="p-2 text-gray-500 hover:text-gray-900">
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                  <span className="min-w-32 px-2 text-center text-sm font-semibold text-gray-700">{weekLabel(value)}</span>
+                  <span className="px-2 text-center text-sm font-semibold text-gray-700">{weekLabel(value)}</span>
                   <button type="button" onClick={() => setValue((current) => shiftWeek(current, 7))} className="p-2 text-gray-500 hover:text-gray-900">
                     <ChevronRight className="h-4 w-4" />
                   </button>

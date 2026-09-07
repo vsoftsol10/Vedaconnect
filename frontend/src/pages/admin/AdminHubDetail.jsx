@@ -29,9 +29,9 @@ export default function AdminHubDetail() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <AdminHeader />
-        <main className="p-8">
+        <main className="px-4 py-6 sm:px-6 md:p-8">
           <button
             onClick={() => navigate('/admin/hubs')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium mb-6"
@@ -46,8 +46,8 @@ export default function AdminHubDetail() {
             <p className="text-gray-500">Hub not found.</p>
           ) : (
             <>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-                <div className="flex items-center gap-4 mb-6">
+              <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+                <div className="mb-6 flex items-center gap-3 sm:gap-4">
                   <div className="w-14 h-14 rounded-xl bg-amber-50 flex items-center justify-center">
                     <Building2 className="text-amber-500" size={26} />
                   </div>
@@ -88,7 +88,7 @@ export default function AdminHubDetail() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+              <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900">Members</h3>
                 <p className="text-gray-500 text-sm mb-4">{hub.memberCount} members in this hub</p>
                 <div className="space-y-3">
@@ -117,7 +117,7 @@ export default function AdminHubDetail() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Events</h3>
                   {hub.upcomingEvents.length === 0 ? (
                     <p className="text-gray-400 text-sm">No upcoming events.</p>
@@ -138,7 +138,7 @@ export default function AdminHubDetail() {
                   )}
                 </div>
 
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Past Events</h3>
                   {hub.pastEvents.length === 0 ? (
                     <p className="text-gray-400 text-sm">No past events.</p>

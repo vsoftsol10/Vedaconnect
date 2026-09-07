@@ -59,7 +59,7 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600"
+            className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-gray-400 hover:text-green-600"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>

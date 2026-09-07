@@ -173,7 +173,7 @@ const CompleteMembership = () => {
   const handleBack = () => navigate("/onboarding/membership");
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen w-full items-center justify-center bg-stone-50 px-4 py-6 sm:py-12">
       <div className="w-full max-w-2xl">
         <OnboardingHeader />
         <OnboardingProgress currentStep={5} />
@@ -188,36 +188,36 @@ const CompleteMembership = () => {
           </p>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-4">
+            <div className="flex flex-col gap-1 rounded-xl border border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <span className="text-gray-500">Membership Plan</span>
               <span className="font-bold text-gray-900">{selectedPlan?.name || "Membership Plan"}</span>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-4">
+            <div className="flex flex-col gap-1 rounded-xl border border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <span className="text-gray-500">Base Amount</span>
               <span className="font-bold text-gray-900">&#8377;{formatCurrency(price.baseAmount)}</span>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-4">
+            <div className="flex flex-col gap-1 rounded-xl border border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <span className="text-gray-500">GST ({formatCurrency(price.gstPercent)}%)</span>
               <span className="font-bold text-gray-900">&#8377;{formatCurrency(price.gstAmount)}</span>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border-2 border-amber-400 bg-amber-50/60 px-5 py-4">
+            <div className="flex flex-col gap-1 rounded-xl border-2 border-amber-400 bg-amber-50/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <span className="font-bold text-gray-900">Total Amount</span>
               <span className="text-xl font-extrabold text-green-700">
                 &#8377;{formattedTotalAmount}
               </span>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-4">
+            <div className="flex flex-col gap-1 rounded-xl border border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <span className="text-gray-500">WhatsApp Number</span>
               <span className="font-bold text-gray-900">{SUMMARY.whatsappNumber}</span>
             </div>
 
             <div className="rounded-xl border border-gray-200 px-5 py-4">
               <p className="font-bold text-gray-900 mb-3">Payment Method</p>
-              <div className="flex items-center justify-between gap-4 rounded-xl bg-green-50/60 border border-green-100 px-4 py-3 mb-4">
+              <div className="flex items-center gap-3 rounded-xl bg-green-50/60 border border-green-100 px-4 py-3 mb-4">
                 <div className="flex items-center gap-3">
                   <span className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
                     <ShieldCheck className="h-5 w-5 text-white" />
@@ -293,7 +293,7 @@ const CompleteMembership = () => {
           </div>
           {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
 
-          <div className="flex items-center justify-between mt-9">
+          <div className="mt-9 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={handleBack}

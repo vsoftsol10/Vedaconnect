@@ -99,8 +99,7 @@ const App = () => {
             />
 
             {/* ================================
-                TEMPORARY NORMAL ROUTES
-                FOR TESTING
+                MEMBER PORTAL
             ================================= */}
 
             <Route
@@ -130,12 +129,12 @@ const App = () => {
 
             <Route
               path="/events"
-              element={<Events />}
+              element={<ProtectedRoute><Events /></ProtectedRoute>}
             />
 
             <Route
               path="/events/:eventId"
-              element={<EventDetail />}
+              element={<ProtectedRoute><EventDetail /></ProtectedRoute>}
             />
 
             <Route
@@ -162,52 +161,6 @@ const App = () => {
             <Route path="/admin/subscriptions/:id" element={<AdminRoute><AdminSubscriptionForm /></AdminRoute>} />
             <Route path="/admin/payment-history" element={<AdminRoute><AdminPaymentHistory /></AdminRoute>} />
             <Route path="/admin/profile" element={<AdminRoute><AdminProfile /></AdminRoute>} />
-
-            {/* ================================
-                FUTURE PROTECTED ROUTES
-
-                When authentication is ready,
-                replace the above normal routes
-                with ProtectedRoute versions.
-
-                Example:
-
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/members"
-                  element={
-                    <ProtectedRoute>
-                      <Members />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/events"
-                  element={
-                    <ProtectedRoute>
-                      <Events />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/events/:eventId"
-                  element={
-                    <ProtectedRoute>
-                      <EventDetail />
-                    </ProtectedRoute>
-                  }
-                />
-            ================================= */}
 
           </Routes>
         </OnboardingProvider>

@@ -5,7 +5,7 @@ const MemberCard = ({ member }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center shadow-sm">
+    <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center shadow-sm sm:p-6">
       <div className="relative inline-block mb-4">
         {member.profilePhoto ? (
           <img
@@ -41,7 +41,7 @@ const MemberCard = ({ member }) => {
 
       <button
         onClick={() => navigate(`/members/${member.userId}`)}
-        className="w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-900 font-medium px-4 py-2.5 rounded-xl transition-colors"
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gray-50 px-4 py-2.5 font-medium text-gray-900 transition-colors hover:bg-gray-100"
       >
         View Profile <ArrowRight className="h-4 w-4" />
       </button>
