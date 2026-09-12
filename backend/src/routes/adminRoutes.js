@@ -9,6 +9,7 @@ import { validate } from "../validations/onboardingValidation.js";
 import {
   addMemberSchema,
   joinedDateSchema,
+  editMemberSchema,
   subscriptionSchema,
   adminProfileSchema,
   changePasswordSchema,
@@ -46,6 +47,10 @@ router.get("/leaderboard", requireAuth, requireAdmin, validateQuery(leaderboardQ
 // Members
 router.get("/members", requireAuth, requireAdmin, adminController.listMembers);
 router.get("/members/:userId", requireAuth, requireAdmin, adminController.getMemberDetail);
+router.patch("/members/:userId", requireAuth, requireAdmin, validate(editMemberSchema), adminController.updateMember);
+router.patch("/members/:userId/suspend", requireAuth, requireAdmin, adminController.suspendMember);
+router.patch("/members/:userId/reactivate", requireAuth, requireAdmin, adminController.reactivateMember);
+router.delete("/members/:userId", requireAuth, requireAdmin, adminController.deleteMember);
 router.patch("/members/:userId/hub", requireAuth, requireAdmin, adminController.assignHub);
 router.patch("/members/:userId/joined-date", requireAuth, requireAdmin, validate(joinedDateSchema), adminController.updateJoinedDate);
 router.post(

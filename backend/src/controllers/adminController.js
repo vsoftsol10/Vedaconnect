@@ -37,6 +37,23 @@ export const updateJoinedDate = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const updateMember = async (req, res, next) => {
+  try { res.json({ success: true, data: await adminService.updateMember(req.params.userId, req.validatedBody) }); }
+  catch (err) { next(err); }
+};
+export const suspendMember = async (req, res, next) => {
+  try { res.json({ success: true, data: await adminService.suspendMember(req.params.userId) }); }
+  catch (err) { next(err); }
+};
+export const reactivateMember = async (req, res, next) => {
+  try { res.json({ success: true, data: await adminService.reactivateMember(req.params.userId) }); }
+  catch (err) { next(err); }
+};
+export const deleteMember = async (req, res, next) => {
+  try { res.json({ success: true, data: await adminService.softDeleteMember(req.params.userId) }); }
+  catch (err) { next(err); }
+};
+
 export const listHubs = async (req, res, next) => {
   try {
     res.json({ success: true, data: await adminService.listHubs() });

@@ -70,7 +70,8 @@ export const getMyUpcomingEvents = async () => {
 export const listMembers = async ({ search, category, location }) => {
   const where = {
     memberProfile: { isNot: null },
-    membership: { membershipStatus: "ACTIVE" },
+    status: { not: "DELETED" },
+    membership: { membershipStatus: "ACTIVE", deletedAt: null },
   };
 
   if (search) {
@@ -109,7 +110,7 @@ export const getMemberDetail = async (userId) => {
     include: { memberProfile: true, membership: true, businessCertificates: true },
   });
 
-  if (!user || !user.memberProfile) throw new AppError("Member not found.", 404);
+  if (!user || !user.memberProfile || user.status === "DELETED" || user.membership?.deletedAt) throw new AppError("Member not found.", 404);
 
   return {
     userId: user.id,

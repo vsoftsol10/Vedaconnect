@@ -22,6 +22,14 @@ export const joinedDateSchema = z.object({
   joinedAt: z.string().trim().min(1, "Joined date is required"),
 });
 
+export const editMemberSchema = z.object({
+  fullName: z.string().trim().min(2, "Full name is required"),
+  businessName: z.string().trim().min(1, "Business name is required"),
+  hubId: z.string().uuid("Please select a hub").nullable().optional(),
+  membershipType: z.string().trim().min(1, "Membership type is required"),
+  membershipStatus: z.enum(["PENDING_PAYMENT", "ACTIVE", "SUSPENDED", "CANCELLED"]).optional(),
+});
+
 export const subscriptionSchema = z.object({
   name: z.string().trim().min(1, "Subscription name is required"),
   price: z.number().positive("Price must be greater than 0").optional(),

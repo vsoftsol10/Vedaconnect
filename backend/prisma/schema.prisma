@@ -18,6 +18,7 @@ enum UserStatus {
   PENDING
   ACTIVE
   SUSPENDED
+  DELETED
 }
 
 enum MembershipStatus {
@@ -25,6 +26,7 @@ enum MembershipStatus {
   ACTIVE
   SUSPENDED
   CANCELLED
+  DELETED
 }
 
 enum PaymentStatus {
@@ -129,12 +131,18 @@ model Membership {
   paidAt           DateTime?        @map("paid_at")
   joinedAt         DateTime?        @map("joined_at")
   expiresAt        DateTime?        @map("expires_at")
+  suspendedAt      DateTime?        @map("suspended_at")
+  autoDeleteAt     DateTime?        @map("auto_delete_at")
+  deletedAt        DateTime?        @map("deleted_at")
+  previousStatus   MembershipStatus? @map("previous_status")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("memberships")
+  @@index([membershipStatus, autoDeleteAt])
+  @@index([deletedAt])
 }
 
 model BusinessCertificate {

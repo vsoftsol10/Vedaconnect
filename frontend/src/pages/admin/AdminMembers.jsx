@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Eye } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AddMemberModal from "../../components/admin/AddMemberModal";
 import { listAdminMembers, listAdminHubs } from "../../services/adminService";
+import { suspendMember, reactivateMember, deleteMember } from "../../services/adminService";
+import MemberActionMenu from "../../components/admin/MemberActionMenu";
+import MemberConfirmModal from "../../components/admin/MemberConfirmModal";
+import EditMemberModal from "../../components/admin/EditMemberModal";
 
 const STATUS_OPTIONS = ["PENDING_PAYMENT", "ACTIVE", "SUSPENDED", "CANCELLED"];
 
@@ -16,6 +20,9 @@ const AdminMembers = () => {
   const [hubId, setHubId] = useState("");
   const [status, setStatus] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
+  const [isActing, setIsActing] = useState(false);
 
   useEffect(() => { listAdminHubs().then(setHubs); }, []);
 
@@ -25,6 +32,28 @@ const AdminMembers = () => {
     const timeout = setTimeout(refreshMembers, 300);
     return () => clearTimeout(timeout);
   }, [search, hubId, status]);
+
+  const confirmAction = async () => {
+    if (!confirmation) return;
+    setIsActing(true);
+    try {
+      if (confirmation.type === "suspend") await suspendMember(confirmation.member.userId);
+      else await deleteMember(confirmation.member.userId);
+      setConfirmation(null);
+      refreshMembers();
+    } finally { setIsActing(false); }
+  };
+
+  const reactivate = async (member) => {
+    await reactivateMember(member.userId);
+    refreshMembers();
+  };
+
+  const statusStyle = (member) => {
+    if (member.membershipStatus === "ACTIVE") return "text-green-600 bg-green-500";
+    if (member.membershipStatus === "SUSPENDED") return "text-red-600 bg-red-500";
+    return "text-gray-500 bg-gray-300";
+  };
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -103,20 +132,14 @@ const AdminMembers = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`flex items-center gap-1.5 text-xs font-medium ${m.membershipStatus === "ACTIVE" ? "text-green-600" : "text-gray-400"}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${m.membershipStatus === "ACTIVE" ? "bg-green-500" : "bg-gray-300"}`} />
+                      <span title={m.membershipStatus === "SUSPENDED" && m.autoDeleteAt ? `Auto-deletes on ${new Date(m.autoDeleteAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : undefined} className={`flex items-center gap-1.5 text-xs font-medium ${statusStyle(m).split(" ")[0]}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${statusStyle(m).split(" ")[1]}`} />
                         {m.membershipStatus?.replace("_", " ") || "-"}
                       </span>
+                      {m.membershipStatus === "SUSPENDED" && m.autoDeleteAt && <p className="mt-1 text-[11px] text-red-500">Auto-deletes {new Date(m.autoDeleteAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>}
                     </td>
                     <td className="px-6 py-4 text-gray-400">{m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => navigate(`/admin/members/${m.userId}`)}
-                        className="flex items-center gap-1.5 border border-gray-200 hover:border-green-400 hover:text-green-600 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        <Eye className="h-3.5 w-3.5" /> View Details
-                      </button>
-                    </td>
+                    <td className="px-6 py-4"><MemberActionMenu member={m} onView={() => navigate(`/admin/members/${m.userId}`)} onEdit={() => setEditingMember(m)} onSuspend={() => setConfirmation({ type: "suspend", member: m })} onReactivate={() => reactivate(m)} onDelete={() => setConfirmation({ type: "delete", member: m })} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -134,6 +157,8 @@ const AdminMembers = () => {
           }}
         />
       )}
+      {editingMember && <EditMemberModal member={editingMember} onClose={() => setEditingMember(null)} onSuccess={() => { setEditingMember(null); refreshMembers(); }} />}
+      {confirmation && <MemberConfirmModal type={confirmation.type} member={confirmation.member} onClose={() => setConfirmation(null)} onConfirm={confirmAction} isSubmitting={isActing} />}
     </div>
   );
 };

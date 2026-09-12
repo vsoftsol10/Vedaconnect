@@ -6,6 +6,10 @@ export const listAdminMembers = async (params = {}) => (await api.get("/admin/me
 export const getAdminMemberDetail = async (userId) => (await api.get(`/admin/members/${userId}`)).data.data;
 export const assignMemberHub = async (userId, hubId) => (await api.patch(`/admin/members/${userId}/hub`, { hubId })).data.data;
 export const updateMemberJoinedDate = async (userId, joinedAt) => (await api.patch(`/admin/members/${userId}/joined-date`, { joinedAt })).data.data;
+export const updateMember = async (userId, data) => (await api.patch(`/admin/members/${userId}`, data)).data.data;
+export const suspendMember = async (userId) => (await api.patch(`/admin/members/${userId}/suspend`)).data.data;
+export const reactivateMember = async (userId) => (await api.patch(`/admin/members/${userId}/reactivate`)).data.data;
+export const deleteMember = async (userId) => (await api.delete(`/admin/members/${userId}`)).data.data;
 export const listAdminHubs = async () => (await api.get("/admin/hubs")).data.data;
 export const getMembershipPlansAdmin = async () => (await api.get("/onboarding/plans")).data.data;
 export const listSubscriptions = async () => (await api.get("/admin/subscriptions")).data.data;

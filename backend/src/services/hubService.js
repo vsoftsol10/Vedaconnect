@@ -5,7 +5,11 @@ export async function listHubs() {
   const hubs = await prisma.hub.findMany({
     orderBy: { name: "asc" },
     include: {
-      _count: { select: { memberProfiles: true } },
+      _count: {
+        select: {
+          memberProfiles: { where: { user: { status: { not: "DELETED" }, membership: { deletedAt: null } } } },
+        },
+      },
     },
   });
 
@@ -25,8 +29,15 @@ export async function getHubById(id) {
   const hub = await prisma.hub.findUnique({
     where: { id },
     include: {
-      memberProfiles: { include: { user: true } },
-      _count: { select: { memberProfiles: true } },
+      memberProfiles: {
+        where: { user: { status: { not: "DELETED" }, membership: { deletedAt: null } } },
+        include: { user: true },
+      },
+      _count: {
+        select: {
+          memberProfiles: { where: { user: { status: { not: "DELETED" }, membership: { deletedAt: null } } } },
+        },
+      },
     },
   });
 

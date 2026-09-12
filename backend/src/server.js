@@ -15,6 +15,7 @@ import networkingRoutes from "./routes/networkingRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import meetingFeeRoutes from "./routes/meetingFeeRoutes.js";
+import { scheduleMemberLifecycleJob } from "./jobs/memberLifecycleJob.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -65,3 +66,5 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`VedaConnect backend running on http://localhost:${PORT}`);
 });
+
+scheduleMemberLifecycleJob();

@@ -7,6 +7,8 @@ import { generateTemporaryPassword } from "../utils/generatePassword.js";
 import { sendWelcomeCredentialsEmail } from "./emailService.js";
 import { generateEventInvoice, generateMembershipInvoice } from "./invoiceService.js";
 import { calculateExpiryDate } from "../utils/membershipDates.js";
+import { notifyAdmins } from "./notificationService.js";
+import { reactivationFields, suspensionFields } from "../utils/memberLifecycle.js";
 
 const CERTIFICATES_BUCKET = "business-certificates";
 
@@ -42,7 +44,7 @@ export const getDashboardStats = async () => {
 
 export const getMembersByHub = async () => {
   const profiles = await prisma.memberProfile.findMany({
-    where: { location: { not: null } },
+    where: { location: { not: null }, user: { status: { not: "DELETED" }, membership: { deletedAt: null } } },
     select: { location: true },
   });
 
@@ -92,7 +94,7 @@ export const getEventRegistrationSummary = async () => {
 };
 
 export const listAllMembers = async ({ search, hubId, status, membershipType }) => {
-  const where = { memberProfile: { isNot: null } };
+  const where = { memberProfile: { isNot: null }, status: { not: "DELETED" }, membership: { deletedAt: null } };
 
   if (search) {
     where.OR = [
@@ -101,7 +103,7 @@ export const listAllMembers = async ({ search, hubId, status, membershipType }) 
     ];
   }
   if (hubId) where.memberProfile = { ...where.memberProfile, hubId };
-  if (status) where.membership = { membershipStatus: status };
+  if (status) where.membership = { ...where.membership, membershipStatus: status };
   if (membershipType) where.membership = { ...where.membership, membershipType };
 
   const users = await prisma.user.findMany({
@@ -116,10 +118,13 @@ export const listAllMembers = async ({ search, hubId, status, membershipType }) 
     profilePhoto: u.memberProfile?.profilePhoto,
     businessName: u.memberProfile?.businessName,
     hub: u.memberProfile?.hub?.name || "Not assigned",
+    hubId: u.memberProfile?.hubId || null,
     membershipType: u.membership?.membershipType || null,
     membershipStatus: u.membership?.membershipStatus || null,
     joinedAt: u.membership?.joinedAt,
     expiresAt: u.membership?.expiresAt,
+    suspendedAt: u.membership?.suspendedAt || null,
+    autoDeleteAt: u.membership?.autoDeleteAt || null,
   }));
 };
 
@@ -134,7 +139,7 @@ export const getMemberDetailForAdmin = async (userId) => {
     },
   });
 
-  if (!user || !user.memberProfile) throw new AppError("Member not found.", 404);
+  if (!user || !user.memberProfile || user.status === "DELETED" || user.membership?.deletedAt) throw new AppError("Member not found.", 404);
 
   const plan = user.membership
     ? await prisma.membershipPlan.findFirst({ where: { planCode: user.membership.membershipType } })
@@ -186,6 +191,8 @@ export const getMemberDetailForAdmin = async (userId) => {
     businessDescription: user.memberProfile.businessDescription,
     membershipType: user.membership?.membershipType,
     membershipStatus: user.membership?.membershipStatus,
+    suspendedAt: user.membership?.suspendedAt || null,
+    autoDeleteAt: user.membership?.autoDeleteAt || null,
     billingCycle: plan?.billingCycle || null,
     certificates,
     eventRegistrations: user.eventRegistrations.map((r) => ({
@@ -395,6 +402,71 @@ export const listMembershipPayments = async () => {
         : "PENDING"
       : "NOT_READY",
   }));
+};
+
+const getActiveMember = async (userId) => {
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { membership: true } });
+  if (!user?.membership || user.status === "DELETED" || user.membership.deletedAt) throw new AppError("Member not found.", 404);
+  return user;
+};
+
+export const updateMember = async (userId, data) => {
+  const user = await getActiveMember(userId);
+  if (data.hubId) {
+    const hub = await prisma.hub.findUnique({ where: { id: data.hubId } });
+    if (!hub) throw new AppError("Hub not found.", 404);
+  }
+  if (data.membershipStatus === "SUSPENDED") throw new AppError("Use the Suspend action to suspend a member.", 400);
+  return prisma.$transaction(async (tx) => {
+    await tx.memberProfile.update({ where: { userId }, data: { fullName: data.fullName, businessName: data.businessName, hubId: data.hubId ?? null } });
+    const status = data.membershipStatus && data.membershipStatus !== user.membership.membershipStatus
+      ? data.membershipStatus : undefined;
+    if (status) await tx.user.update({ where: { id: userId }, data: { status: status === "ACTIVE" ? "ACTIVE" : "PENDING" } });
+    return tx.membership.update({ where: { userId }, data: { membershipType: data.membershipType, ...(status ? { membershipStatus: status } : {}) } });
+  });
+};
+
+export const suspendMember = async (userId, now = new Date()) => {
+  const user = await getActiveMember(userId);
+  if (user.membership.membershipStatus === "SUSPENDED") throw new AppError("Member is already suspended.", 400);
+  return prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { status: "SUSPENDED" } });
+    return tx.membership.update({ where: { userId }, data: suspensionFields(user.membership.membershipStatus, now) });
+  });
+};
+
+export const reactivateMember = async (userId) => {
+  const user = await getActiveMember(userId);
+  if (user.membership.membershipStatus !== "SUSPENDED") throw new AppError("Only suspended members can be reactivated.", 400);
+  const fields = reactivationFields(user.membership.previousStatus);
+  return prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { status: fields.membershipStatus === "ACTIVE" ? "ACTIVE" : "PENDING" } });
+    return tx.membership.update({ where: { userId }, data: fields });
+  });
+};
+
+export const softDeleteMember = async (userId, now = new Date()) => {
+  await getActiveMember(userId);
+  return prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { status: "DELETED" } });
+    return tx.membership.update({ where: { userId }, data: {
+      membershipStatus: "DELETED", deletedAt: now, autoDeleteAt: null,
+    } });
+  });
+};
+
+export const autoDeleteExpiredSuspensions = async (now = new Date()) => {
+  const expired = await prisma.membership.findMany({
+    where: { membershipStatus: "SUSPENDED", deletedAt: null, autoDeleteAt: { lte: now } },
+    select: { userId: true },
+  });
+  if (!expired.length) return { count: 0 };
+  await prisma.$transaction([
+    prisma.membership.updateMany({ where: { userId: { in: expired.map((item) => item.userId) } }, data: { membershipStatus: "DELETED", deletedAt: now, autoDeleteAt: null } }),
+    prisma.user.updateMany({ where: { id: { in: expired.map((item) => item.userId) } }, data: { status: "DELETED" } }),
+  ]);
+  await notifyAdmins({ type: "MEMBER_AUTO_DELETED", title: "Suspended members deleted", message: `${expired.length} suspended member${expired.length === 1 ? " was" : "s were"} soft-deleted after six months.` });
+  return { count: expired.length };
 };
 
 export const listEventPayments = async () => {
