@@ -36,6 +36,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum OnboardingStatus {
+  ONLINE
+  MANUAL
+  PRE_ONBOARDED
+}
+
 enum NetworkingPartyType {
   MEMBER   @map("member")
   EXTERNAL @map("external")
@@ -45,7 +51,7 @@ model User {
   id           String     @id @default(uuid()) @db.Uuid
   fullName     String?    @map("full_name")
   profilePhoto String?    @map("profile_photo")
-  email        String     @unique
+  email        String?    @unique
   passwordHash String?    @map("password_hash")
   role         UserRole   @default(MEMBER)
   status       UserStatus @default(PENDING)
@@ -72,8 +78,9 @@ model User {
 model MemberProfile {
   id                  String   @id @default(uuid()) @db.Uuid
   userId              String   @unique @map("user_id") @db.Uuid
-  fullName            String   @map("full_name")
-  phone               String
+  fullName            String?  @map("full_name")
+  phone               String?
+  onboardingStatus    OnboardingStatus @default(ONLINE) @map("onboarding_status")
   location            String?
   profilePhoto        String?  @map("profile_photo")
   businessName        String?  @map("business_name")
