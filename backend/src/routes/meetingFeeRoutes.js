@@ -14,6 +14,9 @@ const router = Router();
 router.post("/create-order", requireAuth, meetingFeeController.createOrder);
 router.post("/verify", requireAuth, validate(meetingFeeVerificationSchema), meetingFeeController.verify);
 router.get("/status", requireAuth, meetingFeeController.getStatus);
+router.get("/history", requireAuth, meetingFeeController.getHistory);
+router.post("/renewal/create-order", requireAuth, meetingFeeController.createRenewalOrder);
+router.post("/renewal/verify", requireAuth, validate(meetingFeeVerificationSchema), meetingFeeController.verifyRenewal);
 router.get(
   "/month",
   requireAuth,

@@ -1,5 +1,7 @@
 import { prisma } from "../config/prismaClient.js";
-import { buildPaymentInvoiceHtml, sendPaymentInvoiceEmail } from "./emailService.js";
+import { buildPaymentInvoiceHtml } from "./emailService.js";
+import { sendWhatsAppMessage } from "../utils/whatsappNotify.js";
+import { notifyAdmins } from "./notificationService.js";
 
 const GST_PERCENT = 18;
 
@@ -28,17 +30,17 @@ const sendAndMarkInvoice = async (invoice, data, invoiceDate) => {
   if (freshInvoice?.emailedAt) return { ...invoice, emailedAt: freshInvoice.emailedAt };
 
   try {
-    await sendPaymentInvoiceEmail({
-      ...data,
-      invoiceNumber: invoice.invoiceNumber,
-      invoiceDate,
-    });
+    await sendWhatsAppMessage(data.phone, "payment_confirmation", [
+      data.memberName,
+      `₹${Number(data.totalAmount).toFixed(2)}`,
+      data.itemName,
+    ]);
     return prisma.paymentInvoice.update({
       where: { id: invoice.id },
       data: { emailedAt: new Date() },
     });
   } catch (error) {
-    console.error("[INVOICE_EMAIL_FAILED]", {
+    console.error("[PAYMENT_WHATSAPP_FAILED]", {
       message: error?.message,
       responseData: error?.response?.data,
       stack: error?.stack,
@@ -49,6 +51,21 @@ const sendAndMarkInvoice = async (invoice, data, invoiceDate) => {
       paymentRecordId: data.paymentRecordId,
       transactionId: data.transactionId,
     });
+    try {
+      await notifyAdmins({
+        type: "WHATSAPP_DELIVERY_FAILED",
+        title: "Payment WhatsApp failed",
+        message: `Could not send the payment confirmation for invoice ${invoice.invoiceNumber}. Please follow up manually.`,
+        relatedUserId: data.userId,
+        link: "/admin/payment-history",
+      });
+    } catch (notificationError) {
+      console.error("[WHATSAPP_FAILURE_ADMIN_LOG_FAILED]", {
+        message: notificationError?.message,
+        invoiceId: invoice.id,
+        userId: data.userId,
+      });
+    }
     return invoice;
   }
 };
@@ -130,7 +147,7 @@ const buildMembershipInvoiceData = async (membershipId, paymentMethod = "WhatsAp
   };
 };
 
-export const resendPaymentInvoiceEmail = async (invoiceId) => {
+export const resendPaymentInvoiceWhatsApp = async (invoiceId) => {
   const invoice = await prisma.paymentInvoice.findUnique({
     where: { id: invoiceId },
   });

@@ -125,12 +125,13 @@ const PersonalDetails = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Phone Number
+                  Phone Number <span className="text-amber-500">*</span>
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
                   <input
                     type="tel"
+                    required
                     value={form.phone}
                     onChange={handleChange("phone")}
                     placeholder="+91 00000 00000"

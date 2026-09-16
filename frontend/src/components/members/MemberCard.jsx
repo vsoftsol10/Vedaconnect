@@ -34,6 +34,12 @@ const MemberCard = ({ member }) => {
         </span>
       )}
 
+      {member.membershipTier && (
+        <span className="inline-block bg-amber-50 text-amber-700 text-xs font-medium px-3 py-1 rounded-full mb-2">
+          {member.membershipTier === "FOUNDING_MEMBER" ? "Founding Member" : "Member"}
+        </span>
+      )}
+
       <p className="flex items-center justify-center gap-1 text-sm text-gray-400 mb-5">
         <MapPin className="h-3.5 w-3.5" />
         {member.location}

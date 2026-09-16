@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
-    "test": "node --test"
+    "test": "node --test",
+    "test:whatsapp-templates": "node src/scripts/testWhatsappTemplates.js"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

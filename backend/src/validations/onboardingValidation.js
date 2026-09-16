@@ -11,6 +11,7 @@ export const personalDetailsSchema = z.object({
   phone: z
     .string()
     .trim()
+    .min(1, "Phone number is required")
     .transform(normalizePhone)
     .refine((value) => value.length === 10, "Phone number must be exactly 10 digits"),
   location: z.string().trim().min(1, "Location is required"),

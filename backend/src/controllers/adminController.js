@@ -14,8 +14,8 @@ export const getDashboard = async (req, res, next) => {
 
 export const listMembers = async (req, res, next) => {
   try {
-    const { search, hubId, status, membershipType } = req.query;
-    res.json({ success: true, data: await adminService.listAllMembers({ search, hubId, status, membershipType }) });
+    const { search, hubId, status, membershipType, membershipTier } = req.query;
+    res.json({ success: true, data: await adminService.listAllMembers({ search, hubId, status, membershipType, membershipTier }) });
   } catch (err) { next(err); }
 };
 

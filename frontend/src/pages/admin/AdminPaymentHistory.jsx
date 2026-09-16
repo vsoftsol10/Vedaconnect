@@ -6,6 +6,8 @@ import {
   listMembershipPayments, verifyMembershipPayment, rejectMembershipPayment,
   listEventPayments, verifyEventPayment, rejectEventPayment,
 } from "../../services/adminService";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Table from "../../components/ui/Table";
 
 const STATUS_STYLES = {
   PENDING: "bg-amber-50 text-amber-700",
@@ -13,14 +15,14 @@ const STATUS_STYLES = {
   FAILED: "bg-red-50 text-red-600",
 };
 const STATUS_LABEL = { PENDING: "Pending", PAID: "Verified", FAILED: "Rejected" };
-const INVOICE_EMAIL_STYLES = {
+const PAYMENT_WHATSAPP_STYLES = {
   SENT: "bg-green-50 text-green-700",
   PENDING: "bg-amber-50 text-amber-700",
   NOT_READY: "bg-gray-50 text-gray-500",
 };
-const INVOICE_EMAIL_LABEL = {
-  SENT: "Invoice sent",
-  PENDING: "Invoice pending",
+const PAYMENT_WHATSAPP_LABEL = {
+  SENT: "WhatsApp sent",
+  PENDING: "WhatsApp pending",
   NOT_READY: "Not ready",
 };
 
@@ -31,6 +33,8 @@ const AdminPaymentHistory = () => {
   const [membershipPayments, setMembershipPayments] = useState([]);
   const [eventPayments, setEventPayments] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const load = () => {
     listMembershipPayments().then(setMembershipPayments);
@@ -53,6 +57,7 @@ const AdminPaymentHistory = () => {
   };
 
   const rows = tab === "membership" ? membershipPayments : eventPayments;
+  const visibleRows = usePagination(rows, page, rowsPerPage);
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -65,14 +70,14 @@ const AdminPaymentHistory = () => {
 
           <div className="inline-flex bg-white border border-gray-100 rounded-2xl p-1.5 mb-6 shadow-sm">
             <button
-              onClick={() => setTab("membership")}
+              onClick={() => { setTab("membership"); setPage(1); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${tab === "membership" ? "bg-white shadow text-gray-900" : "text-gray-500"}`}
             >
               Membership Payments
               <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{membershipPayments.length}</span>
             </button>
             <button
-              onClick={() => setTab("events")}
+              onClick={() => { setTab("events"); setPage(1); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${tab === "events" ? "bg-white shadow text-gray-900" : "text-gray-500"}`}
             >
               Event Payments
@@ -81,7 +86,7 @@ const AdminPaymentHistory = () => {
           </div>
 
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-x-auto">
-            <table className="w-full text-sm">
+            <Table minWidth="min-w-[900px]">
               <thead>
                 <tr className="text-left text-xs text-gray-400 uppercase border-b border-gray-100">
                   <th className="px-6 py-4">Member</th>
@@ -91,12 +96,12 @@ const AdminPaymentHistory = () => {
                   <th className="px-6 py-4">Date</th>
                   <th className="px-6 py-4">Method</th>
                   <th className="px-6 py-4">Status</th>
-                  {tab === "membership" && <th className="px-6 py-4">Invoice Email</th>}
+                  {tab === "membership" && <th className="px-6 py-4">Payment WhatsApp</th>}
                   <th className="px-6 py-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr key={row.id} className="border-b border-gray-50 last:border-0">
                     <td className="px-6 py-4 font-medium text-gray-900">{row.memberName}</td>
                     <td className="px-6 py-4 text-gray-600">{tab === "membership" ? "Membership" : "Event"}</td>
@@ -111,8 +116,8 @@ const AdminPaymentHistory = () => {
                     </td>
                     {tab === "membership" && (
                       <td className="px-6 py-4">
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${INVOICE_EMAIL_STYLES[row.invoiceEmailStatus]}`}>
-                          {INVOICE_EMAIL_LABEL[row.invoiceEmailStatus]}
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${PAYMENT_WHATSAPP_STYLES[row.invoiceEmailStatus]}`}>
+                          {PAYMENT_WHATSAPP_LABEL[row.invoiceEmailStatus]}
                         </span>
                         {row.invoiceNumber && <p className="mt-1 text-xs text-gray-400">{row.invoiceNumber}</p>}
                       </td>
@@ -137,7 +142,8 @@ const AdminPaymentHistory = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
+            <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(value) => { setRowsPerPage(value); setPage(1); }} total={rows.length} />
           </div>
         </main>
       </div>
@@ -165,8 +171,8 @@ const AdminPaymentHistory = () => {
                 <Field label="Date" value={formatDate(selected.date)} />
                 {tab === "membership" && (
                   <Field
-                    label="Invoice Email"
-                    value={`${INVOICE_EMAIL_LABEL[selected.invoiceEmailStatus] || "-"}${selected.invoiceNumber ? ` (${selected.invoiceNumber})` : ""}`}
+                    label="Payment WhatsApp"
+                    value={`${PAYMENT_WHATSAPP_LABEL[selected.invoiceEmailStatus] || "-"}${selected.invoiceNumber ? ` (${selected.invoiceNumber})` : ""}`}
                   />
                 )}
                 <div>

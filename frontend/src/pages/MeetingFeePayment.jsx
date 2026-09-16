@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
+import Pagination, { usePagination } from "../components/ui/Pagination";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import {
   createMeetingFeeOrder,
+  createMembershipRenewalOrder,
+  getMeetingFeeHistory,
   getMeetingFeeStatus,
+  verifyMembershipRenewalPayment,
   verifyMeetingFeePayment,
 } from "../services/meetingFeeService";
 
@@ -35,14 +40,21 @@ const loadRazorpayCheckout = () =>
   });
 
 const MeetingFeePayment = () => {
+  const [searchParams] = useSearchParams();
+  const isRenewal = searchParams.get("renewal") === "1";
   const [status, setStatus] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyRowsPerPage, setHistoryRowsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState("");
   const paymentCompletedRef = useRef(false);
 
   const load = async () => {
-    setStatus(await getMeetingFeeStatus());
+    const [nextStatus, nextHistory] = await Promise.all([getMeetingFeeStatus(), getMeetingFeeHistory()]);
+    setStatus(nextStatus);
+    setHistory(nextHistory);
   };
 
   useEffect(() => {
@@ -57,7 +69,7 @@ const MeetingFeePayment = () => {
     paymentCompletedRef.current = false;
     try {
       await loadRazorpayCheckout();
-      const order = await createMeetingFeeOrder();
+      const order = await (isRenewal ? createMembershipRenewalOrder() : createMeetingFeeOrder());
 
       const razorpay = new window.Razorpay({
         key: order.keyId,
@@ -70,7 +82,7 @@ const MeetingFeePayment = () => {
         theme: { color: "#16a34a" },
         handler: async (response) => {
           try {
-            const verified = await verifyMeetingFeePayment({
+            const verified = await (isRenewal ? verifyMembershipRenewalPayment : verifyMeetingFeePayment)({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
@@ -109,6 +121,8 @@ const MeetingFeePayment = () => {
   };
 
   const isPaid = status?.paymentStatus === "PAID";
+  const paymentAmount = isRenewal ? status?.renewalAmount : status?.amount;
+  const visibleHistory = usePagination(history, historyPage, historyRowsPerPage);
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -116,10 +130,11 @@ const MeetingFeePayment = () => {
       <div className="min-w-0 flex-1">
         <DashboardHeader />
         <main className="px-4 py-6 sm:px-6 md:p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Meeting Fee</h1>
-          <p className="text-gray-500 mb-6">Pay your monthly VedaConnect meeting fee.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">{isRenewal ? "Renew Membership" : "Meeting Fee"}</h1>
+          <p className="text-gray-500 mb-6">{isRenewal ? "Complete your membership renewal securely." : "Pay your monthly VedaConnect meeting fee."}</p>
 
-          <div className="max-w-xl bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
+          <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
+          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
             {isLoading ? (
               <div className="flex items-center gap-2 text-gray-500">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -129,25 +144,25 @@ const MeetingFeePayment = () => {
               <>
                 <div className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:justify-between sm:gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Current Month</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{status?.month}</p>
+                    <p className="text-sm text-gray-500">{isRenewal ? "Renewal" : "Current Month"}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{isRenewal ? "Membership renewal" : status?.month}</p>
                   </div>
                   <span
                     className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${
-                      isPaid ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                      isRenewal ? "bg-amber-50 text-amber-700" : isPaid ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
                     }`}
                   >
-                    {isPaid ? <CheckCircle2 className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
-                    {isPaid ? "Paid" : "Pending"}
+                    {isRenewal ? <CreditCard className="h-4 w-4" /> : isPaid ? <CheckCircle2 className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                    {isRenewal ? "Ready to renew" : isPaid ? "Paid" : "Pending"}
                   </span>
                 </div>
 
                 <div className="rounded-xl border border-gray-200 px-5 py-4 mb-6">
                   <p className="text-sm text-gray-500">Fee Amount</p>
-                  <p className="text-3xl font-extrabold text-green-700 mt-1">{formatCurrency(status?.amount)}</p>
+                  <p className="text-3xl font-extrabold text-green-700 mt-1">{formatCurrency(paymentAmount)}</p>
                 </div>
 
-                {isPaid ? (
+                {!isRenewal && isPaid ? (
                   <div className="rounded-xl border border-green-100 bg-green-50 px-5 py-4 text-green-700 font-semibold">
                     Paid for {status?.month}
                   </div>
@@ -159,12 +174,31 @@ const MeetingFeePayment = () => {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3.5 font-semibold text-gray-900 hover:bg-green-600 hover:text-white disabled:opacity-60"
                   >
                     {isPaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                    Pay {formatCurrency(status?.amount)}
+                    Pay {formatCurrency(paymentAmount)}
                   </button>
                 )}
               </>
             )}
             {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
+          </div>
+          {!isRenewal && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
+              <h2 className="font-bold text-gray-900">Payment History</h2>
+              <p className="mb-4 text-sm text-gray-500">Your monthly meeting fee payments, newest first.</p>
+              <div className="max-h-[28rem] divide-y divide-gray-100 overflow-y-auto">
+                {visibleHistory.map((payment) => {
+                  const paid = payment.paymentStatus === "PAID";
+                  const overdue = payment.paymentStatus === "OVERDUE";
+                  return <div key={payment.month} className="flex items-center justify-between gap-3 py-3">
+                    <div><p className="font-semibold text-gray-900">{payment.month}</p><p className="text-xs text-gray-500">{paid && payment.paidAt ? `Paid ${new Date(payment.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : overdue ? "Payment overdue" : "Awaiting payment"}</p></div>
+                    <div className="text-right"><p className="font-semibold text-gray-900">{formatCurrency(payment.amount)}</p><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${paid ? "bg-green-50 text-green-700" : overdue ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}`}>{paid ? "Paid" : overdue ? "Overdue" : "Pending"}</span></div>
+                  </div>;
+                })}
+                {!history.length && <p className="py-5 text-sm text-gray-500">No payment records yet.</p>}
+              </div>
+              <Pagination page={historyPage} onPageChange={setHistoryPage} rowsPerPage={historyRowsPerPage} onRowsPerPageChange={(value) => { setHistoryRowsPerPage(value); setHistoryPage(1); }} total={history.length} />
+            </div>
+          )}
           </div>
         </main>
       </div>

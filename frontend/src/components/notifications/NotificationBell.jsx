@@ -7,7 +7,10 @@ import {
   markNotificationRead,
 } from "../../services/notificationService";
 
-const NotificationBell = ({ badgeClass = "bg-amber-400 text-gray-900" }) => {
+const NotificationBell = ({
+  badgeClass = "bg-amber-400 text-gray-900",
+  buttonClass = "hover:bg-gray-50 hover:text-green-600",
+}) => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState({ items: [], unreadCount: 0 });
   const [isOpen, setIsOpen] = useState(false);
@@ -44,7 +47,7 @@ const NotificationBell = ({ badgeClass = "bg-amber-400 text-gray-900" }) => {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-50 hover:text-green-600"
+        className={`relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 transition-colors ${buttonClass}`}
       >
         <Bell className="h-5 w-5" />
         {notifications.unreadCount > 0 && (

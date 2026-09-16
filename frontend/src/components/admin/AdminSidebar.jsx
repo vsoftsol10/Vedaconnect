@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutGrid, Users, Building2, Calendar, CreditCard, Receipt, CircleUser, LogOut, Trophy, Menu, X } from "lucide-react";
+import { LayoutGrid, Users, Building2, Calendar, CreditCard, Receipt, CircleUser, LogOut, Trophy, Menu, X, WalletCards } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/images/vedaconnect-logo.png";
 
@@ -12,6 +12,7 @@ const MENU_ITEMS = [
   { to: "/admin/leaderboard", label: "Awards", icon: Trophy },
   { to: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { to: "/admin/payment-history", label: "Payment History", icon: Receipt },
+  { to: "/admin/expenses", label: "Expenses", icon: WalletCards },
   { to: "/admin/profile", label: "Profile", icon: CircleUser },
 ];
 

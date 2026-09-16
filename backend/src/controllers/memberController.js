@@ -27,8 +27,8 @@ export const getMyUpcomingEvents = async (req, res, next) => {
 };
 export const listMembers = async (req, res, next) => {
   try {
-    const { search, category, location } = req.query;
-    const members = await memberService.listMembers({ search, category, location });
+    const { search, category, location, membershipStatus, membershipTier } = req.query;
+    const members = await memberService.listMembers({ search, category, location, membershipStatus, membershipTier });
     res.status(200).json({ success: true, data: members });
   } catch (err) {
     next(err);

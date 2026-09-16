@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, Eye, Download, X, Check, Loader2 } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
@@ -22,6 +23,7 @@ const EDITABLE_FIELDS = [
 ];
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({});
@@ -123,6 +125,10 @@ const Profile = () => {
   const memberSinceLabel = profile.joinedAt
     ? new Date(profile.joinedAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
     : "-";
+  const daysUntilExpiry = profile.expiresAt
+    ? Math.ceil((new Date(profile.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+    : null;
+  const canRenew = !isLifetime && daysUntilExpiry !== null && daysUntilExpiry <= 7;
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -239,7 +245,22 @@ const Profile = () => {
               </div>
               <div className="flex flex-col gap-1 rounded-xl bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="text-xs text-gray-400 uppercase">Valid Until</span>
-                <span className="break-words font-semibold text-gray-900 sm:text-right">{validUntilLabel}</span>
+                <div className="flex items-center gap-3 sm:justify-end">
+                  <span className="break-words font-semibold text-gray-900 sm:text-right">{validUntilLabel}</span>
+                  {canRenew && (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/meeting-fee?renewal=1")}
+                      className="rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-green-600 hover:text-white"
+                    >
+                      Renew
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="mb-3 flex flex-col gap-1 rounded-xl bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <span className="text-xs uppercase text-amber-700">Membership Tier</span>
+                <span className="break-words font-semibold text-amber-800 sm:text-right">{profile.membershipTier === "FOUNDING_MEMBER" ? "Founding Member" : profile.membershipTier === "MEMBER" ? "Member" : "Pending"}</span>
               </div>
               <div className="flex flex-col gap-1 rounded-xl bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="text-xs text-gray-400 uppercase">Renewal Date</span>

@@ -15,7 +15,9 @@ import networkingRoutes from "./routes/networkingRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import meetingFeeRoutes from "./routes/meetingFeeRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
 import { scheduleMemberLifecycleJob } from "./jobs/memberLifecycleJob.js";
+import { scheduleMonthlyExpenseNotificationJob } from "./jobs/monthlyExpenseNotificationJob.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,6 +57,7 @@ app.use("/api/networking", networkingRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/meeting-fee", meetingFeeRoutes);
+app.use("/api/expenses", expenseRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/hubs", hubRoutes);
 app.use("/api/admin/events", adminEventRoutes);
@@ -68,3 +71,4 @@ app.listen(PORT, () => {
 });
 
 scheduleMemberLifecycleJob();
+scheduleMonthlyExpenseNotificationJob();

@@ -4,11 +4,12 @@ import { AppError } from "../middleware/errorHandler.js";
 import { supabaseStorage } from "../config/supabaseStorageClient.js";
 import { generateMemberId } from "../utils/generateMemberId.js";
 import { generateTemporaryPassword } from "../utils/generatePassword.js";
-import { sendWelcomeCredentialsEmail } from "./emailService.js";
+import { sendWhatsAppMessage } from "../utils/whatsappNotify.js";
 import { generateEventInvoice, generateMembershipInvoice } from "./invoiceService.js";
 import { calculateExpiryDate } from "../utils/membershipDates.js";
 import { notifyAdmins } from "./notificationService.js";
 import { reactivationFields, suspensionFields } from "../utils/memberLifecycle.js";
+import { getMembershipTierForPlan } from "../utils/membershipTier.js";
 
 const CERTIFICATES_BUCKET = "business-certificates";
 
@@ -93,7 +94,7 @@ export const getEventRegistrationSummary = async () => {
   }));
 };
 
-export const listAllMembers = async ({ search, hubId, status, membershipType }) => {
+export const listAllMembers = async ({ search, hubId, status, membershipType, membershipTier }) => {
   const where = { memberProfile: { isNot: null }, status: { not: "DELETED" }, membership: { deletedAt: null } };
 
   if (search) {
@@ -105,6 +106,7 @@ export const listAllMembers = async ({ search, hubId, status, membershipType }) 
   if (hubId) where.memberProfile = { ...where.memberProfile, hubId };
   if (status) where.membership = { ...where.membership, membershipStatus: status };
   if (membershipType) where.membership = { ...where.membership, membershipType };
+  if (membershipTier) where.membershipTier = membershipTier;
 
   const users = await prisma.user.findMany({
     where,
@@ -120,6 +122,7 @@ export const listAllMembers = async ({ search, hubId, status, membershipType }) 
     hub: u.memberProfile?.hub?.name || "Not assigned",
     hubId: u.memberProfile?.hubId || null,
     membershipType: u.membership?.membershipType || null,
+    membershipTier: u.membershipTier || null,
     membershipStatus: u.membership?.membershipStatus || null,
     joinedAt: u.membership?.joinedAt,
     expiresAt: u.membership?.expiresAt,
@@ -238,7 +241,7 @@ export const createMemberByAdmin = async (data, certificateFile) => {
 
   const user = await prisma.$transaction(async (tx) => {
     const newUser = await tx.user.create({
-      data: { email: data.email, passwordHash, role: "MEMBER", status: "ACTIVE" },
+      data: { email: data.email, passwordHash, role: "MEMBER", status: "ACTIVE", membershipTier: getMembershipTierForPlan(plan) },
     });
 
     await tx.memberProfile.create({
@@ -291,12 +294,26 @@ export const createMemberByAdmin = async (data, certificateFile) => {
     });
   }
 
-  await sendWelcomeCredentialsEmail({
-    toEmail: data.email,
-    fullName: data.fullName,
-    memberId,
-    tempPassword,
-  });
+  try {
+    await sendWhatsAppMessage(data.phone, "member_onboarding", [data.fullName, memberId, tempPassword]);
+  } catch (error) {
+    console.error("[ADMIN_MEMBER_ONBOARDING_WHATSAPP_FAILED]", {
+      message: error?.message,
+      userId: user.id,
+      memberId,
+    });
+    try {
+      await notifyAdmins({
+        type: "WHATSAPP_DELIVERY_FAILED",
+        title: "Member onboarding WhatsApp failed",
+        message: `Could not send onboarding credentials to ${data.fullName}. Please follow up manually.`,
+        relatedUserId: user.id,
+        link: "/admin/members",
+      });
+    } catch (notificationError) {
+      console.error("[WHATSAPP_FAILURE_ADMIN_LOG_FAILED]", { message: notificationError?.message, userId: user.id });
+    }
+  }
 
   return { userId: user.id, memberId };
 };
@@ -488,7 +505,7 @@ export const listEventPayments = async () => {
 };
 
 export const verifyMembershipPayment = async (membershipId) => {
-  const membership = await prisma.membership.findUnique({ where: { id: membershipId } });
+  const membership = await prisma.membership.findUnique({ where: { id: membershipId }, include: { user: { select: { membershipTier: true } } } });
   if (!membership) throw new AppError("Payment record not found.", 404);
   if (membership.paymentStatus !== "PENDING") throw new AppError("This payment is not pending.", 400);
 
@@ -499,11 +516,12 @@ export const verifyMembershipPayment = async (membershipId) => {
   const memberId = membership.memberId || await generateMemberId();
   const joinedAt = membership.joinedAt || now;
   const expiresAt = calculateExpiryDate(joinedAt, plan?.billingCycle);
+  const membershipTier = getMembershipTierForPlan(plan);
 
   const updated = await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: membership.userId },
-      data: { status: "ACTIVE" },
+      data: { status: "ACTIVE", ...(membership.user?.membershipTier ? {} : { membershipTier }) },
     });
 
     return tx.membership.update({

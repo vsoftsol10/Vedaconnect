@@ -9,8 +9,13 @@ import { suspendMember, reactivateMember, deleteMember } from "../../services/ad
 import MemberActionMenu from "../../components/admin/MemberActionMenu";
 import MemberConfirmModal from "../../components/admin/MemberConfirmModal";
 import EditMemberModal from "../../components/admin/EditMemberModal";
+import Dropdown from "../../components/ui/Dropdown";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Table, { Cell, HeaderCell } from "../../components/ui/Table";
+import { Avatar } from "../../components/ui/Avatar";
 
 const STATUS_OPTIONS = ["PENDING_PAYMENT", "ACTIVE", "SUSPENDED", "CANCELLED"];
+const TIER_OPTIONS = ["FOUNDING_MEMBER", "MEMBER"];
 
 const AdminMembers = () => {
   const navigate = useNavigate();
@@ -19,19 +24,24 @@ const AdminMembers = () => {
   const [search, setSearch] = useState("");
   const [hubId, setHubId] = useState("");
   const [status, setStatus] = useState("");
+  const [membershipTier, setMembershipTier] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [isActing, setIsActing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => { listAdminHubs().then(setHubs); }, []);
 
-  const refreshMembers = () => listAdminMembers({ search, hubId, status }).then(setMembers);
+  const refreshMembers = () => listAdminMembers({ search, hubId, status, membershipTier }).then(setMembers);
 
   useEffect(() => {
     const timeout = setTimeout(refreshMembers, 300);
     return () => clearTimeout(timeout);
-  }, [search, hubId, status]);
+  }, [search, hubId, status, membershipTier]);
+  useEffect(() => { setPage(1); }, [search, hubId, status, membershipTier, rowsPerPage]);
+  const visibleMembers = usePagination(members, page, rowsPerPage);
 
   const confirmAction = async () => {
     if (!confirmation) return;
@@ -84,14 +94,9 @@ const AdminMembers = () => {
                 className="w-full rounded-xl border border-gray-200 pl-11 pr-4 py-2.5 text-sm outline-none focus:border-green-500"
               />
             </div>
-            <select value={hubId} onChange={(e) => setHubId(e.target.value)} className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none sm:w-auto">
-              <option value="">All Hubs</option>
-              {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-            </select>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none sm:w-auto">
-              <option value="">All Status</option>
-              {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-            </select>
+            <Dropdown value={hubId} onChange={setHubId} placeholder="All Hubs" className="w-full sm:w-52" options={hubs.map((hub) => ({ value: hub.id, label: hub.name }))} />
+            <Dropdown value={status} onChange={setStatus} placeholder="All Status" className="w-full sm:w-52" options={STATUS_OPTIONS.map((item) => ({ value: item, label: item.replace("_", " ") }))} />
+            <Dropdown value={membershipTier} onChange={setMembershipTier} placeholder="All Tiers" className="w-full sm:w-52" options={TIER_OPTIONS.map((item) => ({ value: item, label: item === "FOUNDING_MEMBER" ? "Founding Member" : "Member" }))} />
           </div>
 
           <p className="text-sm text-gray-500 mb-3">
@@ -99,51 +104,33 @@ const AdminMembers = () => {
           </p>
 
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-x-auto">
-            <table className="w-full text-sm">
+            <Table minWidth="min-w-[900px]">
               <thead>
-                <tr className="text-left text-xs text-gray-400 uppercase border-b border-gray-100">
-                  <th className="px-6 py-4">Member</th>
-                  <th className="px-6 py-4">Business</th>
-                  <th className="px-6 py-4">Hub</th>
-                  <th className="px-6 py-4">Membership</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Joined</th>
-                  <th className="px-6 py-4">Action</th>
+                <tr><HeaderCell>Member</HeaderCell><HeaderCell>Business</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Membership</HeaderCell><HeaderCell>Tier</HeaderCell><HeaderCell align="center">Status</HeaderCell><HeaderCell align="center">Joined</HeaderCell><HeaderCell align="right">Action</HeaderCell>
                 </tr>
               </thead>
               <tbody>
-                {members.map((m) => (
-                  <tr key={m.userId} className="border-b border-gray-50 last:border-0">
-                    <td className="px-6 py-4 flex items-center gap-3">
-                      {m.profilePhoto ? (
-                        <img src={m.profilePhoto} className="h-9 w-9 rounded-full object-cover" alt="" />
-                      ) : (
-                        <div className="h-9 w-9 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
-                          {m.fullName?.[0]}
-                        </div>
-                      )}
-                      <span className="font-medium text-gray-900">{m.fullName}</span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{m.businessName}</td>
-                    <td className="px-6 py-4 text-gray-600">{m.hub}</td>
-                    <td className="px-6 py-4">
+                {visibleMembers.map((m) => (
+                  <tr key={m.userId}>
+                    <Cell title={m.fullName}><div className="flex items-center gap-3"><Avatar src={m.profilePhoto} name={m.fullName} /><span className="font-medium text-gray-900">{m.fullName}</span></div></Cell>
+                    <Cell title={m.businessName}>{m.businessName || "-"}</Cell><Cell title={m.hub}>{m.hub || "-"}</Cell>
+                    <Cell>
                       <span className="bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full">
                         {m.membershipType?.replace("_", " ") || "-"}
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span title={m.membershipStatus === "SUSPENDED" && m.autoDeleteAt ? `Auto-deletes on ${new Date(m.autoDeleteAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : undefined} className={`flex items-center gap-1.5 text-xs font-medium ${statusStyle(m).split(" ")[0]}`}>
+                    </Cell>
+                    <Cell>{m.membershipTier ? <span className="bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full">{m.membershipTier === "FOUNDING_MEMBER" ? "Founding Member" : "Member"}</span> : "-"}</Cell>
+                    <Cell align="center"><span title={m.membershipStatus === "SUSPENDED" && m.autoDeleteAt ? `Auto-deletes on ${new Date(m.autoDeleteAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : undefined} className={`inline-flex items-center gap-1.5 text-xs font-medium ${statusStyle(m).split(" ")[0]}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${statusStyle(m).split(" ")[1]}`} />
                         {m.membershipStatus?.replace("_", " ") || "-"}
                       </span>
-                      {m.membershipStatus === "SUSPENDED" && m.autoDeleteAt && <p className="mt-1 text-[11px] text-red-500">Auto-deletes {new Date(m.autoDeleteAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>}
-                    </td>
-                    <td className="px-6 py-4 text-gray-400">{m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</td>
-                    <td className="px-6 py-4"><MemberActionMenu member={m} onView={() => navigate(`/admin/members/${m.userId}`)} onEdit={() => setEditingMember(m)} onSuspend={() => setConfirmation({ type: "suspend", member: m })} onReactivate={() => reactivate(m)} onDelete={() => setConfirmation({ type: "delete", member: m })} /></td>
+                    </Cell>
+                    <Cell align="center">{m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</Cell><Cell align="right"><MemberActionMenu member={m} onView={() => navigate(`/admin/members/${m.userId}`)} onEdit={() => setEditingMember(m)} onSuspend={() => setConfirmation({ type: "suspend", member: m })} onReactivate={() => reactivate(m)} onDelete={() => setConfirmation({ type: "delete", member: m })} /></Cell>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
+            <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={setRowsPerPage} total={members.length} />
           </div>
         </main>
       </div>

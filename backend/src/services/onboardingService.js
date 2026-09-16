@@ -3,14 +3,14 @@ import bcrypt from "bcrypt";
 import { prisma } from "../config/prismaClient.js";
 import { supabaseStorage } from "../config/supabaseStorageClient.js";
 import { AppError } from "../middleware/errorHandler.js";
-import { sendWelcomeCredentialsEmail } from "./emailService.js";
-import { getMyFullProfile } from "./memberService.js";
+import { sendWhatsAppMessage } from "../utils/whatsappNotify.js";
 import { generateMemberId } from "../utils/generateMemberId.js";
 import { generateTemporaryPassword } from "../utils/generatePassword.js";
 import { generateMembershipInvoice } from "./invoiceService.js";
 import { notifyAdmins } from "./notificationService.js";
 import { createRazorpayOrder as createRazorpayApiOrder } from "../utils/razorpayUtils.js";
 import { calculateExpiryDate } from "../utils/membershipDates.js";
+import { getMembershipTierForPlan } from "../utils/membershipTier.js";
 
 const CERTIFICATES_BUCKET = "business-certificates";
 const CURRENCY = "INR";
@@ -344,13 +344,14 @@ export const verifyRazorpayMembershipPayment = async ({
     throw new AppError("Payment verification failed. Please try again.", 400);
   }
 
-  const shouldSendWelcomeEmail = membership.membershipStatus !== "ACTIVE" || !membership.memberId || !user.passwordHash;
+  const shouldSendWelcomeMessage = membership.membershipStatus !== "ACTIVE" || !membership.memberId || !user.passwordHash;
   const memberId = membership.memberId || (await generateMemberId());
   const tempPassword = user.passwordHash ? null : generateTemporaryPassword();
   const passwordHash = tempPassword ? await bcrypt.hash(tempPassword, 10) : user.passwordHash;
   const now = new Date();
   const joinedAt = membership.joinedAt || now;
   const expiresAt = calculateExpiryDate(joinedAt, plan.billingCycle);
+  const membershipTier = getMembershipTierForPlan(plan);
 
   const updated = await prisma.$transaction(async (tx) => {
     await tx.user.update({
@@ -358,6 +359,8 @@ export const verifyRazorpayMembershipPayment = async ({
       data: {
         status: "ACTIVE",
         passwordHash,
+        // Keep an already-earned tier immutable if this verification is retried.
+        ...(user.membershipTier ? {} : { membershipTier }),
       },
     });
 
@@ -389,24 +392,30 @@ export const verifyRazorpayMembershipPayment = async ({
     });
   });
 
-  if (shouldSendWelcomeEmail) {
+  if (shouldSendWelcomeMessage) {
     try {
-      const profile = await getMyFullProfile(userId);
-      await sendWelcomeCredentialsEmail({
-        toEmail: user.email,
-        fullName: user.memberProfile.fullName,
+      await sendWhatsAppMessage(user.memberProfile.phone, "member_onboarding", [
+        user.memberProfile.fullName,
         memberId,
-        tempPassword: tempPassword || "Already set",
-        profile,
-        paymentMethod: "Razorpay",
-        paymentReference: razorpay_payment_id,
-      });
+        tempPassword || "Already set",
+      ]);
     } catch (error) {
-      console.error("[WELCOME_EMAIL_FAILED]", {
+      console.error("[MEMBER_ONBOARDING_WHATSAPP_FAILED]", {
         message: error?.message,
         userId,
         memberId,
       });
+      try {
+        await notifyAdmins({
+          type: "WHATSAPP_DELIVERY_FAILED",
+          title: "Member onboarding WhatsApp failed",
+          message: `Could not send onboarding credentials to ${user.memberProfile.fullName}. Please follow up manually.`,
+          relatedUserId: userId,
+          link: "/admin/members",
+        });
+      } catch (notificationError) {
+        console.error("[WHATSAPP_FAILURE_ADMIN_LOG_FAILED]", { message: notificationError?.message, userId });
+      }
     }
   }
 
@@ -440,7 +449,7 @@ export const verifyRazorpayMembershipPayment = async ({
       expiresAt: updated.expiresAt,
     };
   } catch (error) {
-    console.error("[RAZORPAY VERIFY POST_EMAIL_RESPONSE_ERROR]", {
+    console.error("[RAZORPAY_VERIFY_POST_RESPONSE_ERROR]", {
       message: error?.message,
       stack: error?.stack,
       userId,

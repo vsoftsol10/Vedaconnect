@@ -6,6 +6,9 @@ import { getWeeklyAttendance } from "../../services/attendanceService";
 import { getMonthlyMeetingFees } from "../../services/meetingFeeService";
 import { getAdminLeaderboard } from "../../services/adminService";
 import { getHubs } from "../../services/hubService";
+import Dropdown from "../../components/ui/Dropdown";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
+import Table, { Cell, HeaderCell } from "../../components/ui/Table";
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
@@ -45,48 +48,47 @@ const weekLabel = (weekStart) => {
   })}`;
 };
 
-const LeaderboardTable = ({ rows }) => (
-  <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
+const LeaderboardTable = ({ rows }) => {
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const visibleRows = usePagination(rows, page, rowsPerPage);
+  useEffect(() => setPage(1), [rows, rowsPerPage]);
+  return <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
     <h2 className="font-bold text-gray-900 mb-4">Member Leaderboard</h2>
-    <table className="w-full text-sm">
+    <Table minWidth="min-w-[760px]">
       <thead>
-        <tr className="text-left text-xs text-gray-400 uppercase">
-          <th className="pb-3">Rank</th>
-          <th className="pb-3">Member</th>
-          <th className="pb-3">Hub</th>
-          <th className="pb-3 text-right">Referrals given</th>
-          <th className="pb-3 text-right">Business received</th>
-        </tr>
+        <tr><HeaderCell align="center">Rank</HeaderCell><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell align="right">Referrals given</HeaderCell><HeaderCell align="right">Business received</HeaderCell></tr>
       </thead>
       <tbody>
         {rows.length ? (
-          rows.map((row, index) => (
-            <tr key={row.userId} className="border-t border-gray-50">
-              <td className="py-3 font-bold text-gray-900">{index + 1}</td>
-              <td className="py-3">
+          visibleRows.map((row, index) => (
+            <tr key={row.userId}>
+              <Cell align="center"><span className="font-bold text-gray-900">{(page - 1) * rowsPerPage + index + 1}</span></Cell>
+              <Cell title={`${row.fullName} ${row.businessName || ""}`}>
                 <p className="font-semibold text-gray-900">{row.fullName}</p>
                 <p className="text-xs text-gray-400">{row.businessName || "-"}</p>
-              </td>
-              <td className="py-3 text-gray-600">{row.hubName || "-"}</td>
-              <td className="py-3 text-right">
+              </Cell>
+              <Cell title={row.hubName}>{row.hubName || "-"}</Cell>
+              <Cell align="right">
                 <p className="font-bold text-gray-900">{row.referralCount}</p>
                 <p className="text-xs text-green-700">{formatCurrency(row.referralAmount)}</p>
-              </td>
-              <td className="py-3 text-right">
+              </Cell>
+              <Cell align="right">
                 <p className="font-bold text-gray-900">{row.businessCount}</p>
                 <p className="text-xs text-green-700">{formatCurrency(row.businessAmount)}</p>
-              </td>
+              </Cell>
             </tr>
           ))
         ) : (
           <tr>
-            <td colSpan={5} className="py-6 text-center text-gray-400">No entries yet.</td>
+            <td colSpan={5} className="vc-cell text-center text-gray-400">No entries yet.</td>
           </tr>
         )}
       </tbody>
-    </table>
-  </div>
-);
+    </Table>
+    <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(value) => { setRowsPerPage(value); setPage(1); }} total={rows.length} />
+  </div>;
+};
 
 const AdminLeaderboard = () => {
   const [period, setPeriod] = useState("week");
@@ -181,26 +183,9 @@ const AdminLeaderboard = () => {
                 />
               )}
               {period === "year" && (
-                <select
-                  value={value}
-                  onChange={(event) => setValue(event.target.value)}
-                  className="rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
+                <Dropdown value={value} onChange={setValue} className="w-full sm:w-32" options={years.map((year) => ({ value: String(year), label: String(year) }))} />
               )}
-              <select
-                value={hub}
-                onChange={(event) => setHub(event.target.value)}
-                className="rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
-              >
-                <option value="all">All Hubs</option>
-                {hubs.map((row) => (
-                  <option key={row.id} value={row.id}>{row.name}</option>
-                ))}
-              </select>
+              <Dropdown value={hub} onChange={setHub} className="w-full sm:w-48" options={[{ value: "all", label: "All Hubs" }, ...hubs.map((row) => ({ value: row.id, label: row.name }))]} />
               <div className="flex rounded-xl bg-white border border-gray-100 p-1">
                 {[
                   ["business", "Business"],
@@ -237,7 +222,7 @@ const AdminLeaderboard = () => {
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
                   <h2 className="font-bold text-gray-900 mb-4">This Week's Attendance</h2>
-                  <table className="w-full text-sm">
+                  <Table minWidth="min-w-[520px]">
                     <thead>
                       <tr className="text-left text-xs text-gray-400 uppercase">
                         <th className="pb-3">Member</th>
@@ -263,12 +248,12 @@ const AdminLeaderboard = () => {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </Table>
                 </div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
                   <h2 className="font-bold text-gray-900 mb-4">Meeting Fee Status</h2>
-                  <table className="w-full text-sm">
+                  <Table minWidth="min-w-[520px]">
                     <thead>
                       <tr className="text-left text-xs text-gray-400 uppercase">
                         <th className="pb-3">Member</th>
@@ -292,7 +277,7 @@ const AdminLeaderboard = () => {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </Table>
                 </div>
               </div>
             </>

@@ -1,18 +1,17 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, User, Calendar, LogOut } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { getMyProfile } from "../../services/memberService";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "../notifications/NotificationBell";
+import Dropdown from "../ui/Dropdown";
 
 const DashboardHeader = () => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef(null);
 
   useEffect(() => {
     getMyProfile()
@@ -21,22 +20,37 @@ const DashboardHeader = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setIsMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
+  const formatGreetingName = (fullName) => {
+    const firstPerson = fullName?.split("&")[0]?.trim() || "";
+    const nameParts = firstPerson.split(/\s+/).filter(Boolean);
+    if (!nameParts.length) return "there";
+
+    // A leading initial (for example, "L.") is not a useful greeting name.
+    const firstExpandedName = nameParts.find((part) => !/^[A-Za-z]\.?$/.test(part));
+    return firstExpandedName || firstPerson;
+  };
+
+  const handleAccountAction = (action) => {
+    if (action === "profile") navigate("/profile");
+    if (action === "logout") handleLogout();
+  };
+
   return (
-    <header className="relative flex min-h-[68px] items-center justify-end gap-3 border-b border-gray-100 bg-white px-4 py-3 pl-16 sm:px-6 sm:pl-16 md:gap-6 md:px-8 md:py-5">
-      <NotificationBell />
+    <header className="relative flex min-h-[68px] items-center gap-3 overflow-hidden bg-white px-4 py-3 pl-16 sm:px-6 sm:pl-16 md:gap-6 md:px-8 md:py-5">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(95,194,51,0.18)_0%,rgba(95,194,51,0.07)_45%,rgba(255,255,255,0)_75%)]" />
+      <div className="relative z-10 min-w-0 flex-1 pr-1">
+        <p className="truncate text-base font-semibold tracking-tight text-gray-900 sm:text-lg">
+          Welcome, {isLoading ? "…" : formatGreetingName(profile?.fullName)}
+        </p>
+      </div>
+
+      <div className="relative z-10 flex shrink-0 items-center gap-3 md:gap-6">
+      <NotificationBell buttonClass="bg-white/75 text-green-700 shadow-sm ring-1 ring-green-100/80 hover:bg-white hover:text-green-800" />
 
       {isLoading ? (
         <div className="flex items-center gap-2 sm:gap-3">
@@ -51,12 +65,18 @@ const DashboardHeader = () => {
           {error}
         </div>
       ) : (
-        <div className="relative" ref={menuRef}>
-          <button onClick={() => setIsMenuOpen((prev) => !prev)} className="flex min-w-0 items-center gap-2 sm:gap-3 group" aria-expanded={isMenuOpen}>
+        <Dropdown
+          value=""
+          onChange={handleAccountAction}
+          options={[{ value: "profile", label: "Profile" }, { value: "logout", label: "Logout" }]}
+          className="w-auto"
+          triggerClassName="flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left outline-none transition hover:bg-white/60 focus:bg-white/70 focus:ring-2 focus:ring-green-100 sm:gap-3"
+          menuClassName="right-0 w-48"
+          trigger={({ open }) => <>
             {profile?.profilePhoto ? (
-              <img src={profile.profilePhoto} alt={profile.fullName} className="h-10 w-10 rounded-full object-cover" />
+              <img src={profile.profilePhoto} alt={profile.fullName} className="h-10 w-10 rounded-full object-cover ring-2 ring-green-100 ring-offset-2" />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center font-semibold text-amber-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 font-semibold text-amber-700 ring-2 ring-green-100 ring-offset-2">
                 {profile?.fullName?.[0] || "?"}
               </div>
             )}
@@ -64,41 +84,11 @@ const DashboardHeader = () => {
               <p className="truncate text-sm font-semibold text-gray-900">{profile?.fullName}</p>
               <p className="text-xs text-gray-400">{profile?.location}</p>
             </div>
-            <ChevronDown className={`hidden h-4 w-4 text-gray-400 transition-transform group-hover:text-green-600 sm:block ${isMenuOpen ? "rotate-180" : ""}`} />
-          </button>
-
-          {isMenuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-64 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg sm:w-64">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="font-semibold text-gray-900">{profile?.fullName}</p>
-                <p className="text-sm text-gray-400 truncate">{user?.email}</p>
-              </div>
-              <nav className="py-2">
-                <button
-                  onClick={() => { setIsMenuOpen(false); navigate("/profile"); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <User className="h-4 w-4" /> My Profile
-                </button>
-                <button
-                  onClick={() => { setIsMenuOpen(false); navigate("/events?tab=mine"); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Calendar className="h-4 w-4" /> My Events
-                </button>
-              </nav>
-              <div className="border-t border-gray-100 py-2">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <LogOut className="h-4 w-4" /> Logout
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            <ChevronDown className={`hidden h-4 w-4 text-gray-400 transition-transform hover:text-green-600 sm:block ${open ? "rotate-180" : ""}`} />
+          </>}
+        />
       )}
+      </div>
     </header>
   );
 };

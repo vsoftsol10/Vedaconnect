@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutGrid, Users, Calendar, CircleUser, Handshake, CreditCard, Menu, X } from "lucide-react";
+import { LayoutGrid, Users, Calendar, CircleUser, Handshake, CreditCard, Menu, X, WalletCards } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { getMyProfile } from "../../services/memberService";
 import logo from "../../assets/images/vedaconnect-logo.png";
 
 const MENU_ITEMS = [
@@ -10,12 +11,20 @@ const MENU_ITEMS = [
   { to: "/networking", label: "Networking", icon: Handshake },
   { to: "/events", label: "Events", icon: Calendar },
   { to: "/meeting-fee", label: "Meeting Fee", icon: CreditCard },
+  { to: "/meeting-expenses", label: "Meeting Expenses", icon: WalletCards },
   { to: "/profile", label: "Profile", icon: CircleUser },
 ];
 
 const Sidebar = () => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [hubName, setHubName] = useState(user?.activeHub || "");
+
+  useEffect(() => {
+    getMyProfile()
+      .then((profile) => setHubName(profile?.hub?.name || user?.activeHub || ""))
+      .catch(() => setHubName(user?.activeHub || ""));
+  }, [user?.activeHub]);
 
   const linkClasses = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors relative ${
@@ -40,7 +49,10 @@ const Sidebar = () => {
 
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-100 bg-white px-4 py-6 shadow-xl transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:flex-shrink-0 md:translate-x-0 md:shadow-none ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
       <div className="flex items-center gap-2 px-2 mb-7">
-        <img src={logo} alt="VedaConnect" className="h-14 w-auto object-contain" />
+        <div className="min-w-0">
+          <img src={logo} alt="VedaConnect" className="h-14 w-auto object-contain" />
+          {hubName && <p className="mt-0.5 pl-1 text-xs font-medium tracking-wide text-gray-400">{hubName}</p>}
+        </div>
         <button type="button" onClick={() => setIsOpen(false)} className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 md:hidden" aria-label="Close navigation menu">
           <X className="h-5 w-5" />
         </button>

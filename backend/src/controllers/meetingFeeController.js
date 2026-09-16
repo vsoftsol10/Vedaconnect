@@ -31,6 +31,24 @@ export const getStatus = async (req, res, next) => {
   }
 };
 
+export const getHistory = async (req, res, next) => {
+  try {
+    res.status(200).json({ success: true, data: await meetingFeeService.getMyMeetingFeeHistory(req.user.userId) });
+  } catch (err) { next(err); }
+};
+
+export const createRenewalOrder = async (req, res, next) => {
+  try {
+    res.status(201).json({ success: true, data: await meetingFeeService.createMembershipRenewalOrder(req.user.userId) });
+  } catch (err) { next(err); }
+};
+
+export const verifyRenewal = async (req, res, next) => {
+  try {
+    res.status(200).json({ success: true, data: await meetingFeeService.verifyMembershipRenewalPayment({ userId: req.user.userId, ...req.validatedBody }) });
+  } catch (err) { next(err); }
+};
+
 export const getMonth = async (req, res, next) => {
   try {
     const data = await meetingFeeService.getMonthlyMeetingFeeList(

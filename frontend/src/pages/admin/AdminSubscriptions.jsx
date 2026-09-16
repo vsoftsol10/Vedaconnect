@@ -4,10 +4,13 @@ import { Pencil, Power, Plus } from "lucide-react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import { listSubscriptions, toggleSubscription } from "../../services/adminService";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 
 const AdminSubscriptions = () => {
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const load = () => listSubscriptions().then(setPlans);
   useEffect(() => { load(); }, []);
@@ -16,6 +19,7 @@ const AdminSubscriptions = () => {
     await toggleSubscription(id);
     load();
   };
+  const visiblePlans = usePagination(plans, page, rowsPerPage);
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -37,7 +41,7 @@ const AdminSubscriptions = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {plans.map((plan) => (
+            {visiblePlans.map((plan) => (
               <div key={plan.id} className="flex flex-col rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
                 <div className="flex items-start justify-between mb-1">
                   <h3 className="font-bold text-gray-900">{plan.name}</h3>
@@ -94,6 +98,7 @@ const AdminSubscriptions = () => {
               </div>
             ))}
           </div>
+          <div className="mt-5 rounded-2xl border border-gray-100 bg-white shadow-sm"><Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(value) => { setRowsPerPage(value); setPage(1); }} total={plans.length} /></div>
         </main>
       </div>
     </div>

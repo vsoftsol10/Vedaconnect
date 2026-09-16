@@ -3,6 +3,9 @@ import { Users, Building2, Calendar, IndianRupee, TrendingUp } from "lucide-reac
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import { getAdminDashboard } from "../../services/adminService";
+import Table, { Cell, HeaderCell } from "../../components/ui/Table";
+import { Avatar } from "../../components/ui/Avatar";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 
 const StatCard = ({ icon: Icon, iconBg, value, label, trend }) => (
   <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
@@ -20,12 +23,15 @@ const StatCard = ({ icon: Icon, iconBg, value, label, trend }) => (
 
 const AdminDashboard = () => {
   const [data, setData] = useState(null);
+  const [recentPage, setRecentPage] = useState(1);
+  const [recentRows, setRecentRows] = useState(10);
 
   useEffect(() => { getAdminDashboard().then(setData); }, []);
 
   if (!data) return null;
 
   const { stats, membersByHub, recentMembers, eventRegistrations } = data;
+  const visibleRecent = usePagination(recentMembers, recentPage, recentRows);
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -44,53 +50,23 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm sm:p-6">
-              <h3 className="font-bold text-gray-900 mb-1">Members by Hub</h3>
-              <p className="text-sm text-gray-400 mb-4">Distribution across active hubs</p>
-              <div className="flex items-end gap-6 flex-wrap">
-                {membersByHub.map(({ hub, count }) => (
-                  <div key={hub} className="text-center">
-                    <p className="text-xl font-bold text-gray-900">{count}</p>
-                    <p className="text-xs text-gray-400">{hub}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="overflow-hidden bg-white border border-gray-100 rounded-2xl shadow-sm">
+              <h3 className="px-4 pt-4 font-bold text-gray-900 mb-1 sm:px-6 sm:pt-6">Members by Hub</h3>
+              <p className="px-4 text-sm text-gray-400 mb-4 sm:px-6">Distribution across active hubs</p>
+              <Table><thead><tr><HeaderCell>Hub</HeaderCell><HeaderCell align="right">Members</HeaderCell></tr></thead><tbody>{membersByHub.map(({ hub, count }) => <tr key={hub}><Cell title={hub}>{hub}</Cell><Cell align="right"><span className="font-bold text-gray-900">{count}</span></Cell></tr>)}</tbody></Table>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
               <h3 className="font-bold text-gray-900 mb-4">Recently Joined Members</h3>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-gray-400 uppercase">
-                    <th className="pb-2">Member</th>
-                    <th className="pb-2">Business</th>
-                    <th className="pb-2">Hub</th>
-                    <th className="pb-2">Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentMembers.map((m) => (
-                    <tr key={m.userId} className="border-t border-gray-50">
-                      <td className="py-3 flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
-                          {m.fullName?.[0]}
-                        </div>
-                        {m.fullName}
-                      </td>
-                      <td className="py-3 text-gray-600">{m.businessName}</td>
-                      <td className="py-3 text-gray-600">{m.hub}</td>
-                      <td className="py-3 text-gray-400">{new Date(m.joinedAt).toLocaleDateString("en-IN")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table minWidth="min-w-[640px]"><thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Business</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell align="center">Joined</HeaderCell></tr></thead><tbody>{visibleRecent.map((m) => <tr key={m.userId}><Cell title={m.fullName}><div className="flex items-center gap-2"><Avatar name={m.fullName} src={m.profilePhoto} className="h-8 w-8" /><span className="font-medium text-gray-900">{m.fullName}</span></div></Cell><Cell title={m.businessName}>{m.businessName || "-"}</Cell><Cell title={m.hub}>{m.hub || "-"}</Cell><Cell align="center">{new Date(m.joinedAt).toLocaleDateString("en-IN")}</Cell></tr>)}</tbody></Table>
+              <Pagination page={recentPage} onPageChange={setRecentPage} rowsPerPage={recentRows} onRowsPerPageChange={(value) => { setRecentRows(value); setRecentPage(1); }} total={recentMembers.length} />
             </div>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
             <h3 className="font-bold text-gray-900 mb-1">Event Registrations</h3>
             <p className="text-sm text-gray-400 mb-4">Upcoming events and registration counts</p>
-            <table className="w-full text-sm">
+            <Table minWidth="min-w-[720px]">
               <thead>
                 <tr className="text-left text-xs text-gray-400 uppercase">
                   <th className="pb-2">Event</th>
@@ -111,7 +87,7 @@ const AdminDashboard = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
         </main>
       </div>

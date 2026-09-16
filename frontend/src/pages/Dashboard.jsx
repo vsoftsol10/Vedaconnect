@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ShieldCheck, Calendar, UserPlus, Users, Loader2 } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
@@ -9,6 +10,7 @@ import Leaderboard from "../components/dashboard/Leaderboard";
 import { getMyProfile, getMyStats, getMyUpcomingEvents } from "../services/memberService";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -38,8 +40,6 @@ const Dashboard = () => {
     loadDashboard();
   }, []);
 
-  const firstName = profile?.fullName?.split(" ")[0] || "";
-
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
@@ -57,9 +57,6 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                Welcome back, {firstName}
-              </h1>
               <p className="text-gray-500 mb-8">
                 Here's what's happening in your VedaConnect community.
               </p>
@@ -97,12 +94,36 @@ const Dashboard = () => {
 
               <div className="flex items-center justify-between gap-3 mb-4">
                 <h2 className="text-lg font-bold text-gray-900">Upcoming Events</h2>
-                <button className="text-sm font-medium text-green-600 hover:text-green-700">View All</button>
+                <button
+                  onClick={() => navigate("/events?tab=upcoming")}
+                  className="text-sm font-medium text-green-600 hover:text-green-700"
+                >
+                  View All
+                </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {events.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <div
+                    key={event.id}
+                    onClick={() => navigate(`/events/${event.id}`)}
+                    onKeyDown={(eventKey) => {
+                      if (eventKey.key === "Enter" || eventKey.key === " ") {
+                        eventKey.preventDefault();
+                        navigate(`/events/${event.id}`);
+                      }
+                    }}
+                    role="link"
+                    tabIndex={0}
+                    className="cursor-pointer rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  >
+                    <EventCard event={event} />
+                  </div>
                 ))}
+                {!events.length && (
+                  <p className="rounded-xl border border-dashed border-gray-200 bg-white px-5 py-6 text-sm text-gray-500">
+                    No upcoming events have been published yet.
+                  </p>
+                )}
               </div>
             </>
           )}

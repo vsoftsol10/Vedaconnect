@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { prisma } from "../src/config/prismaClient.js";
-import { resendPaymentInvoiceEmail } from "../src/services/invoiceService.js";
+import { resendPaymentInvoiceWhatsApp } from "../src/services/invoiceService.js";
 
 const isDryRun = process.argv.includes("--dry-run");
 
@@ -30,7 +30,7 @@ const main = async () => {
         `invoiceId=${invoice.id}`,
         `paymentType=${invoice.paymentType}`,
         `membershipId=${membershipId}`,
-        `email=${invoice.user.email}`,
+        `phone=${invoice.user.memberProfile?.phone || "missing"}`,
         `member=${memberName}`,
       ].join(" ")
     );
@@ -38,11 +38,11 @@ const main = async () => {
     if (isDryRun) continue;
 
     const before = invoice.emailedAt;
-    const updated = await resendPaymentInvoiceEmail(invoice.id);
+    const updated = await resendPaymentInvoiceWhatsApp(invoice.id);
     if (updated?.emailedAt && !before) {
-      console.log(`[RESEND_OK] invoice=${invoice.invoiceNumber} email=${invoice.user.email}`);
+      console.log(`[RESEND_OK] invoice=${invoice.invoiceNumber} phone=${invoice.user.memberProfile?.phone || "missing"}`);
     } else {
-      console.log(`[RESEND_SKIPPED_OR_FAILED] invoice=${invoice.invoiceNumber} email=${invoice.user.email}`);
+      console.log(`[RESEND_SKIPPED_OR_FAILED] invoice=${invoice.invoiceNumber} phone=${invoice.user.memberProfile?.phone || "missing"}`);
     }
   }
 };

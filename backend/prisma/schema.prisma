@@ -29,6 +29,11 @@ enum MembershipStatus {
   DELETED
 }
 
+enum MembershipTier {
+  FOUNDING_MEMBER
+  MEMBER
+}
+
 enum PaymentStatus {
   PENDING
   PAID
@@ -47,6 +52,16 @@ enum NetworkingPartyType {
   EXTERNAL @map("external")
 }
 
+enum ExpenseCategory {
+  VENUE
+  FOOD
+  PRINTING
+  DECORATION
+  GUEST_SPEAKER
+  MISCELLANEOUS
+  OTHER
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   fullName     String?    @map("full_name")
@@ -55,6 +70,8 @@ model User {
   passwordHash String?    @map("password_hash")
   role         UserRole   @default(MEMBER)
   status       UserStatus @default(PENDING)
+  // Assigned only when the first membership payment succeeds; never recalculated.
+  membershipTier MembershipTier? @map("membership_tier")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
     
@@ -71,6 +88,8 @@ model User {
   meetingAttendance     MeetingAttendance[]
   meetingFeePayments    MeetingFeePayment[]
   invoices              PaymentInvoice[]
+  createdExpenses       Expense[] @relation("ExpenseCreatedBy")
+  notificationLogs      NotificationLog[]
 
   @@map("users")
 }
@@ -336,6 +355,42 @@ model Hub {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   memberProfiles MemberProfile[]
+  expenses       Expense[]
 
   @@map("hubs")
+}
+
+model Expense {
+  id          String          @id @default(uuid()) @db.Uuid
+  hubId       String          @map("hub_id") @db.Uuid
+  date        DateTime
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(10, 2)
+  description String
+  receiptUrl  String?         @map("receipt_url")
+  createdBy   String          @map("created_by") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  hub     Hub  @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  creator User @relation("ExpenseCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([hubId, date])
+  @@map("expenses")
+}
+
+model NotificationLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  memberId     String   @map("member_id") @db.Uuid
+  hubId        String   @map("hub_id") @db.Uuid
+  type         String
+  period       String
+  status       String
+  errorMessage String?  @map("error_message")
+  sentAt       DateTime @default(now()) @map("sent_at")
+
+  member User @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([hubId, type, sentAt])
+  @@map("notification_logs")
 }

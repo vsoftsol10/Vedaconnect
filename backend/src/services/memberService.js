@@ -9,13 +9,14 @@ const normalizePhone = (value) => {
 export const getMyProfile = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { memberProfile: true, membership: true },
+    include: { memberProfile: { include: { hub: { select: { id: true, name: true } } } }, membership: true },
   });
 
   if (!user) throw new AppError("User not found.", 404);
 
   return {
     fullName: user.memberProfile?.fullName || "",
+    hub: user.memberProfile?.hub || null,
     location: user.memberProfile?.location || "",
     profilePhoto: user.memberProfile?.profilePhoto || null,
     email: user.email,
@@ -44,34 +45,37 @@ export const getMyStats = async (userId) => {
 };
 
 export const getMyUpcomingEvents = async () => {
-  // TODO: requires `events` + `event_registrations` tables (Phase 7 of the
-  // original architecture). Returning mock data until those exist.
-  return [
-    {
-      id: "mock-1",
-      title: "Sustainable Business Showcase",
-      imageUrl: null,
-      tags: ["Business", "Community", "Networking"],
-      date: "20 October 2026",
-      time: "11:00 AM",
-      location: "Pondicherry",
+  const events = await prisma.event.findMany({
+    where: { status: "PUBLISHED", eventDate: { gte: new Date() } },
+    orderBy: { eventDate: "asc" },
+    take: 4,
+    select: {
+      id: true,
+      title: true,
+      imageUrl: true,
+      tags: true,
+      eventDate: true,
+      startTime: true,
+      location: true,
     },
-    {
-      id: "mock-2",
-      title: "Handloom & Craft Exhibition",
-      imageUrl: null,
-      tags: ["Community", "Networking"],
-      date: "15 November 2026",
-      time: "10:00 AM",
-      location: "Madurai",
-    },
-  ];
+  });
+
+  return events.map((event) => ({
+    ...event,
+    tags: Array.isArray(event.tags) ? event.tags : [],
+    date: event.eventDate.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }),
+    time: event.startTime || "Time to be announced",
+  }));
 };
-export const listMembers = async ({ search, category, location }) => {
+export const listMembers = async ({ search, category, location, membershipStatus, membershipTier }) => {
   const where = {
     memberProfile: { isNot: null },
     status: { not: "DELETED" },
-    membership: { membershipStatus: "ACTIVE", deletedAt: null },
+    membership: { deletedAt: null },
   };
 
   if (search) {
@@ -86,10 +90,14 @@ export const listMembers = async ({ search, category, location }) => {
   if (location) {
     where.memberProfile = { ...where.memberProfile, location: { contains: location, mode: "insensitive" } };
   }
+  if (membershipStatus) {
+    where.membership = { ...where.membership, membershipStatus };
+  }
+  if (membershipTier) where.membershipTier = membershipTier;
 
   const users = await prisma.user.findMany({
     where,
-    include: { memberProfile: true, businessCertificates: true },
+    include: { memberProfile: { include: { hub: { select: { id: true, name: true } } } }, membership: true, businessCertificates: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -99,7 +107,11 @@ export const listMembers = async ({ search, category, location }) => {
     profilePhoto: u.memberProfile.profilePhoto,
     businessName: u.memberProfile.businessName,
     businessCategory: u.memberProfile.businessCategory,
+    businessType: u.memberProfile.businessType,
     location: u.memberProfile.location,
+    hub: u.memberProfile.hub?.name || null,
+    membershipStatus: u.membership?.membershipStatus || "PENDING_PAYMENT",
+    membershipTier: u.membershipTier || null,
     isVerified: u.businessCertificates.some((c) => c.isVerified),
   }));
 };
@@ -176,6 +188,7 @@ export const getMyFullProfile = async (userId) => {
     productsServices: user.memberProfile.productsServices,
     memberId: user.membership?.memberId || null,
     membershipType: user.membership?.membershipType,
+    membershipTier: user.membershipTier || null,
     membershipStatus: user.membership?.membershipStatus,
     membershipPlanName: plan?.name || null,
     membershipAmount: user.membership?.amount ?? null,
