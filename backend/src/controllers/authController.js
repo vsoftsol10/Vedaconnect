@@ -17,3 +17,12 @@ export const me = async (req, res, next) => {
     next(err);
   }
 };
+
+export const adminLogin = async (req, res, next) => {
+  try {
+    const result = await authService.loginAdmin(req.validatedBody);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+};

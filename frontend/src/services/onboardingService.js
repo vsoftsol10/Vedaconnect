@@ -45,7 +45,9 @@ export const verifyRazorpayPayment = async (payload) => {
   return unwrap(response);
 };
 
-export const confirmPayment = async (payload) => {
-  const response = await api.post("/onboarding/confirm-payment", payload);
+export const confirmPayment = async ({ paymentReference, onboardingToken }) => {
+  const response = await api.post("/onboarding/confirm-payment", { paymentReference }, {
+    headers: { Authorization: `Bearer ${onboardingToken}` },
+  });
   return unwrap(response);
 };

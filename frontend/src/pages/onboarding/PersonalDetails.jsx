@@ -15,7 +15,7 @@ const normalizePhone = (value) => {
 
 const PersonalDetails = () => {
   const navigate = useNavigate();
-  const { setUserId } = useOnboarding();
+  const { setUserId, setOnboardingToken } = useOnboarding();
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -52,6 +52,7 @@ const PersonalDetails = () => {
     try {
       const result = await submitPersonalDetails(form);
       setUserId(result.userId);
+      setOnboardingToken(result.onboardingToken);
       navigate("/onboarding/business-details");
     } catch (err) {
       setSubmitError(err.message);

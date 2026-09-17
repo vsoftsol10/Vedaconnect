@@ -10,6 +10,7 @@ export const updateMember = async (userId, data) => (await api.patch(`/admin/mem
 export const suspendMember = async (userId) => (await api.patch(`/admin/members/${userId}/suspend`)).data.data;
 export const reactivateMember = async (userId) => (await api.patch(`/admin/members/${userId}/reactivate`)).data.data;
 export const deleteMember = async (userId) => (await api.delete(`/admin/members/${userId}`)).data.data;
+export const resendMemberCredentials = async (userId) => (await api.post(`/admin/members/${userId}/resend-credentials`)).data.data;
 export const listAdminHubs = async () => (await api.get("/admin/hubs")).data.data;
 export const getMembershipPlansAdmin = async () => (await api.get("/onboarding/plans")).data.data;
 export const listSubscriptions = async () => (await api.get("/admin/subscriptions")).data.data;
@@ -17,7 +18,7 @@ export const createSubscription = async (data) => (await api.post("/admin/subscr
 export const updateSubscription = async (id, data) => (await api.put(`/admin/subscriptions/${id}`, data)).data.data;
 export const toggleSubscription = async (id) => (await api.patch(`/admin/subscriptions/${id}/toggle`)).data.data;
 export const listMembershipPayments = async () => (await api.get("/admin/payments/membership")).data.data;
-export const verifyMembershipPayment = async (id) => (await api.patch(`/admin/payments/membership/${id}/verify`)).data.data;
+export const verifyMembershipPayment = async (id, payload) => (await api.patch(`/admin/payments/membership/${id}/verify`, payload)).data.data;
 export const rejectMembershipPayment = async (id) => (await api.patch(`/admin/payments/membership/${id}/reject`)).data.data;
 
 export const listEventPayments = async () => (await api.get("/admin/payments/events")).data.data;

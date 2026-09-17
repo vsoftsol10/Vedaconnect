@@ -15,6 +15,12 @@ const redactPhone = (phone) => {
   return digits ? `***${digits.slice(-4)}` : "missing";
 };
 
+export const normalizeWhatsAppPhone = (phone) => {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (/^[6-9]\d{9}$/.test(digits)) return `91${digits}`;
+  return digits;
+};
+
 /**
  * Sends an approved WhatsApp template through Meta's WhatsApp Cloud API.
  * Throws on delivery failures so callers can create an admin follow-up record.
@@ -27,7 +33,7 @@ export const sendWhatsAppMessage = async (phone, templateName, variables) => {
       throw new Error("WhatsApp template variables must be an array of strings");
     }
 
-    const recipientPhone = phone.trim();
+    const recipientPhone = normalizeWhatsAppPhone(phone);
     if (!/^\d+$/.test(recipientPhone)) {
       throw new Error("Recipient phone number must contain only digits with country code (no leading + or spaces)");
     }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Ban, Eye, MoreVertical, Pencil, Play, Trash2 } from "lucide-react";
+import { Ban, Eye, MoreVertical, Pencil, Play, Send, Trash2 } from "lucide-react";
 
-const MemberActionMenu = ({ member, onView, onEdit, onSuspend, onReactivate, onDelete }) => {
+const MemberActionMenu = ({ member, onView, onEdit, onResendCredentials, onSuspend, onReactivate, onDelete }) => {
   const [open, setOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState({});
   const buttonRef = useRef(null);
@@ -39,6 +39,7 @@ const MemberActionMenu = ({ member, onView, onEdit, onSuspend, onReactivate, onD
     {open && <div ref={menuRef} style={menuStyle} className="z-50 w-44 rounded-xl border border-gray-100 bg-white p-1.5 shadow-lg shadow-gray-200/70">
       <MenuItem icon={Eye} label="View Details" onClick={choose(onView)} />
       <MenuItem icon={Pencil} label="Edit" onClick={choose(onEdit)} />
+      <MenuItem icon={Send} label="Resend credentials" onClick={choose(onResendCredentials)} />
       <MenuItem icon={suspended ? Play : Ban} label={suspended ? "Reactivate" : "Suspend"} onClick={choose(suspended ? onReactivate : onSuspend)} />
       <div className="my-1 border-t border-gray-100" />
       <MenuItem icon={Trash2} label="Delete" destructive onClick={choose(onDelete)} />

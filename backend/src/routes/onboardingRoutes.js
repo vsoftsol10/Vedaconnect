@@ -2,6 +2,8 @@ import { Router } from "express";
 import multer from "multer";
 import * as onboardingController from "../controllers/onboardingController.js";
 import { AppError } from "../middleware/errorHandler.js";
+import rateLimit from "express-rate-limit";
+import { requireOnboardingSession } from "../middleware/onboardingSessionMiddleware.js";
 import {
   validate,
   personalDetailsSchema,
@@ -49,6 +51,14 @@ const uploadCertificates = (req, res, next) => {
   });
 };
 
+const manualPaymentSubmissionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, message: "Too many manual payment submissions. Please try again in an hour." },
+});
+
 // Step 1
 router.post("/personal-details", validate(personalDetailsSchema), onboardingController.personalDetails);
 
@@ -81,6 +91,8 @@ router.post(
 );
 router.post(
   "/confirm-payment",
+  manualPaymentSubmissionLimiter,
+  requireOnboardingSession,
   validate(paymentConfirmationSchema),
   onboardingController.confirmPayment
 );

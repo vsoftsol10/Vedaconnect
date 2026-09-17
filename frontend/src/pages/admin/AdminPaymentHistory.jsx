@@ -33,6 +33,7 @@ const AdminPaymentHistory = () => {
   const [membershipPayments, setMembershipPayments] = useState([]);
   const [eventPayments, setEventPayments] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [independentlyVerified, setIndependentlyVerified] = useState(false);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -43,9 +44,13 @@ const AdminPaymentHistory = () => {
   useEffect(() => { load(); }, []);
 
   const handleVerify = async (row) => {
-    if (tab === "membership") await verifyMembershipPayment(row.id);
+    if (tab === "membership") {
+      if (!independentlyVerified || !row.manualSubmission?.id) return;
+      await verifyMembershipPayment(row.id, { manualSubmissionId: row.manualSubmission.id, independentlyVerified: true });
+    }
     else await verifyEventPayment(row.id);
     setSelected(null);
+    setIndependentlyVerified(false);
     load();
   };
 
@@ -124,14 +129,12 @@ const AdminPaymentHistory = () => {
                     )}
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button onClick={() => setSelected(row)} className="flex items-center gap-1 border border-gray-200 hover:border-green-400 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-lg">
+                        <button onClick={() => { setIndependentlyVerified(false); setSelected(row); }} className="flex items-center gap-1 border border-gray-200 hover:border-green-400 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-lg">
                           <Eye className="h-3.5 w-3.5" /> View
                         </button>
                         {row.status === "PENDING" && (
                           <>
-                            <button onClick={() => handleVerify(row)} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg">
-                              <CheckCircle className="h-3.5 w-3.5" /> Verify
-                            </button>
+                            {tab === "membership" ? <button onClick={() => { setIndependentlyVerified(false); setSelected(row); }} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg"><CheckCircle className="h-3.5 w-3.5" /> Review & Verify</button> : <button onClick={() => handleVerify(row)} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg"><CheckCircle className="h-3.5 w-3.5" /> Verify</button>}
                             <button onClick={() => handleReject(row)} className="flex items-center gap-1 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium px-3 py-1.5 rounded-lg">
                               <XCircle className="h-3.5 w-3.5" /> Reject
                             </button>
@@ -153,7 +156,7 @@ const AdminPaymentHistory = () => {
           <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white sm:max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900">Payment Details</h2>
-              <button onClick={() => setSelected(null)}><X className="h-5 w-5 text-gray-400 hover:text-gray-600" /></button>
+              <button onClick={() => { setSelected(null); setIndependentlyVerified(false); }}><X className="h-5 w-5 text-gray-400 hover:text-gray-600" /></button>
             </div>
             <div className="p-6">
               <div className="bg-green-50 rounded-xl px-4 py-3 flex items-center gap-3 mb-5">
@@ -175,19 +178,24 @@ const AdminPaymentHistory = () => {
                     value={`${PAYMENT_WHATSAPP_LABEL[selected.invoiceEmailStatus] || "-"}${selected.invoiceNumber ? ` (${selected.invoiceNumber})` : ""}`}
                   />
                 )}
+                {tab === "membership" && <Field label="Manual payment reference" value={selected.manualSubmission?.reference || "No manual payment submission"} />}
+                {tab === "membership" && selected.manualSubmission?.submittedAt && <Field label="Submitted" value={formatDate(selected.manualSubmission.submittedAt)} />}
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</p>
                   <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLES[selected.status]}`}>{STATUS_LABEL[selected.status]}</span>
                 </div>
               </div>
               {selected.status === "PENDING" && (
+                <div className="space-y-3">
+                  {tab === "membership" && <label className="flex cursor-pointer gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><input type="checkbox" checked={independentlyVerified} onChange={(event) => setIndependentlyVerified(event.target.checked)} className="mt-0.5 h-4 w-4 accent-green-600" /><span><strong>I have independently verified that this payment was received.</strong><br />Do not activate the membership based only on this reference or notification.</span></label>}
                 <div className="flex gap-3">
                   <button onClick={() => handleReject(selected)} className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 font-medium py-2.5 rounded-xl">
                     <XCircle className="h-4 w-4" /> Reject Payment
                   </button>
-                  <button onClick={() => handleVerify(selected)} className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-xl">
-                    <CheckCircle className="h-4 w-4" /> Verify Payment
+                  <button onClick={() => handleVerify(selected)} disabled={tab === "membership" && (!independentlyVerified || !selected.manualSubmission?.id)} className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300 text-white font-medium py-2.5 rounded-xl">
+                    <CheckCircle className="h-4 w-4" /> {tab === "membership" ? "Confirm & Activate" : "Verify Payment"}
                   </button>
+                </div>
                 </div>
               )}
             </div>

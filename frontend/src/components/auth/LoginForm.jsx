@@ -3,7 +3,7 @@ import { Mail, Lock, MapPin, ChevronDown, ArrowRight, Eye, EyeOff } from "lucide
 import { HUB_OPTIONS } from "../../utils/hubs";
 
 const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
-  const [form, setForm] = useState({ email: "", password: "", hub: HUB_OPTIONS[0] });
+  const [form, setForm] = useState({ memberId: "", password: "", hub: HUB_OPTIONS[0] });
   const [showPassword, setShowPassword] = useState(false);
   const [allowInput, setAllowInput] = useState(false);
 
@@ -20,20 +20,20 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
   return (
     <form onSubmit={handleSubmit} autoComplete="new-password" className="space-y-6">
       <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">Email Address</label>
+        <label className="block text-sm font-semibold text-gray-900 mb-2">Member ID</label>
         <div className="relative">
           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
           <input
-            type="email"
+            type="text"
             required
-            value={form.email}
-            onChange={handleChange("email")}
+            value={form.memberId}
+            onChange={handleChange("memberId")}
             onFocus={enableInput}
             onPointerDown={enableInput}
             readOnly={!allowInput}
             autoComplete="new-password"
             name="vc-member-identity"
-            placeholder="you@example.com"
+            placeholder="VC-FM-00001"
             className="w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-4 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
           />
         </div>

@@ -28,6 +28,10 @@ if (!testPhone) {
       name: "payment_confirmation",
       variables: ["Test Member", "₹18000.00", "Founder Membership"],
     },
+    {
+      name: "member_onboarding",
+      variables: ["Test Member", "VC-TEST-2026", "Welcome@2026"],
+    },
   ];
 
   try {
@@ -46,9 +50,10 @@ if (!testPhone) {
 
     console.log(`[WHATSAPP_TEMPLATE_TEST] Sending ${template.name}`, { variables: template.variables });
     try {
-      await sendWhatsAppMessage(testPhone, template.name, template.variables);
-      console.log(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: SUCCESS`);
-      results.push({ template: template.name, status: "SUCCESS", detail: "Delivered to CRM" });
+      const metaResponse = await sendWhatsAppMessage(testPhone, template.name, template.variables);
+      const detail = metaResponse ? JSON.stringify(metaResponse) : "HTTP 204 (no response body)";
+      console.log(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: SUCCESS - ${detail}`);
+      results.push({ template: template.name, status: "SUCCESS", detail });
     } catch (error) {
       console.error(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: FAILED - ${error.message}`);
       results.push({ template: template.name, status: "FAILED", detail: error.message });

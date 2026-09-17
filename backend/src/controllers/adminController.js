@@ -53,6 +53,10 @@ export const deleteMember = async (req, res, next) => {
   try { res.json({ success: true, data: await adminService.softDeleteMember(req.params.userId) }); }
   catch (err) { next(err); }
 };
+export const resendCredentials = async (req, res, next) => {
+  try { res.json({ success: true, data: await adminService.resendMemberCredentials(req.params.userId) }); }
+  catch (err) { next(err); }
+};
 
 export const listHubs = async (req, res, next) => {
   try {
@@ -97,7 +101,7 @@ export const listEventPaymentsHandler = async (req, res, next) => {
 };
 
 export const verifyMembershipPaymentHandler = async (req, res, next) => {
-  try { res.json({ success: true, data: await adminService.verifyMembershipPayment(req.params.id) }); }
+  try { res.json({ success: true, data: await adminService.verifyMembershipPayment(req.params.id, req.validatedBody, req.user.userId) }); }
   catch (err) { next(err); }
 };
 

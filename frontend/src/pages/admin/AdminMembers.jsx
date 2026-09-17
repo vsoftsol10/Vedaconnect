@@ -5,7 +5,7 @@ import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AddMemberModal from "../../components/admin/AddMemberModal";
 import { listAdminMembers, listAdminHubs } from "../../services/adminService";
-import { suspendMember, reactivateMember, deleteMember } from "../../services/adminService";
+import { suspendMember, reactivateMember, deleteMember, resendMemberCredentials } from "../../services/adminService";
 import MemberActionMenu from "../../components/admin/MemberActionMenu";
 import MemberConfirmModal from "../../components/admin/MemberConfirmModal";
 import EditMemberModal from "../../components/admin/EditMemberModal";
@@ -58,6 +58,10 @@ const AdminMembers = () => {
     await reactivateMember(member.userId);
     refreshMembers();
   };
+  const resendCredentials = async (member) => {
+    await resendMemberCredentials(member.userId);
+    refreshMembers();
+  };
 
   const statusStyle = (member) => {
     if (member.membershipStatus === "ACTIVE") return "text-green-600 bg-green-500";
@@ -106,7 +110,7 @@ const AdminMembers = () => {
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-x-auto">
             <Table minWidth="min-w-[900px]">
               <thead>
-                <tr><HeaderCell>Member</HeaderCell><HeaderCell>Business</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Membership</HeaderCell><HeaderCell>Tier</HeaderCell><HeaderCell align="center">Status</HeaderCell><HeaderCell align="center">Joined</HeaderCell><HeaderCell align="right">Action</HeaderCell>
+                <tr><HeaderCell>Member</HeaderCell><HeaderCell>Business</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Membership</HeaderCell><HeaderCell>Tier</HeaderCell><HeaderCell align="center">Status</HeaderCell><HeaderCell align="center">Credentials</HeaderCell><HeaderCell align="center">Joined</HeaderCell><HeaderCell align="right">Action</HeaderCell>
                 </tr>
               </thead>
               <tbody>
@@ -125,7 +129,8 @@ const AdminMembers = () => {
                         {m.membershipStatus?.replace("_", " ") || "-"}
                       </span>
                     </Cell>
-                    <Cell align="center">{m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</Cell><Cell align="right"><MemberActionMenu member={m} onView={() => navigate(`/admin/members/${m.userId}`)} onEdit={() => setEditingMember(m)} onSuspend={() => setConfirmation({ type: "suspend", member: m })} onReactivate={() => reactivate(m)} onDelete={() => setConfirmation({ type: "delete", member: m })} /></Cell>
+                    <Cell align="center"><span className={`text-xs font-medium ${m.onboardingDeliveryStatus === "success" ? "text-green-600" : m.onboardingDeliveryStatus === "failed" ? "text-red-600" : "text-gray-500"}`}>{m.onboardingDeliveryStatus === "success" ? "Credentials sent" : m.onboardingDeliveryStatus === "failed" ? "Failed" : "Unknown-legacy"}</span></Cell>
+                    <Cell align="center">{m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</Cell><Cell align="right"><MemberActionMenu member={m} onView={() => navigate(`/admin/members/${m.userId}`)} onEdit={() => setEditingMember(m)} onResendCredentials={() => resendCredentials(m)} onSuspend={() => setConfirmation({ type: "suspend", member: m })} onReactivate={() => reactivate(m)} onDelete={() => setConfirmation({ type: "delete", member: m })} /></Cell>
                   </tr>
                 ))}
               </tbody>

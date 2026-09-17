@@ -4,17 +4,18 @@ import { AppError } from "../middleware/errorHandler.js";
 /**
  * Pulls the next value from the `member_id_seq` Postgres sequence (via the
  * `next_member_id()` SQL function - see sql/functions.sql) and formats it
- * as VC-FM-00001, VC-FM-00002, etc.
+ * as VC-FM-00001 for Founding Members or VC-M-00001 for Members.
  *
  * Uses a DB sequence (not a JS counter) so IDs stay unique even under
  * concurrent requests.
  */
-export const generateMemberId = async () => {
+export const generateMemberId = async (membershipTier = "FOUNDING_MEMBER") => {
   try {
     const result = await prisma.$queryRaw`SELECT next_member_id() AS id`;
     const nextVal = result[0].id;
     const padded = String(nextVal).padStart(5, "0");
-    return `VC-FM-${padded}`;
+    const prefix = membershipTier === "MEMBER" ? "VC-M" : "VC-FM";
+    return `${prefix}-${padded}`;
   } catch (err) {
     throw new AppError(`Failed to generate member ID: ${err.message}`, 500);
   }

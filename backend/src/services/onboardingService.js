@@ -11,6 +11,8 @@ import { notifyAdmins } from "./notificationService.js";
 import { createRazorpayOrder as createRazorpayApiOrder } from "../utils/razorpayUtils.js";
 import { calculateExpiryDate } from "../utils/membershipDates.js";
 import { getMembershipTierForPlan } from "../utils/membershipTier.js";
+import { sendWelcomeCredentialsEmail } from "./emailService.js";
+import { createOnboardingSession } from "../middleware/onboardingSessionMiddleware.js";
 
 const CERTIFICATES_BUCKET = "business-certificates";
 const CURRENCY = "INR";
@@ -77,7 +79,7 @@ export const submitPersonalDetails = async ({ fullName, email, phone, location }
     return newUser;
   });
 
-  return { userId: user.id };
+  return { userId: user.id, onboardingToken: createOnboardingSession(user.id) };
 };
 
 /**
@@ -345,7 +347,7 @@ export const verifyRazorpayMembershipPayment = async ({
   }
 
   const shouldSendWelcomeMessage = membership.membershipStatus !== "ACTIVE" || !membership.memberId || !user.passwordHash;
-  const memberId = membership.memberId || (await generateMemberId());
+  const memberId = membership.memberId || (await generateMemberId(getMembershipTierForPlan(plan)));
   const tempPassword = user.passwordHash ? null : generateTemporaryPassword();
   const passwordHash = tempPassword ? await bcrypt.hash(tempPassword, 10) : user.passwordHash;
   const now = new Date();
@@ -393,28 +395,22 @@ export const verifyRazorpayMembershipPayment = async ({
   });
 
   if (shouldSendWelcomeMessage) {
-    try {
-      await sendWhatsAppMessage(user.memberProfile.phone, "member_onboarding", [
-        user.memberProfile.fullName,
-        memberId,
-        tempPassword || "Already set",
-      ]);
-    } catch (error) {
-      console.error("[MEMBER_ONBOARDING_WHATSAPP_FAILED]", {
-        message: error?.message,
-        userId,
-        memberId,
-      });
+    if (tempPassword) {
       try {
-        await notifyAdmins({
-          type: "WHATSAPP_DELIVERY_FAILED",
-          title: "Member onboarding WhatsApp failed",
-          message: `Could not send onboarding credentials to ${user.memberProfile.fullName}. Please follow up manually.`,
-          relatedUserId: userId,
-          link: "/admin/members",
-        });
-      } catch (notificationError) {
-        console.error("[WHATSAPP_FAILURE_ADMIN_LOG_FAILED]", { message: notificationError?.message, userId });
+        await sendWelcomeCredentialsEmail({ userId, toEmail: user.email, fullName: user.memberProfile.fullName, memberId, tempPassword });
+      } catch (error) {
+        console.error("[MEMBER_ONBOARDING_EMAIL_FAILED]", { message: error?.message, userId, memberId });
+        try {
+          await notifyAdmins({
+            type: "EMAIL_DELIVERY_FAILED",
+            title: "Member onboarding email failed",
+            message: `Could not email onboarding credentials to ${user.memberProfile.fullName}. Please follow up manually.`,
+            relatedUserId: userId,
+            link: "/admin/members",
+          });
+        } catch (notificationError) {
+          console.error("[EMAIL_FAILURE_ADMIN_LOG_FAILED]", { message: notificationError?.message, userId });
+        }
       }
     }
   }
@@ -477,7 +473,7 @@ export const verifyRazorpayMembershipPayment = async ({
  * Does NOT auto-activate the account or generate a Member ID — an admin
  * verifies the WhatsApp payment first (next phase).
  */
-export const confirmPaymentSubmitted = async ({ userId, paymentReference }) => {
+export const confirmPaymentSubmitted = async ({ userId, paymentReference, ipAddress }) => {
   const membership = await prisma.membership.findUnique({
     where: { userId },
     include: { user: { include: { memberProfile: true } } },
@@ -485,11 +481,18 @@ export const confirmPaymentSubmitted = async ({ userId, paymentReference }) => {
   if (!membership) {
     throw new AppError("Membership not found for this user. Complete Step 4 first.", 404);
   }
+  if (membership.paymentStatus !== "PENDING" || membership.membershipStatus !== "PENDING_PAYMENT") {
+    throw new AppError("This membership is not awaiting a manual payment submission.", 400);
+  }
 
-  const updated = await prisma.membership.update({
-    where: { userId },
-    data: { paymentReference: paymentReference || null },
-    select: { userId: true, membershipStatus: true, paymentStatus: true },
+  const submission = await prisma.manualPaymentSubmission.create({
+    data: {
+      userId,
+      membershipId: membership.id,
+      reference: paymentReference || null,
+      ipAddress: ipAddress || null,
+    },
+    select: { id: true, submittedAt: true, status: true },
   });
 
   try {
@@ -507,5 +510,5 @@ export const confirmPaymentSubmitted = async ({ userId, paymentReference }) => {
     });
   }
 
-  return updated;
+  return { userId, submission };
 };

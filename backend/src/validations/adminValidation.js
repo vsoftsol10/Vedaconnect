@@ -22,6 +22,11 @@ export const joinedDateSchema = z.object({
   joinedAt: z.string().trim().min(1, "Joined date is required"),
 });
 
+export const manualPaymentVerificationSchema = z.object({
+  manualSubmissionId: z.string().uuid("A manual payment submission is required"),
+  independentlyVerified: z.literal(true, { errorMap: () => ({ message: "Confirm independent payment verification before activating this member" }) }),
+});
+
 export const editMemberSchema = z.object({
   fullName: z.string().trim().min(2, "Full name is required"),
   businessName: z.string().trim().min(1, "Business name is required"),

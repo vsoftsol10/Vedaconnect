@@ -31,8 +31,7 @@ export const membershipSchema = z.object({
 });
 
 export const paymentConfirmationSchema = z.object({
-  userId: z.string().uuid("Invalid user id"),
-  paymentReference: z.string().trim().optional(),
+  paymentReference: z.string().trim().max(200).optional(),
 });
 
 export const razorpayOrderSchema = z.object({

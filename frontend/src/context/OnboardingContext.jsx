@@ -4,7 +4,8 @@ const OnboardingContext = createContext(null);
 
 export const OnboardingProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
-  const value = useMemo(() => ({ userId, setUserId }), [userId]);
+  const [onboardingToken, setOnboardingToken] = useState(null);
+  const value = useMemo(() => ({ userId, setUserId, onboardingToken, setOnboardingToken }), [userId, onboardingToken]);
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
 };

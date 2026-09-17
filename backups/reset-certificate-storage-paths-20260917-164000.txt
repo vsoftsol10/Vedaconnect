@@ -1,0 +1,12 @@
+Recorded immediately before the approved member-data reset.
+Bucket: business-certificates
+
+Database row: 5d88176f-108b-41aa-b789-761164ad6157
+User ID: a4b2177c-497f-47a7-8b54-45684a9b8156
+Storage path: a4b2177c-497f-47a7-8b54-45684a9b8156/1788777663608-1-ChatGPT_Image_Sep_2_2026_03_59_42_PM.png
+Original filename: ChatGPT Image Sep 2, 2026, 03_59_42 PM.png
+
+Database row: 7048431e-fe3c-4fa1-b68d-c1dda9cbd35f
+User ID: 43a63f3b-5fc2-4e9c-83de-3694a15753e3
+Storage path: 43a63f3b-5fc2-4e9c-83de-3694a15753e3/1788841734835-1-IMG-20260907-WA0031.jpg
+Original filename: IMG-20260907-WA0031.jpg

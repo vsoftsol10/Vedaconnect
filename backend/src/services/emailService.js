@@ -1,4 +1,5 @@
 import { sendBrevoEmail } from "../config/brevoClient.js";
+import { prisma } from "../config/prismaClient.js";
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL;
 const DEFAULT_FRONTEND_ORIGIN = "http://localhost:5173";
@@ -120,11 +121,11 @@ export const buildWelcomeCredentialsEmailContent = ({
   const memberHtml = `
     <div style="font-family: Arial, sans-serif; color:#1A1D23; max-width:560px;line-height:1.55;">
       <h2 style="margin:0 0 12px;">Welcome to VedaConnect, ${escapeHtml(fullName)}!</h2>
-      <p>Your founding membership is now active.</p>
+      <p>Your membership is now active.</p>
       <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background:#FFF9EE;border:1px solid #E8E1D3;border-radius:8px;overflow:hidden;margin:18px 0;">
         ${tableRow("Membership", planReceipt)}
         ${tableRow("Member ID", escapeHtml(memberId))}
-        ${tableRow("Login Email", escapeHtml(toEmail))}
+        ${tableRow("Login Member ID", escapeHtml(memberId))}
         ${tableRow("Temporary Password", escapeHtml(tempPassword))}
       </table>
       <p>Please log in and change your password from your Profile page as soon as possible.</p>
@@ -169,21 +170,29 @@ export const buildWelcomeCredentialsEmailContent = ({
 };
 
 export const sendWelcomeCredentialsEmail = async (params) => {
-  const { toEmail, fullName, memberId } = params;
-  const { memberHtml, adminHtml } = buildWelcomeCredentialsEmailContent(params);
+  const { userId, toEmail } = params;
+  const { memberHtml } = buildWelcomeCredentialsEmailContent(params);
 
-  await sendBrevoEmail({
-    to: toEmail,
-    subject: "Welcome to VedaConnect - Your Login Details",
-    htmlContent: memberHtml,
-  });
-
-  if (ADMIN_EMAIL) {
-    await sendBrevoEmail({
-      to: ADMIN_EMAIL,
-      subject: `New Founding Member Activated: ${fullName} (${memberId})`,
-      htmlContent: adminHtml,
+  try {
+    const response = await sendBrevoEmail({
+      to: toEmail,
+      subject: "Welcome to VedaConnect - Your Login Details",
+      htmlContent: memberHtml,
     });
+    await prisma.emailDeliveryLog.create({
+      data: { memberId: userId, template: "member_welcome_credentials", status: "success", brevoMessageId: response?.messageId || null },
+    });
+    return response;
+  } catch (error) {
+    await prisma.emailDeliveryLog.create({
+      data: {
+        memberId: userId,
+        template: "member_welcome_credentials",
+        status: "failed",
+        errorMessage: error?.message?.slice(0, 1000) || "Unknown delivery error",
+      },
+    });
+    throw error;
   }
 };
 

@@ -123,7 +123,11 @@ export const verifyRazorpayPayment = async (req, res, next) => {
 export const confirmPayment = async (req, res, next) => {
   try {
     const result = await withDatabaseTimeout(
-      onboardingService.confirmPaymentSubmitted(req.validatedBody)
+      onboardingService.confirmPaymentSubmitted({
+        userId: req.onboardingSession.userId,
+        paymentReference: req.validatedBody.paymentReference,
+        ipAddress: req.ip,
+      })
     );
     res.status(200).json({ success: true, data: result });
   } catch (err) {

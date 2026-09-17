@@ -4,7 +4,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import { supabaseStorage } from "../config/supabaseStorageClient.js";
 import { generateMemberId } from "../utils/generateMemberId.js";
 import { generateTemporaryPassword } from "../utils/generatePassword.js";
-import { sendWhatsAppMessage } from "../utils/whatsappNotify.js";
+import { sendWelcomeCredentialsEmail } from "./emailService.js";
 import { generateEventInvoice, generateMembershipInvoice } from "./invoiceService.js";
 import { calculateExpiryDate } from "../utils/membershipDates.js";
 import { notifyAdmins } from "./notificationService.js";
@@ -110,7 +110,7 @@ export const listAllMembers = async ({ search, hubId, status, membershipType, me
 
   const users = await prisma.user.findMany({
     where,
-    include: { memberProfile: { include: { hub: true } }, membership: true },
+    include: { memberProfile: { include: { hub: true } }, membership: true, whatsAppDeliveryLogs: { where: { template: "member_onboarding" }, orderBy: { sentAt: "desc" }, take: 1 } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -128,6 +128,8 @@ export const listAllMembers = async ({ search, hubId, status, membershipType, me
     expiresAt: u.membership?.expiresAt,
     suspendedAt: u.membership?.suspendedAt || null,
     autoDeleteAt: u.membership?.autoDeleteAt || null,
+    onboardingDeliveryStatus: u.whatsAppDeliveryLogs[0]?.status || "unknown-legacy",
+    onboardingDeliverySentAt: u.whatsAppDeliveryLogs[0]?.sentAt || null,
   }));
 };
 
@@ -235,13 +237,14 @@ export const createMemberByAdmin = async (data, certificateFile) => {
 
   const tempPassword = generateTemporaryPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
-  const memberId = await generateMemberId();
+  const membershipTier = getMembershipTierForPlan(plan);
+  const memberId = await generateMemberId(membershipTier);
   const joinedAt = data.joinedAt ? new Date(data.joinedAt) : new Date();
   const expiresAt = calculateExpiryDate(joinedAt, plan.billingCycle);
 
   const user = await prisma.$transaction(async (tx) => {
     const newUser = await tx.user.create({
-      data: { email: data.email, passwordHash, role: "MEMBER", status: "ACTIVE", membershipTier: getMembershipTierForPlan(plan) },
+      data: { email: data.email, passwordHash, role: "MEMBER", status: "ACTIVE", membershipTier },
     });
 
     await tx.memberProfile.create({
@@ -295,23 +298,19 @@ export const createMemberByAdmin = async (data, certificateFile) => {
   }
 
   try {
-    await sendWhatsAppMessage(data.phone, "member_onboarding", [data.fullName, memberId, tempPassword]);
+    await sendWelcomeCredentialsEmail({ userId: user.id, toEmail: data.email, fullName: data.fullName, memberId, tempPassword });
   } catch (error) {
-    console.error("[ADMIN_MEMBER_ONBOARDING_WHATSAPP_FAILED]", {
-      message: error?.message,
-      userId: user.id,
-      memberId,
-    });
+    console.error("[ADMIN_MEMBER_ONBOARDING_EMAIL_FAILED]", { message: error?.message, userId: user.id, memberId });
     try {
       await notifyAdmins({
-        type: "WHATSAPP_DELIVERY_FAILED",
-        title: "Member onboarding WhatsApp failed",
-        message: `Could not send onboarding credentials to ${data.fullName}. Please follow up manually.`,
+        type: "EMAIL_DELIVERY_FAILED",
+        title: "Member onboarding email failed",
+        message: `Could not email onboarding credentials to ${data.fullName}. Please follow up manually.`,
         relatedUserId: user.id,
         link: "/admin/members",
       });
     } catch (notificationError) {
-      console.error("[WHATSAPP_FAILURE_ADMIN_LOG_FAILED]", { message: notificationError?.message, userId: user.id });
+      console.error("[EMAIL_FAILURE_ADMIN_LOG_FAILED]", { message: notificationError?.message, userId: user.id });
     }
   }
 
@@ -384,7 +383,7 @@ export const toggleSubscriptionStatus = async (id) => {
 export const listMembershipPayments = async () => {
   const memberships = await prisma.membership.findMany({
     orderBy: { createdAt: "desc" },
-    include: { user: { include: { memberProfile: true } } },
+    include: { user: { include: { memberProfile: true } }, manualPaymentSubmissions: { orderBy: { submittedAt: "desc" }, take: 1 } },
   });
 
   const plans = await prisma.membershipPlan.findMany();
@@ -410,6 +409,12 @@ export const listMembershipPayments = async () => {
     amount: Number(m.amount),
     date: m.paidAt || m.createdAt,
     method: m.razorpayPaymentId ? "Razorpay" : "WhatsApp",
+    manualSubmission: m.manualPaymentSubmissions[0] ? {
+      id: m.manualPaymentSubmissions[0].id,
+      reference: m.manualPaymentSubmissions[0].reference,
+      submittedAt: m.manualPaymentSubmissions[0].submittedAt,
+      status: m.manualPaymentSubmissions[0].status,
+    } : null,
     status: m.paymentStatus, // PENDING | PAID | FAILED | REFUNDED
     invoiceNumber: invoiceMap.get(m.id)?.invoiceNumber || null,
     invoiceEmailedAt: invoiceMap.get(m.id)?.emailedAt || null,
@@ -419,6 +424,20 @@ export const listMembershipPayments = async () => {
         : "PENDING"
       : "NOT_READY",
   }));
+};
+
+export const resendMemberCredentials = async (userId) => {
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { memberProfile: true, membership: true } });
+  if (!user?.memberProfile || !user.membership?.memberId) throw new AppError("Active member credentials are not available.", 400);
+  const password = generateTemporaryPassword();
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(password, 10) } });
+  try {
+    await sendWelcomeCredentialsEmail({ userId, toEmail: user.email, fullName: user.memberProfile.fullName, memberId: user.membership.memberId, tempPassword: password });
+  } catch (error) {
+    console.error("[MEMBER_CREDENTIAL_RESEND_EMAIL_FAILED]", { message: error?.message, userId });
+    await notifyAdmins({ type: "EMAIL_DELIVERY_FAILED", title: "Member credential email failed", message: `Could not email reset credentials to ${user.memberProfile.fullName}. Please follow up manually.`, relatedUserId: userId, link: "/admin/members" }).catch((notificationError) => console.error("[EMAIL_FAILURE_ADMIN_LOG_FAILED]", { message: notificationError?.message, userId }));
+  }
+  return { status: "success" };
 };
 
 const getActiveMember = async (userId) => {
@@ -504,24 +523,34 @@ export const listEventPayments = async () => {
   }));
 };
 
-export const verifyMembershipPayment = async (membershipId) => {
+export const verifyMembershipPayment = async (membershipId, { manualSubmissionId, independentlyVerified }, adminUserId) => {
   const membership = await prisma.membership.findUnique({ where: { id: membershipId }, include: { user: { select: { membershipTier: true } } } });
   if (!membership) throw new AppError("Payment record not found.", 404);
   if (membership.paymentStatus !== "PENDING") throw new AppError("This payment is not pending.", 400);
+  if (!independentlyVerified) throw new AppError("Independent payment verification confirmation is required.", 400);
+  const submission = await prisma.manualPaymentSubmission.findFirst({
+    where: { id: manualSubmissionId, membershipId, status: "SUBMITTED" },
+  });
+  if (!submission) throw new AppError("A pending manual payment submission is required before activation.", 400);
 
   const plan = await prisma.membershipPlan.findFirst({
     where: { planCode: membership.membershipType },
   });
   const now = new Date();
-  const memberId = membership.memberId || await generateMemberId();
+  const membershipTier = getMembershipTierForPlan(plan);
+  const memberId = membership.memberId || await generateMemberId(membershipTier);
   const joinedAt = membership.joinedAt || now;
   const expiresAt = calculateExpiryDate(joinedAt, plan?.billingCycle);
-  const membershipTier = getMembershipTierForPlan(plan);
 
   const updated = await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: membership.userId },
       data: { status: "ACTIVE", ...(membership.user?.membershipTier ? {} : { membershipTier }) },
+    });
+
+    await tx.manualPaymentSubmission.update({
+      where: { id: submission.id },
+      data: { status: "VERIFIED", verifiedAt: now, verifiedBy: adminUserId },
     });
 
     return tx.membership.update({

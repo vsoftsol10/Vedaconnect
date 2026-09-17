@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
 import OnboardingHeader from "../../components/onboarding/OnboardingHeader";
 import OnboardingCard from "../../components/onboarding/OnboardingCard";
-import { login as loginRequest } from "../../services/authService";
+import { loginAdmin } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 
 const AdminLogin = () => {
@@ -25,7 +25,7 @@ const AdminLogin = () => {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const { token, user } = await loginRequest(form);
+      const { token, user } = await loginAdmin(form);
 
       if (user.role !== "ADMIN") {
         setErrorMessage("This account doesn't have admin access. Use the member login instead.");
@@ -36,7 +36,7 @@ const AdminLogin = () => {
       login(token, user);
       navigate("/admin/dashboard");
     } catch (err) {
-      setErrorMessage(err.message || "Login failed. Please try again.");
+      setErrorMessage(err.response?.data?.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
