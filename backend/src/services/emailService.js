@@ -94,6 +94,41 @@ const getPaymentBreakdown = (profile = {}) => {
   };
 };
 
+const getWelcomeMembershipProfile = async (userId) => {
+  const membership = await prisma.membership.findUnique({
+    where: { userId },
+    select: {
+      membershipType: true,
+      amount: true,
+      paymentReference: true,
+      joinedAt: true,
+    },
+  });
+  if (!membership) return {};
+
+  const plan = await prisma.membershipPlan.findUnique({
+    where: { planCode: membership.membershipType },
+    select: { name: true, baseAmount: true, gstPercent: true, billingCycle: true },
+  });
+
+  return {
+    membershipPlanName: plan?.name || membership.membershipType,
+    membershipType: membership.membershipType,
+    // The membership row is the payment-time source of truth. The plan supplies
+    // its GST breakdown: manual members use the ₹7,000 plan and self-registered
+    // members use the ₹13,000 plan.
+    membershipAmount: membership.amount,
+    // Legacy membership types may no longer have a matching plan row. Display
+    // the stored total rather than allowing the template's null-to-zero coercion
+    // to imply the member paid nothing.
+    membershipBaseAmount: plan?.baseAmount ?? membership.amount,
+    membershipGstPercent: plan?.gstPercent ?? 18,
+    paymentReference: membership.paymentReference,
+    joinedAt: membership.joinedAt,
+    billingCycle: plan?.billingCycle || null,
+  };
+};
+
 const tableRow = (label, value) => `
   <tr>
     <td style="padding:10px 12px;border-bottom:1px solid #E8E1D3;color:#6B6258;width:38%;font-weight:bold;">${escapeHtml(label)}</td>
@@ -171,7 +206,11 @@ export const buildWelcomeCredentialsEmailContent = ({
 
 export const sendWelcomeCredentialsEmail = async (params) => {
   const { userId, toEmail } = params;
-  const { memberHtml } = buildWelcomeCredentialsEmailContent(params);
+  const membershipProfile = await getWelcomeMembershipProfile(userId);
+  const { memberHtml } = buildWelcomeCredentialsEmailContent({
+    ...params,
+    profile: { ...(params.profile || {}), ...membershipProfile },
+  });
 
   try {
     const response = await sendBrevoEmail({
