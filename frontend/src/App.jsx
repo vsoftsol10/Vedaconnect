@@ -10,6 +10,8 @@ import { OnboardingProvider } from "./context/OnboardingContext";
 import { AuthProvider } from "./context/AuthContext";
 
 import Login from "./pages/auth/Login";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Members from "./pages/Members";
@@ -99,6 +101,8 @@ const App = () => {
               path="/login"
               element={<Login />}
             />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* ================================
                 MEMBER PORTAL

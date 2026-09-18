@@ -235,6 +235,21 @@ export const sendWelcomeCredentialsEmail = async (params) => {
   }
 };
 
+export const sendPasswordResetEmail = async ({ userId, toEmail, fullName, resetUrl }) => {
+  const memberHtml = `
+    <div style="font-family: Arial, sans-serif; color:#1A1D23; max-width:560px;line-height:1.55;">
+      <h2 style="margin:0 0 12px;">Reset your VedaConnect password</h2>
+      <p>Hello ${escapeHtml(fullName || "Member")},</p>
+      <p>We received a request to reset your password. This link expires in one hour.</p>
+      <p style="margin:24px 0;"><a href="${escapeHtml(resetUrl)}" style="display:inline-block;background:#F5A623;color:#1A1D23;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;">Reset Password</a></p>
+      <p style="font-size:13px;color:#6B6258;">If you did not request this, you can safely ignore this email. Your password will remain unchanged.</p>
+    </div>
+  `;
+  const response = await sendBrevoEmail({ to: toEmail, subject: "Reset your VedaConnect password", htmlContent: memberHtml });
+  await prisma.emailDeliveryLog.create({ data: { memberId: userId, template: "member_password_reset", status: "success", brevoMessageId: response?.messageId || null } });
+  return response;
+};
+
 export const buildPaymentInvoiceHtml = ({
   paymentType = "MEMBERSHIP",
   invoiceNumber,

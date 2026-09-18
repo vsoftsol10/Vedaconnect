@@ -1,4 +1,5 @@
 import { prisma } from "../config/prismaClient.js";
+import bcrypt from "bcrypt";
 import { AppError } from "../middleware/errorHandler.js";
 
 const normalizePhone = (value) => {
@@ -26,6 +27,19 @@ export const getMyProfile = async (userId) => {
     joinedAt: user.membership?.joinedAt || null,
     expiresAt: user.membership?.expiresAt || null,
   };
+};
+
+export const changeMyPassword = async (userId, { currentPassword, newPassword }) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user?.passwordHash || user.role !== "MEMBER") throw new AppError("Member account not found.", 404);
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    throw new AppError("Current password is incorrect.", 401);
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10), resetTokenHash: null, resetTokenExpiresAt: null },
+  });
+  return { success: true };
 };
 
 export const getMyStats = async (userId) => {

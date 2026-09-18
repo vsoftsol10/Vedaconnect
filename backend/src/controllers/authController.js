@@ -26,3 +26,17 @@ export const adminLogin = async (req, res, next) => {
     next(err);
   }
 };
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    await authService.requestPasswordReset(req.validatedBody);
+    res.json({ success: true, message: "If an active member account matches, a reset link has been sent." });
+  } catch (err) { next(err); }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    await authService.resetPassword(req.validatedBody);
+    res.json({ success: true, message: "Password reset successfully. You can now log in." });
+  } catch (err) { next(err); }
+};

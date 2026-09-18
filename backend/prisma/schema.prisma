@@ -74,6 +74,8 @@ model User {
   profilePhoto String?    @map("profile_photo")
   email        String?    @unique
   passwordHash String?    @map("password_hash")
+  resetTokenHash String?  @map("reset_token_hash")
+  resetTokenExpiresAt DateTime? @map("reset_token_expires_at")
   role         UserRole   @default(MEMBER)
   status       UserStatus @default(PENDING)
   // Assigned only when the first membership payment succeeds; never recalculated.

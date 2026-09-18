@@ -1,0 +1,11 @@
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import OnboardingHeader from "../../components/onboarding/OnboardingHeader";
+import OnboardingCard from "../../components/onboarding/OnboardingCard";
+import { resetPassword } from "../../services/authService";
+
+export default function ResetPassword() {
+  const [params] = useSearchParams(); const [password, setPassword] = useState(""); const [confirm, setConfirm] = useState(""); const [message, setMessage] = useState(""); const [loading, setLoading] = useState(false);
+  const submit = async (event) => { event.preventDefault(); if (password !== confirm) return setMessage("Passwords do not match."); setLoading(true); setMessage(""); try { const result = await resetPassword({ token: params.get("token"), newPassword: password }); setMessage(result.message); } catch (error) { setMessage(error.message || "Could not reset password."); } finally { setLoading(false); } };
+  return <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4"><div className="w-full max-w-md"><OnboardingHeader /><OnboardingCard><h1 className="text-2xl font-bold text-gray-900">Set a New Password</h1><p className="mb-6 mt-1 text-gray-500">Choose a new password with at least six characters.</p><form onSubmit={submit} className="space-y-4"><input type="password" required minLength="6" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password" className="w-full rounded-xl border border-gray-200 px-4 py-3.5 outline-none focus:border-green-500" /><input type="password" required minLength="6" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Confirm new password" className="w-full rounded-xl border border-gray-200 px-4 py-3.5 outline-none focus:border-green-500" /><button disabled={loading || !params.get("token")} className="w-full rounded-xl bg-amber-400 py-3.5 font-semibold text-gray-900 disabled:opacity-60">{loading ? "Resetting..." : "Reset Password"}</button></form>{message && <p className="mt-4 text-sm text-gray-600">{message}</p>}<Link to="/login" className="mt-5 inline-block text-sm font-medium text-green-700">Back to login</Link></OnboardingCard></div></div>;
+}

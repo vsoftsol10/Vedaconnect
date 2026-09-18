@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Mail, Lock, MapPin, ChevronDown, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router-dom";
 import { HUB_OPTIONS } from "../../utils/hubs";
 
 const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
@@ -37,6 +38,7 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
             className="w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-4 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
           />
         </div>
+        <div className="mt-2 text-right"><Link to="/forgot-password" className="text-sm font-medium text-green-700 hover:text-green-800">Forgot Password?</Link></div>
       </div>
 
       <div>

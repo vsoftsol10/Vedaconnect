@@ -24,3 +24,4 @@ export const getMemberDetail = async (userId) => {
 };
 export const getMyFullProfile = async () => (await api.get("/members/me/full")).data.data;
 export const updateMyProfile = async (payload) => (await api.put("/members/me", payload)).data.data;
+export const changeMyPassword = async (payload) => (await api.put("/members/me/password", payload)).data.data;

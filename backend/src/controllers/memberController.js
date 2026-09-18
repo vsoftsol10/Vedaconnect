@@ -56,3 +56,9 @@ export const updateMyProfile = async (req, res, next) => {
     res.status(200).json({ success: true, data: updated });
   } catch (err) { next(err); }
 };
+
+export const changeMyPassword = async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await memberService.changeMyPassword(req.user.userId, req.validatedBody) });
+  } catch (err) { next(err); }
+};

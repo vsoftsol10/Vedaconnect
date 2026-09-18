@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, Eye, Download, X, Check, Loader2 } from "lucide-react";
+import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, Eye, Download, X, Check, Loader2, Lock } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
-import { getMyFullProfile, updateMyProfile } from "../services/memberService";
+import { changeMyPassword, getMyFullProfile, updateMyProfile } from "../services/memberService";
 
 const PHONE_ERROR = "Enter a valid 10-digit phone number";
 const normalizePhone = (value = "") => {
@@ -32,6 +32,9 @@ const Profile = () => {
   const [errors, setErrors] = useState({});
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const load = async () => {
     setLoadError("");
@@ -71,6 +74,17 @@ const Profile = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handlePasswordChange = async (event) => {
+    event.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) return setPasswordMessage("New passwords do not match.");
+    setIsChangingPassword(true); setPasswordMessage("");
+    try {
+      await changeMyPassword({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordMessage("Password changed successfully.");
+    } catch (error) { setPasswordMessage(error.message || "Could not change password."); } finally { setIsChangingPassword(false); }
   };
 
   if (isLoading) {
@@ -273,6 +287,18 @@ const Profile = () => {
             </div>
           </div>
           {saveError && <p className="mt-4 text-sm text-red-500">{saveError}</p>}
+
+          <section className="mt-6 max-w-2xl rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+            <h3 className="mb-1 flex items-center gap-2 font-bold text-gray-900"><Lock className="h-5 w-5 text-green-600" /> Change Password</h3>
+            <p className="mb-4 text-sm text-gray-500">Use your current password to set a new one.</p>
+            <form onSubmit={handlePasswordChange} className="space-y-3">
+              <input type="password" required value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))} placeholder="Current password" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
+              <input type="password" required minLength="6" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} placeholder="New password (at least 6 characters)" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
+              <input type="password" required minLength="6" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} placeholder="Confirm new password" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
+              <button disabled={isChangingPassword} className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-green-600 hover:text-white disabled:opacity-60">{isChangingPassword ? "Changing..." : "Change Password"}</button>
+              {passwordMessage && <p className="text-sm text-gray-600">{passwordMessage}</p>}
+            </form>
+          </section>
 
           {/* Business Certificate */}
           {profile.certificates?.length > 0 && (

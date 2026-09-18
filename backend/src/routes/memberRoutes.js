@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { validate } from "../validations/onboardingValidation.js";
 import { editMemberSchema } from "../validations/adminValidation.js";
+import { changeMemberPasswordSchema } from "../validations/authValidation.js";
 import * as adminController from "../controllers/adminController.js";
 
 const router = Router();
@@ -12,6 +13,7 @@ router.get("/me", requireAuth, memberController.getMe);
 router.get("/", requireAuth, memberController.listMembers);
 router.get("/me/full", requireAuth, memberController.getMyFullProfile);
 router.put("/me", requireAuth, memberController.updateMyProfile);
+router.put("/me/password", requireAuth, validate(changeMemberPasswordSchema), memberController.changeMyPassword);
 router.get("/me/stats", requireAuth, memberController.getMyStats);
 router.get("/me/upcoming-events", requireAuth, memberController.getMyUpcomingEvents);
 // Admin lifecycle aliases keep the member resource API available at /api/members.
