@@ -77,6 +77,9 @@ export default function AdminEventDetail() {
             <div className="p-6 flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
+                <span className={`inline-block mt-2 text-xs font-medium px-3 py-1 rounded-full ${event.eventType === 'NO_FEE' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {event.eventType === 'NO_FEE' ? 'Weekly Meeting · No Fee' : 'Standard Event · Fee'}
+                </span>
                 <p className="text-gray-500 mb-3">{event.hubName || 'No hub assigned'}</p>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
                   <span className="flex items-center gap-1.5">
@@ -97,11 +100,11 @@ export default function AdminEventDetail() {
                 <p className="text-gray-600 max-w-2xl">{event.description}</p>
               </div>
               <div className="text-right shrink-0 ml-6">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">Event Fee</p>
+                <p className="text-xs text-gray-400 uppercase tracking-wide">{event.eventType === 'NO_FEE' ? 'Event Type' : 'Event Fee'}</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {Number(event.registrationAmount) > 0 ? `₹${event.registrationAmount}` : 'Free'}
+                  {event.eventType === 'NO_FEE' ? 'No Fee' : `₹${event.registrationAmount}`}
                 </p>
-                {Number(event.registrationAmount) > 0 && <p className="text-xs text-gray-400">per member</p>}
+                {event.eventType !== 'NO_FEE' && <p className="text-xs text-gray-400">per member</p>}
                 <span className="inline-block mt-2 text-xs font-medium px-3 py-1 rounded-full bg-amber-50 text-amber-600">
                   {event.registrationCount} registered
                 </span>

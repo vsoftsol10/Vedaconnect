@@ -5,7 +5,7 @@ import { getHubs } from '../../services/hubService';
 const emptyForm = {
   title: '', description: '', aboutEvent: '', eventDate: '', timeRange: '',
   location: '', hubId: '', schedule: [{ time: '', item: '' }],
-  registrationDeadline: '', isPaid: true, registrationAmount: '',
+  registrationDeadline: '', eventType: 'FEE', registrationAmount: '',
 };
 
 export default function EventForm({ initialValues, onSubmit, submitting, submitLabel, footerLabel }) {
@@ -35,7 +35,7 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
         schedule: initialValues.schedule?.length ? initialValues.schedule : [{ time: '', item: '' }],
         registrationDeadline: initialValues.registrationDeadline
           ? initialValues.registrationDeadline.slice(0, 10) : '',
-        isPaid: Number(initialValues.registrationAmount) > 0,
+        eventType: initialValues.eventType || (Number(initialValues.registrationAmount) > 0 ? 'FEE' : 'NO_FEE'),
         registrationAmount: initialValues.registrationAmount || '',
       });
       setPoster(null);
@@ -86,8 +86,8 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
     if (!formData.eventDate) newErrors.eventDate = 'Date is required';
     if (!formData.timeRange.trim()) newErrors.timeRange = 'Time is required';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (!formData.registrationDeadline) newErrors.registrationDeadline = 'Registration deadline is required';
-    if (formData.isPaid && !formData.registrationAmount) newErrors.registrationAmount = 'Event fee is required';
+    if (formData.eventType === 'FEE' && !formData.registrationDeadline) newErrors.registrationDeadline = 'Registration deadline is required';
+    if (formData.eventType === 'FEE' && !formData.registrationAmount) newErrors.registrationAmount = 'Event fee is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -108,10 +108,12 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
       location: formData.location,
       hubId: formData.hubId || undefined,
       schedule: formData.schedule.filter((s) => s.time.trim() || s.item.trim()),
-      registrationDeadline: formData.registrationDeadline,
+      registrationDeadline: formData.eventType === 'FEE' ? formData.registrationDeadline : undefined,
       poster,
-      isPaid: formData.isPaid,
-      registrationAmount: formData.isPaid ? Number(formData.registrationAmount) : 0,
+      eventType: formData.eventType,
+      // Keep the last fee in state when switching to a weekly meeting. The API
+      // retains it for existing events but never applies it while NO_FEE.
+      registrationAmount: Number(formData.registrationAmount || 0),
     });
   };
 
@@ -126,6 +128,21 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
         </div>
 
         <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1.5">Event Type <span className="text-amber-500">*</span></label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button type="button" onClick={() => handleChange('eventType', 'FEE')} className={`flex items-center justify-center gap-2 rounded-xl py-3 font-medium border transition-all ${formData.eventType === 'FEE' ? 'bg-amber-100 border-amber-400 text-gray-900' : 'border-gray-200 text-gray-500 bg-white'}`}>
+                <span className={`w-2.5 h-2.5 rounded-full border ${formData.eventType === 'FEE' ? 'border-amber-500 bg-amber-400' : 'border-gray-300'}`} />
+                Standard Event (Fee)
+              </button>
+              <button type="button" onClick={() => handleChange('eventType', 'NO_FEE')} className={`flex items-center justify-center gap-2 rounded-xl py-3 font-medium border transition-all ${formData.eventType === 'NO_FEE' ? 'bg-green-50 border-green-500 text-gray-900' : 'border-gray-200 text-gray-500 bg-white'}`}>
+                <span className={`w-2.5 h-2.5 rounded-full border ${formData.eventType === 'NO_FEE' ? 'border-green-600 bg-green-500' : 'border-gray-300'}`} />
+                Weekly Meeting (No Fee)
+              </button>
+            </div>
+            {formData.eventType === 'NO_FEE' && <p className="mt-2 text-sm text-green-700">This is an informational meeting. Members will be notified, with no payment or registration flow.</p>}
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1.5">
               Event Name <span className="text-amber-500">*</span>
@@ -296,7 +313,7 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+      {formData.eventType === 'FEE' && <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
             <Users size={16} className="text-amber-500" />
@@ -318,42 +335,17 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
             {errors.registrationDeadline && <p className="text-xs text-red-500 mt-1">{errors.registrationDeadline}</p>}
           </div>
         </div>
-      </div>
+      </div>}
 
-      <div className="bg-amber-50/40 border border-amber-200 rounded-2xl p-6 mb-6">
+      {formData.eventType === 'FEE' && <div className="bg-amber-50/40 border border-amber-200 rounded-2xl p-6 mb-6">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
             <CreditCard size={16} className="text-amber-600" />
           </div>
           <h3 className="text-xs font-semibold text-gray-500 tracking-wide uppercase">Event Payment</h3>
         </div>
-        <p className="text-sm text-gray-500 mb-4">Does this event require payment?</p>
-
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <button
-            type="button"
-            onClick={() => handleChange('isPaid', false)}
-            className={`flex items-center justify-center gap-2 rounded-xl py-3 font-medium border transition-all duration-300 ${
-              !formData.isPaid ? 'bg-amber-100 border-amber-400 text-gray-900' : 'border-gray-200 text-gray-500 bg-white'
-            }`}
-          >
-            <span className={`w-2.5 h-2.5 rounded-full border ${!formData.isPaid ? 'border-amber-500 bg-amber-400' : 'border-gray-300'}`} />
-            Free Event
-          </button>
-          <button
-            type="button"
-            onClick={() => handleChange('isPaid', true)}
-            className={`flex items-center justify-center gap-2 rounded-xl py-3 font-medium border transition-all duration-300 ${
-              formData.isPaid ? 'bg-amber-100 border-amber-400 text-gray-900' : 'border-gray-200 text-gray-500 bg-white'
-            }`}
-          >
-            <span className={`w-2.5 h-2.5 rounded-full border ${formData.isPaid ? 'border-amber-500 bg-amber-400' : 'border-gray-300'}`} />
-            Paid Event
-          </button>
-        </div>
-
-        {formData.isPaid && (
-          <div>
+        <p className="text-sm text-gray-500 mb-4">Members pay this fee when registering.</p>
+        <div>
             <label className="block text-sm font-medium text-gray-900 mb-1.5">
               Event Fee <span className="text-amber-500">*</span>
             </label>
@@ -373,12 +365,11 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
                 ₹{formData.registrationAmount} / Member
               </div>
             )}
-          </div>
-        )}
-      </div>
+        </div>
+      </div>}
 
       <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t border-gray-100 px-8 py-4 flex items-center justify-between">
-        <span className="text-sm text-gray-500">{footerLabel} · ₹{formData.registrationAmount || 0}</span>
+        <span className="text-sm text-gray-500">{footerLabel} · {formData.eventType === 'FEE' ? `₹${formData.registrationAmount || 0}` : 'No fee'}</span>
         <div className="flex gap-3">
           <button
             type="button"

@@ -21,6 +21,7 @@ const formatEvent = (e) => ({
   date: new Date(e.eventDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
   time: e.startTime,
   location: e.location,
+  eventType: e.eventType,
 });
 
 const Events = () => {

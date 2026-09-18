@@ -34,6 +34,7 @@ const EventDetail = () => {
   if (!event) return null;
 
   const formattedDate = new Date(event.eventDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  const isWeeklyMeeting = event.eventType === "NO_FEE";
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -101,28 +102,28 @@ const EventDetail = () => {
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-6 h-fit shadow-sm">
-              <h2 className="font-bold text-gray-900 mb-1">Registration</h2>
-              <p className="text-sm text-gray-500 mb-5">Secure your spot at this event</p>
+              <h2 className="font-bold text-gray-900 mb-1">{isWeeklyMeeting ? "Weekly Meeting" : "Registration"}</h2>
+              <p className="text-sm text-gray-500 mb-5">{isWeeklyMeeting ? "Meeting details for members" : "Secure your spot at this event"}</p>
 
               <div className="space-y-3 mb-5">
-                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-gray-500">Event Fee</span><span className="font-bold text-gray-900">₹{Number(event.registrationAmount)}</span></div>
+                {!isWeeklyMeeting && <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-gray-500">Event Fee</span><span className="font-bold text-gray-900">₹{Number(event.registrationAmount)}</span></div>}
                 <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-gray-500">Date</span><span className="font-semibold text-gray-900">{formattedDate}</span></div>
                 <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-gray-500">Location</span><span className="font-semibold break-words text-gray-900">{event.location}</span></div>
               </div>
 
-              <button
+              {!isWeeklyMeeting && <button
                 onClick={handleRegister}
                 disabled={isRegistering}
                 className="w-full bg-amber-400 hover:bg-green-600 hover:text-white disabled:opacity-60 text-gray-900 font-semibold py-3.5 rounded-xl transition-all duration-300"
               >
                 {isRegistering ? "Registering..." : "Register Now"}
-              </button>
+              </button>}
 
               {message && <p className="text-sm text-center mt-3 text-gray-600">{message}</p>}
 
-              <p className="text-xs text-gray-400 text-center mt-3">
+              {!isWeeklyMeeting && <p className="text-xs text-gray-400 text-center mt-3">
                 By registering, you agree to the community guidelines.
-              </p>
+              </p>}
             </div>
           </div>
         </main>

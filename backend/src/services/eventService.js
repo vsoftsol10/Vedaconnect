@@ -39,6 +39,9 @@ export const getEventDetail = async (eventId) => {
 export const registerForEvent = async ({ userId, eventId }) => {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) throw new AppError("Event not found.", 404);
+  if (event.eventType === "NO_FEE") {
+    throw new AppError("Weekly meetings are informational and do not require registration.", 400);
+  }
 
   const existing = await prisma.eventRegistration.findUnique({
     where: { userId_eventId: { userId, eventId } },

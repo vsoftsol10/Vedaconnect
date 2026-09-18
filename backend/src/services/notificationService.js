@@ -91,8 +91,10 @@ export const notifyActiveMembersAboutEvent = async (event) => {
       userId: member.id,
       audience: "MEMBER",
       type: "EVENT_PUBLISHED",
-      title: "New event published",
-      message: `${event.title} is now open for registration.`,
+      title: event.eventType === "NO_FEE" ? "New weekly meeting" : "New event published",
+      message: event.eventType === "NO_FEE"
+        ? `${event.title} has been announced. View the meeting details.`
+        : `${event.title} is now open for registration.`,
       link: `/events/${event.id}`,
     })),
   });

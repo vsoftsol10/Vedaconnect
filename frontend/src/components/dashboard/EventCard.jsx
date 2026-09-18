@@ -16,6 +16,7 @@ const EventCard = ({ event }) => (
     </div>
     <div className="p-4 sm:p-5">
       <h3 className="font-bold text-gray-900 mb-3">{event.title}</h3>
+      {event.eventType === 'NO_FEE' && <span className="inline-block -mt-1 mb-3 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">Weekly Meeting · No Fee</span>}
       <div className="space-y-1.5 text-sm text-gray-500 mb-4">
         <p className="flex items-center gap-2"><Calendar className="h-4 w-4 text-green-600" />{event.date}</p>
         <p className="flex items-center gap-2"><Clock className="h-4 w-4 text-green-600" />{event.time}</p>

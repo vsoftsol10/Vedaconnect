@@ -16,9 +16,16 @@ const eventSchema = z.object({
   location: z.string().trim().min(2, "Location is required"),
   hubId: z.string().uuid("Select a hub").optional(),
   schedule: z.array(scheduleItemSchema).optional().default([]),
-  registrationDeadline: z.coerce.date(),
-  isPaid: z.boolean().default(true),
+  registrationDeadline: z.coerce.date().optional(),
+  eventType: z.enum(["FEE", "NO_FEE"]).default("FEE"),
   registrationAmount: z.coerce.number().nonnegative().optional().default(0),
+}).superRefine((data, ctx) => {
+  if (data.eventType === "FEE" && data.registrationAmount <= 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationAmount"], message: "Event fee is required" });
+  }
+  if (data.eventType === "FEE" && !data.registrationDeadline) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationDeadline"], message: "Registration deadline is required" });
+  }
 });
 
 const validateEvent = validate(eventSchema);

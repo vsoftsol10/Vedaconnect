@@ -68,6 +68,9 @@ export default function AdminEvents() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-gray-900">{ev.title}</span>
+                          <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${ev.eventType === 'NO_FEE' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                            {ev.eventType === 'NO_FEE' ? 'No Fee' : 'Fee'}
+                          </span>
                           {ev.isPast && (
                             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
                               Past
@@ -86,7 +89,7 @@ export default function AdminEvents() {
                         {ev.registrationCount}
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900">
-                        {Number(ev.registrationAmount) > 0 ? `₹${ev.registrationAmount}` : 'Free'}
+                        {ev.eventType === 'NO_FEE' ? 'No fee' : `₹${ev.registrationAmount}`}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">

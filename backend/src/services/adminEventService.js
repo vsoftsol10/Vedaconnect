@@ -16,6 +16,7 @@ function toAdminEventListItem(event) {
     hubId: null,
     hubName: null,
     registrationCount: event._count?.registrations ?? 0,
+    eventType: event.eventType,
     registrationAmount: Number(event.registrationAmount),
     isPast: isPastEvent(event.eventDate),
   };
@@ -54,7 +55,6 @@ export async function getEventById(id) {
     isPast: isPastEvent(event.eventDate),
     registrationCount: event.registrations.length,
     schedule: [],
-    registrationDeadline: event.eventDate,
     attendees: event.registrations.map((registration) => ({
       userId: registration.userId,
       fullName: registration.user.memberProfile?.fullName || registration.user.email,
@@ -66,18 +66,22 @@ export async function getEventById(id) {
   };
 }
 
-function buildEventData(input) {
+function buildEventData(input, existingEvent = null) {
   const {
-    isPaid,
     hubId,
     schedule,
     registrationDeadline,
     ...eventData
   } = input;
 
+  const isNoFeeEvent = eventData.eventType === "NO_FEE";
+
   return {
     ...eventData,
-    registrationAmount: isPaid ? eventData.registrationAmount : 0,
+    // Retain a prior fee for an event that becomes informational, so switching
+    // it back to FEE does not make the admin re-enter the amount.
+    registrationAmount: isNoFeeEvent ? (existingEvent?.registrationAmount ?? 0) : eventData.registrationAmount,
+    registrationDeadline: isNoFeeEvent ? null : registrationDeadline,
   };
 }
 
@@ -120,7 +124,7 @@ export async function updateEvent(id, input, poster) {
   if (!event) {
     throw new AppError("Event not found", 404);
   }
-  const data = buildEventData(input);
+  const data = buildEventData(input, event);
   if (poster) data.imageUrl = await uploadPoster(id, poster);
   return prisma.event.update({ where: { id }, data });
 }
