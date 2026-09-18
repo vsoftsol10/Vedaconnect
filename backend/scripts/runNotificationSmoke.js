@@ -62,7 +62,7 @@ async function main() {
       schedule: [{ time: "10:00", item: "Smoke test" }],
       registrationDeadline: new Date(Date.now() + 14 * 86400000).toISOString(),
       maxMembers: 20,
-      isPaid: true,
+      eventType: "FEE",
       registrationAmount: 500,
     },
   });

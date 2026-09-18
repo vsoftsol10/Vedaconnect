@@ -300,7 +300,7 @@ async function main() {
     schedule: [{ time: "10:00", item: "QA session" }],
     registrationDeadline: new Date(Date.now() + 9 * 86400000).toISOString(),
     maxMembers: 50,
-    isPaid: true,
+    eventType: "FEE",
     registrationAmount: 250,
   };
   const eventCreate = await request("POST", "/admin/events", { token, body: eventPayload, expected: [201] });

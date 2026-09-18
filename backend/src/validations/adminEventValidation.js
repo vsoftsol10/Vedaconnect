@@ -6,7 +6,7 @@ const scheduleItemSchema = z.object({
   item: z.string().min(1),
 });
 
-const eventSchema = z.object({
+const eventPayloadSchema = z.object({
   title: z.string().trim().min(2, "Event name is required"),
   description: z.string().trim().min(1, "Description is required"),
   aboutEvent: z.string().optional(),
@@ -27,6 +27,15 @@ const eventSchema = z.object({
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationDeadline"], message: "Registration deadline is required" });
   }
 });
+
+// Support the previously deployed admin form while clients refresh to the
+// eventType-based payload. Without this, its `isPaid: false` submission would
+// be treated as the default FEE event and incorrectly require a fee/deadline.
+const eventSchema = z.preprocess((input) => {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+  if (input.eventType || typeof input.isPaid !== "boolean") return input;
+  return { ...input, eventType: input.isPaid ? "FEE" : "NO_FEE" };
+}, eventPayloadSchema);
 
 const validateEvent = validate(eventSchema);
 
