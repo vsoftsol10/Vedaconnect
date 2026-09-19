@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Lock, MapPin, ChevronDown, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Contact, Lock, MapPin, ChevronDown, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HUB_OPTIONS } from "../../utils/hubs";
 
@@ -23,7 +23,7 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">Member ID</label>
         <div className="relative">
-          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+          <Contact className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
           <input
             type="text"
             required

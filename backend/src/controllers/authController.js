@@ -30,7 +30,7 @@ export const adminLogin = async (req, res, next) => {
 export const forgotPassword = async (req, res, next) => {
   try {
     await authService.requestPasswordReset(req.validatedBody);
-    res.json({ success: true, message: "If an active member account matches, a reset link has been sent." });
+    res.json({ success: true, message: "If an active member account matches that Member ID, a reset link has been sent to its email address." });
   } catch (err) { next(err); }
 };
 

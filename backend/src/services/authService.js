@@ -80,20 +80,16 @@ export const getCurrentUser = async (userId) => {
   return user;
 };
 
-export const requestPasswordReset = async ({ identifier }) => {
-  const normalizedIdentifier = identifier.trim();
-  const [membership, emailUser] = await Promise.all([
+export const requestPasswordReset = async ({ memberId }) => {
+  const normalizedMemberId = memberId.trim().toUpperCase();
+  const [membership] = await Promise.all([
     prisma.membership.findUnique({
-      where: { memberId: normalizedIdentifier.toUpperCase() },
+      where: { memberId: normalizedMemberId },
       include: { user: { include: { memberProfile: true } } },
-    }),
-    prisma.user.findUnique({
-      where: { email: normalizedIdentifier.toLowerCase() },
-      include: { memberProfile: true },
     }),
     wait(RESET_REQUEST_MIN_RESPONSE_MS),
   ]);
-  const user = membership?.user || emailUser;
+  const user = membership?.user;
 
   // Always return success to avoid disclosing whether an account exists.
   if (!user || user.role !== "MEMBER" || user.status !== "ACTIVE" || !user.email) return;

@@ -10,5 +10,5 @@ export const loginAdmin = async ({ email, password }) => {
   return data.data; // { token, user }
 };
 
-export const requestPasswordReset = async (identifier) => (await api.post("/auth/forgot-password", { identifier })).data;
+export const requestPasswordReset = async (memberId) => (await api.post("/auth/forgot-password", { memberId })).data;
 export const resetPassword = async ({ token, newPassword }) => (await api.post("/auth/reset-password", { token, newPassword })).data;

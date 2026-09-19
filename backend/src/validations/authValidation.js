@@ -12,7 +12,7 @@ export const adminLoginSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  identifier: z.string().trim().min(1, "Email or Member ID is required"),
+  memberId: z.string().trim().min(1, "Member ID is required"),
 });
 
 export const resetPasswordSchema = z.object({

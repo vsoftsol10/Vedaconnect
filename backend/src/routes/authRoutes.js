@@ -20,7 +20,7 @@ const passwordResetIdentifierLimiter = rateLimit({
   limit: 3,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  keyGenerator: (req) => String(req.body?.identifier || "").trim().toLowerCase(),
+  keyGenerator: (req) => String(req.body?.memberId || "").trim().toUpperCase(),
   message: { success: false, message: "Too many password reset requests. Please try again in an hour." },
 });
 
