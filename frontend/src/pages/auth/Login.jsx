@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { CheckCircle2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import OnboardingHeader from "../../components/onboarding/OnboardingHeader";
 import OnboardingCard from "../../components/onboarding/OnboardingCard";
 import LoginForm from "../../components/auth/LoginForm";
@@ -8,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -36,6 +38,7 @@ const Login = () => {
             <h1 className="text-2xl font-bold text-gray-900">Member Login</h1>
           </div>
           <p className="text-gray-500 mb-8">Log in to your VedaConnect account.</p>
+          {location.state?.successMessage && <div role="status" className="mb-6 flex items-start gap-2 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-700"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />{location.state.successMessage}</div>}
           <LoginForm onSubmit={handleSubmit} isLoading={isLoading} errorMessage={errorMessage} />
         </OnboardingCard>
       </div>

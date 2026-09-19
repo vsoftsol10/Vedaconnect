@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import OnboardingHeader from "../../components/onboarding/OnboardingHeader";
 import OnboardingCard from "../../components/onboarding/OnboardingCard";
@@ -7,6 +8,7 @@ import { requestPasswordReset } from "../../services/authService";
 export default function ForgotPassword() {
   const [memberId, setMemberId] = useState("");
   const [message, setMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const submit = async (event) => {
@@ -15,8 +17,10 @@ export default function ForgotPassword() {
     setMessage("");
     try {
       const result = await requestPasswordReset(memberId);
+      setIsSuccess(true);
       setMessage(result.message);
     } catch (error) {
+      setIsSuccess(false);
       setMessage(error.message || "Could not request a reset link.");
     } finally {
       setLoading(false);
@@ -47,7 +51,10 @@ export default function ForgotPassword() {
               {loading ? "Sending..." : "Send Reset Link"}
             </button>
           </form>
-          {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
+          {message && <div role="alert" className={`mt-4 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${isSuccess ? "border-green-100 bg-green-50 text-green-700" : "border-red-100 bg-red-50 text-red-600"}`}>
+            {isSuccess ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+            <span>{message}</span>
+          </div>}
           <Link to="/login" className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-green-700">Back to login</Link>
         </OnboardingCard>
       </div>
