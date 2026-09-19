@@ -8,3 +8,13 @@ frontend/.env
 frontend/.env.local
 backend/backups/
 tmp/
+
+# Local visual-verification captures (not application assets)
+*-before.png
+*-after.png
+*-after-mobile.png
+*-dropdown-open.png
+*-tier-badge.png
+*-membership-tier.png
+*-layout.png
+*screenshot*.png

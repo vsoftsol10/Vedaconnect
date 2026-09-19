@@ -136,14 +136,14 @@ const Leaderboard = () => {
               type="month"
               value={value}
               onChange={(event) => setValue(event.target.value)}
-              className="rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+              className="min-h-11 rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
             />
           )}
           {period === "year" && (
             <select
               value={value}
               onChange={(event) => setValue(event.target.value)}
-              className="rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+              className="min-h-11 rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
             >
               {years.map((year) => (
                 <option key={year} value={year}>{year}</option>

@@ -29,7 +29,7 @@ const MemberProfile = () => {
         <main className="px-4 py-6 sm:px-6 md:p-8">
           <button
             onClick={() => navigate("/members")}
-            className="mb-5 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-green-600 transition-colors"
+            className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-gray-500 hover:text-green-600 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Members

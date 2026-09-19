@@ -35,10 +35,9 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
             autoComplete="new-password"
             name="vc-member-identity"
             placeholder="VC-FM-00001"
-            className="w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-4 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
+            className="min-h-11 w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-4 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
           />
         </div>
-        <div className="mt-2 text-right"><Link to="/forgot-password" className="text-sm font-medium text-green-700 hover:text-green-800">Forgot Password?</Link></div>
       </div>
 
       <div>
@@ -56,7 +55,7 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
             autoComplete="new-password"
             name="vc-member-secret"
             placeholder="Enter your password"
-            className="w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-11 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
+            className="min-h-11 w-full rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-11 py-3.5 text-gray-900 placeholder-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
           />
           <button
             type="button"
@@ -75,7 +74,7 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
           <select
             value={form.hub}
             onChange={handleChange("hub")}
-            className="w-full appearance-none rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-10 py-3.5 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors bg-white"
+            className="min-h-11 w-full appearance-none rounded-xl border border-gray-200 hover:border-green-300 pl-11 pr-10 py-3.5 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors bg-white"
           >
             {HUB_OPTIONS.map((hub) => (
               <option key={hub} value={hub}>{hub}</option>
@@ -95,6 +94,10 @@ const LoginForm = ({ onSubmit, isLoading, errorMessage }) => {
         {isLoading ? "Logging in..." : "Login"}
         {!isLoading && <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />}
       </button>
+
+      <div className="text-right">
+        <Link to="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-medium text-green-700 hover:text-green-800">Forgot Password?</Link>
+      </div>
     </form>
   );
 };

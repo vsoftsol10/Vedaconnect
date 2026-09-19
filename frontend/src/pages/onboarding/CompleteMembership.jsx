@@ -271,13 +271,13 @@ const CompleteMembership = () => {
             <button
               type="button"
               onClick={handleOpenWhatsApp}
-              className="w-full flex items-center justify-between gap-4 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 px-5 py-4 transition-colors duration-300 text-left"
+              className="flex w-full flex-col items-stretch gap-4 rounded-xl border border-green-100 bg-green-50 px-5 py-4 text-left transition-colors duration-300 hover:bg-green-100 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-4">
                 <span className="h-11 w-11 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
                   <MessageCircle className="h-5 w-5 text-white" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold text-gray-900">Need help with your payment?</p>
                   <p className="text-sm text-gray-500">
                     Chat with the VedaConnect team on WhatsApp.
@@ -285,7 +285,7 @@ const CompleteMembership = () => {
                   <p className="text-sm font-semibold text-gray-900">{SUMMARY.whatsappNumber}</p>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex-shrink-0">
+              <span className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 sm:flex-shrink-0">
                 <MessageCircle className="h-3.5 w-3.5" />
                 Open WhatsApp
               </span>

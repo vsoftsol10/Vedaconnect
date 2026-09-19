@@ -27,7 +27,7 @@ const Sidebar = () => {
   }, [user?.activeHub]);
 
   const linkClasses = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors relative ${
+    `flex min-h-11 items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors relative ${
       isActive
         ? "bg-amber-50 text-gray-900"
         : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"

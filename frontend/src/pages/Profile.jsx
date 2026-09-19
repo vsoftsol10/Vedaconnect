@@ -265,7 +265,7 @@ const Profile = () => {
                     <button
                       type="button"
                       onClick={() => navigate("/meeting-fee?renewal=1")}
-                      className="rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-green-600 hover:text-white"
+                      className="inline-flex min-h-11 items-center rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-green-600 hover:text-white"
                     >
                       Renew
                     </button>
@@ -292,10 +292,10 @@ const Profile = () => {
             <h3 className="mb-1 flex items-center gap-2 font-bold text-gray-900"><Lock className="h-5 w-5 text-green-600" /> Change Password</h3>
             <p className="mb-4 text-sm text-gray-500">Use your current password to set a new one.</p>
             <form onSubmit={handlePasswordChange} className="space-y-3">
-              <input type="password" required value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))} placeholder="Current password" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
-              <input type="password" required minLength="6" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} placeholder="New password (at least 6 characters)" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
-              <input type="password" required minLength="6" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} placeholder="Confirm new password" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
-              <button disabled={isChangingPassword} className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-green-600 hover:text-white disabled:opacity-60">{isChangingPassword ? "Changing..." : "Change Password"}</button>
+              <input type="password" required value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))} placeholder="Current password" className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
+              <input type="password" required minLength="6" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} placeholder="New password (at least 6 characters)" className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
+              <input type="password" required minLength="6" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} placeholder="Confirm new password" className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
+              <button disabled={isChangingPassword} className="inline-flex min-h-11 items-center rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-green-600 hover:text-white disabled:opacity-60">{isChangingPassword ? "Changing..." : "Change Password"}</button>
               {passwordMessage && <p className="text-sm text-gray-600">{passwordMessage}</p>}
             </form>
           </section>
@@ -343,7 +343,7 @@ const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, er
       {editable ? (
         <>
           <input value={form[field] || ""} onChange={onChange(field)}
-            className={`w-full rounded-lg border px-2 py-1 text-sm outline-none ${
+            className={`min-h-11 w-full rounded-lg border px-2 py-1 text-sm outline-none ${
               error
                 ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                 : "border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100"

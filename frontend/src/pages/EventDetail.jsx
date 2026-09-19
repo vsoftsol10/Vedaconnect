@@ -42,7 +42,7 @@ const EventDetail = () => {
       <div className="min-w-0 flex-1">
         <DashboardHeader />
         <main className="px-4 py-6 sm:px-6 md:p-8">
-          <button onClick={() => navigate("/events")} className="flex items-center gap-2 text-gray-500 hover:text-green-600 font-medium mb-4 transition-colors">
+          <button onClick={() => navigate("/events")} className="mb-4 inline-flex min-h-11 items-center gap-2 text-gray-500 hover:text-green-600 font-medium transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Events
           </button>
 

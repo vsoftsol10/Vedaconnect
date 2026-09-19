@@ -60,7 +60,7 @@ const EntryForm = ({ members, activeTab, form, setForm, isSaving, onSubmit }) =>
                   externalContact: "",
                 }))
               }
-              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+              className={`min-h-11 flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                 form.partyType === key ? "bg-amber-400 text-gray-900" : "text-gray-500 hover:text-gray-900"
               }`}
             >
@@ -77,7 +77,7 @@ const EntryForm = ({ members, activeTab, form, setForm, isSaving, onSubmit }) =>
             <select
               value={form.memberId}
               onChange={(event) => setForm((current) => ({ ...current, memberId: event.target.value }))}
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+              className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
               required
             >
               <option value="">Select member</option>
@@ -96,7 +96,7 @@ const EntryForm = ({ members, activeTab, form, setForm, isSaving, onSubmit }) =>
                 type="text"
                 value={form.externalName}
                 onChange={(event) => setForm((current) => ({ ...current, externalName: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 placeholder="Contact name"
                 required
               />
@@ -107,7 +107,7 @@ const EntryForm = ({ members, activeTab, form, setForm, isSaving, onSubmit }) =>
                 type="text"
                 value={form.externalBusiness}
                 onChange={(event) => setForm((current) => ({ ...current, externalBusiness: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 placeholder="Business or category"
               />
             </div>
@@ -117,7 +117,7 @@ const EntryForm = ({ members, activeTab, form, setForm, isSaving, onSubmit }) =>
                 type="text"
                 value={form.externalContact}
                 onChange={(event) => setForm((current) => ({ ...current, externalContact: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 placeholder="Phone number or short note"
               />
             </div>
@@ -134,7 +134,7 @@ const EntryForm = ({ members, activeTab, form, setForm, isSaving, onSubmit }) =>
             step="1"
             value={form.amount}
             onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+            className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
             placeholder="18000"
             required
           />

@@ -48,7 +48,7 @@ export default function ForgotPassword() {
             </button>
           </form>
           {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
-          <Link to="/login" className="mt-5 inline-block text-sm font-medium text-green-700">Back to login</Link>
+          <Link to="/login" className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-green-700">Back to login</Link>
         </OnboardingCard>
       </div>
     </div>
