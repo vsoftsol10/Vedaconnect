@@ -1,8 +1,8 @@
 import { sendBrevoEmail } from "../config/brevoClient.js";
 import { prisma } from "../config/prismaClient.js";
+import { getMemberAppBaseUrl } from "../utils/memberAppUrl.js";
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL;
-const DEFAULT_FRONTEND_ORIGIN = "http://localhost:5173";
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -79,8 +79,6 @@ const numberToIndianWords = (value) => {
   return `Rupees ${parts.join(" ")} Only`;
 };
 
-const getFrontendOrigin = () => (process.env.FRONTEND_ORIGIN || DEFAULT_FRONTEND_ORIGIN).replace(/\/$/, "");
-
 const getPaymentBreakdown = (profile = {}) => {
   const baseAmount = Number(profile.membershipBaseAmount || 0);
   const totalAmount = Number(profile.membershipAmount || 0);
@@ -145,7 +143,7 @@ export const buildWelcomeCredentialsEmailContent = ({
   paymentMethod = "Razorpay",
   paymentReference,
 }) => {
-  const loginUrl = `${getFrontendOrigin()}/login`;
+  const loginUrl = `${getMemberAppBaseUrl()}/login`;
   const pricing = getPaymentBreakdown(profile);
   const planName = profile.membershipPlanName || profile.membershipType || "Membership";
   const planReceipt = `${escapeHtml(planName)} - ${formatCurrency(pricing.totalAmount)} (${formatCurrency(

@@ -4,6 +4,9 @@ import crypto from "crypto";
 import { prisma } from "../config/prismaClient.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { sendPasswordResetEmail } from "./emailService.js";
+import { getMemberAppBaseUrl } from "../utils/memberAppUrl.js";
+
+export { getMemberAppBaseUrl } from "../utils/memberAppUrl.js";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const RESET_REQUEST_MIN_RESPONSE_MS = 300;
@@ -103,7 +106,7 @@ export const requestPasswordReset = async ({ memberId }) => {
         where: { id: user.id },
         data: { resetTokenHash: hashResetToken(token), resetTokenExpiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS) },
       });
-      const resetUrl = `${(process.env.FRONTEND_ORIGIN || "http://localhost:5173").replace(/\/$/, "")}/reset-password?token=${token}`;
+      const resetUrl = `${getMemberAppBaseUrl()}/reset-password?token=${token}`;
       await sendPasswordResetEmail({ userId: user.id, toEmail: user.email, fullName: user.memberProfile?.fullName, resetUrl });
     } catch (error) {
       console.error("[PASSWORD_RESET_ISSUANCE_FAILED]", {
