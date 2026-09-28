@@ -10,6 +10,8 @@ const MENU_ITEMS = [
   { to: "/admin/hubs", label: "Hubs", icon: Building2 },
   { to: "/admin/events", label: "Events", icon: Calendar },
   { to: "/admin/leaderboard", label: "Awards", icon: Trophy },
+  { to: "/admin/attendance", label: "Attendance", icon: Calendar },
+  { to: "/admin/meeting-fees", label: "Meeting Fees", icon: Receipt },
   { to: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { to: "/admin/payment-history", label: "Payment History", icon: Receipt },
   { to: "/admin/expenses", label: "Expenses", icon: WalletCards },

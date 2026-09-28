@@ -2,16 +2,21 @@ import { prisma } from "../config/prismaClient.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { notifyAdmins } from "./notificationService.js";
 
-export const getUpcomingEvents = async () => {
+const eventVisibilityWhere = async (userId) => {
+  const profile = await prisma.memberProfile.findUnique({ where: { userId }, select: { hubId: true } });
+  return profile?.hubId ? { OR: [{ hubId: null }, { hubId: profile.hubId }] } : { hubId: null };
+};
+
+export const getUpcomingEvents = async (userId) => {
   return prisma.event.findMany({
-    where: { status: "PUBLISHED", eventDate: { gte: new Date() } },
+    where: { status: "PUBLISHED", eventDate: { gte: new Date() }, ...(await eventVisibilityWhere(userId)) },
     orderBy: { eventDate: "asc" },
   });
 };
 
-export const getPastEvents = async () => {
+export const getPastEvents = async (userId) => {
   return prisma.event.findMany({
-    where: { status: "PUBLISHED", eventDate: { lt: new Date() } },
+    where: { status: "PUBLISHED", eventDate: { lt: new Date() }, ...(await eventVisibilityWhere(userId)) },
     orderBy: { eventDate: "desc" },
   });
 };
@@ -30,14 +35,14 @@ export const getMyEvents = async (userId) => {
   }));
 };
 
-export const getEventDetail = async (eventId) => {
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+export const getEventDetail = async (eventId, userId) => {
+  const event = await prisma.event.findFirst({ where: { id: eventId, ...(await eventVisibilityWhere(userId)) } });
   if (!event) throw new AppError("Event not found.", 404);
   return event;
 };
 
 export const registerForEvent = async ({ userId, eventId }) => {
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  const event = await prisma.event.findFirst({ where: { id: eventId, ...(await eventVisibilityWhere(userId)) } });
   if (!event) throw new AppError("Event not found.", 404);
   if (event.eventType === "NO_FEE") {
     throw new AppError("Weekly meetings are informational and do not require registration.", 400);

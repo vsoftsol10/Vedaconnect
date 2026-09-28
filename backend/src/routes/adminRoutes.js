@@ -16,6 +16,8 @@ import {
   changePasswordSchema,
 } from "../validations/adminValidation.js";
 import { leaderboardQuerySchema, validateQuery } from "../validations/networkingValidation.js";
+import { meetingFeeListQuerySchema, memberFeeHistoryQuerySchema, attendanceListQuerySchema } from "../validations/adminMeetingListValidation.js";
+import * as adminMeetingListsController from "../controllers/adminMeetingListsController.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -45,10 +47,15 @@ const uploadProfilePhoto = (req, res, next) => {
 router.get("/dashboard", requireAuth, requireAdmin, adminController.getDashboard);
 router.get("/birthdays/upcoming", requireAuth, requireAdmin, adminController.getUpcomingBirthdays);
 router.get("/leaderboard", requireAuth, requireAdmin, validateQuery(leaderboardQuerySchema), adminLeaderboard);
+router.get("/meeting-fees", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.listMeetingFees);
+router.get("/meeting-fees/export", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.exportMeetingFees);
+router.get("/attendance", requireAuth, requireAdmin, validateQuery(attendanceListQuerySchema), adminMeetingListsController.listAttendance);
+router.get("/attendance/export", requireAuth, requireAdmin, validateQuery(attendanceListQuerySchema), adminMeetingListsController.exportAttendance);
 
 // Members
 router.get("/members", requireAuth, requireAdmin, adminController.listMembers);
 router.get("/members/:userId", requireAuth, requireAdmin, adminController.getMemberDetail);
+router.get("/members/:userId/meeting-fees", requireAuth, requireAdmin, validateQuery(memberFeeHistoryQuerySchema), adminMeetingListsController.memberMeetingFees);
 router.get("/members/:userId/documents", requireAuth, requireAdmin, adminController.listMemberDocuments);
 router.get("/members/:userId/documents/:id/url", requireAuth, requireAdmin, adminController.getMemberDocumentUrl);
 router.post("/members/:userId/resend-credentials", requireAuth, requireAdmin, adminController.resendCredentials);

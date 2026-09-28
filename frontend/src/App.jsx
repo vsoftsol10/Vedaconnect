@@ -33,6 +33,7 @@ import AdminEventDetail from "./pages/admin/AdminEventDetail";
 import AdminEditEvent from "./pages/admin/AdminEditEvent";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminSubscriptionForm from "./pages/admin/AdminSubscriptionForm";
+import AdminMeetingLists from "./pages/admin/AdminMeetingLists";
 import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminLeaderboard from "./pages/admin/AdminLeaderboard";
@@ -168,6 +169,8 @@ const App = () => {
             <Route path="/admin/subscriptions/new" element={<AdminRoute><AdminSubscriptionForm /></AdminRoute>} />
             <Route path="/admin/subscriptions/:id" element={<AdminRoute><AdminSubscriptionForm /></AdminRoute>} />
             <Route path="/admin/payment-history" element={<AdminRoute><AdminPaymentHistory /></AdminRoute>} />
+            <Route path="/admin/meeting-fees" element={<AdminRoute><AdminMeetingLists type="fees" /></AdminRoute>} />
+            <Route path="/admin/attendance" element={<AdminRoute><AdminMeetingLists type="attendance" /></AdminRoute>} />
             <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
             <Route path="/admin/profile" element={<AdminRoute><AdminProfile /></AdminRoute>} />
 

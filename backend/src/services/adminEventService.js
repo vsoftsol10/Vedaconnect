@@ -13,8 +13,8 @@ function toAdminEventListItem(event) {
     title: event.title,
     eventDate: event.eventDate,
     location: event.location,
-    hubId: null,
-    hubName: null,
+    hubId: event.hubId,
+    hubName: event.hub?.name || null,
     registrationCount: event._count?.registrations ?? 0,
     eventType: event.eventType,
     registrationAmount: Number(event.registrationAmount),
@@ -26,6 +26,7 @@ export async function listEvents() {
   const events = await prisma.event.findMany({
     orderBy: { eventDate: "desc" },
     include: {
+      hub: { select: { id: true, name: true } },
       _count: { select: { registrations: true } },
     },
   });
@@ -37,6 +38,7 @@ export async function getEventById(id) {
   const event = await prisma.event.findUnique({
     where: { id },
     include: {
+      hub: { select: { id: true, name: true } },
       registrations: {
         include: { user: { include: { memberProfile: true } } },
       },
@@ -50,8 +52,8 @@ export async function getEventById(id) {
   return {
     ...event,
     registrationAmount: Number(event.registrationAmount),
-    hubId: null,
-    hubName: null,
+    hubId: event.hubId,
+    hubName: event.hub?.name || null,
     isPast: isPastEvent(event.eventDate),
     registrationCount: event.registrations.length,
     schedule: [],
@@ -68,7 +70,6 @@ export async function getEventById(id) {
 
 function buildEventData(input, existingEvent = null) {
   const {
-    hubId,
     schedule,
     registrationDeadline,
     ...eventData
@@ -78,12 +79,19 @@ function buildEventData(input, existingEvent = null) {
 
   return {
     ...eventData,
+    hubId: input.hubId ?? null,
     // Retain a prior fee for an event that becomes informational, so switching
     // it back to FEE does not make the admin re-enter the amount.
     registrationAmount: isNoFeeEvent ? (existingEvent?.registrationAmount ?? 0) : eventData.registrationAmount,
     registrationDeadline: isNoFeeEvent ? null : registrationDeadline,
   };
 }
+
+const ensureHubExists = async (hubId) => {
+  if (!hubId) return;
+  const hub = await prisma.hub.findUnique({ where: { id: hubId }, select: { id: true } });
+  if (!hub) throw new AppError("Hub not found", 404);
+};
 
 const POSTERS_BUCKET = "event-posters";
 
@@ -126,6 +134,7 @@ const uploadPoster = async (eventId, poster) => {
 };
 
 export async function createEvent(input, poster) {
+  await ensureHubExists(input.hubId);
   let event = await prisma.event.create({ data: buildEventData(input) });
   let imageUrl = null;
   try {
@@ -149,6 +158,7 @@ export async function updateEvent(id, input, poster) {
   if (!event) {
     throw new AppError("Event not found", 404);
   }
+  await ensureHubExists(input.hubId);
   const data = buildEventData(input, event);
   if (!poster) return prisma.event.update({ where: { id }, data });
 

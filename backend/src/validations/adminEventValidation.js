@@ -14,7 +14,7 @@ const eventPayloadSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   location: z.string().trim().min(2, "Location is required"),
-  hubId: z.string().uuid("Select a hub").optional(),
+  hubId: z.string().uuid("Select a hub").nullable().optional(),
   schedule: z.array(scheduleItemSchema).optional().default([]),
   registrationDeadline: z.coerce.date().optional(),
   eventType: z.enum(["FEE", "NO_FEE"]).default("FEE"),

@@ -5,6 +5,13 @@ export const getUpcomingBirthdays = async (days = 30) => (await api.get("/admin/
 export const getAdminLeaderboard = async (params = {}) => (await api.get("/admin/leaderboard", { params })).data.data;
 export const listAdminMembers = async (params = {}) => (await api.get("/admin/members", { params })).data.data;
 export const getAdminMemberDetail = async (userId) => (await api.get(`/admin/members/${userId}`)).data.data;
+export const getAdminMeetingFees = async (params) => (await api.get("/admin/meeting-fees", { params })).data.data;
+export const getAdminAttendance = async (params) => (await api.get("/admin/attendance", { params })).data.data;
+export const getAdminMemberMeetingFees = async (userId, params) => (await api.get(`/admin/members/${userId}/meeting-fees`, { params })).data.data;
+export const exportAdminMeetingList = async (type, params) => {
+  const response = await api.get(`/admin/${type === "fees" ? "meeting-fees" : "attendance"}/export`, { params, responseType: "blob" });
+  const url = URL.createObjectURL(response.data); const link = document.createElement("a"); link.href = url; link.download = `${type}.csv`; link.click(); URL.revokeObjectURL(url);
+};
 export const getAdminMemberDocuments = async (userId) => (await api.get(`/admin/members/${userId}/documents`)).data.data;
 export const getAdminMemberDocumentUrl = async (userId, id) => (await api.get(`/admin/members/${userId}/documents/${id}/url`)).data.data;
 export const assignMemberHub = async (userId, hubId) => (await api.patch(`/admin/members/${userId}/hub`, { hubId })).data.data;

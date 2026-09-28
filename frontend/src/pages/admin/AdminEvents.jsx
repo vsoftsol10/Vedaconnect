@@ -111,7 +111,7 @@ export default function AdminEvents() {
                           {new Date(ev.eventDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{ev.hubName || '—'}</td>
+                      <td className="px-6 py-4 text-gray-600">{ev.hubName || 'All hubs'}</td>
                       <td className="px-6 py-4 text-gray-600">
                         {ev.registrationCount}
                       </td>

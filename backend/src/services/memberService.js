@@ -59,9 +59,10 @@ export const getMyStats = async (userId) => {
   };
 };
 
-export const getMyUpcomingEvents = async () => {
+export const getMyUpcomingEvents = async (userId) => {
+  const profile = await prisma.memberProfile.findUnique({ where: { userId }, select: { hubId: true } });
   const events = await prisma.event.findMany({
-    where: { status: "PUBLISHED", eventDate: { gte: new Date() } },
+    where: { status: "PUBLISHED", eventDate: { gte: new Date() }, ...(profile?.hubId ? { OR: [{ hubId: null }, { hubId: profile.hubId }] } : { hubId: null }) },
     orderBy: { eventDate: "asc" },
     take: 4,
     select: {

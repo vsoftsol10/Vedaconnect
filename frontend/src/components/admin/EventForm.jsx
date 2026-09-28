@@ -106,7 +106,7 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
       startTime,
       endTime,
       location: formData.location,
-      hubId: formData.hubId || undefined,
+      hubId: formData.hubId || null,
       schedule: formData.schedule.filter((s) => s.time.trim() || s.item.trim()),
       registrationDeadline: formData.eventType === 'FEE' ? formData.registrationDeadline : undefined,
       poster,
@@ -260,7 +260,7 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
                 onChange={(e) => handleChange('hubId', e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
               >
-                <option value="">No hub assigned</option>
+                <option value="">All hubs</option>
                 {hubs.map((hub) => (
                   <option key={hub.id} value={hub.id}>{hub.name}</option>
                 ))}
