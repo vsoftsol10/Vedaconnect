@@ -119,8 +119,13 @@ export const listAllMembers = async ({ search, hubId, status, membershipType, me
     fullName: u.memberProfile?.fullName,
     profilePhoto: u.memberProfile?.profilePhoto,
     businessName: u.memberProfile?.businessName,
+    businessCategory: u.memberProfile?.businessCategory,
+    businessLocation: u.memberProfile?.businessLocation,
+    businessDescription: u.memberProfile?.businessDescription,
+    productsServices: u.memberProfile?.productsServices,
     hub: u.memberProfile?.hub?.name || "Not assigned",
     hubId: u.memberProfile?.hubId || null,
+    birthMonth: u.memberProfile?.dateOfBirth ? u.memberProfile.dateOfBirth.getUTCMonth() + 1 : null, birthDay: u.memberProfile?.dateOfBirth ? u.memberProfile.dateOfBirth.getUTCDate() : null,
     membershipType: u.membership?.membershipType || null,
     membershipTier: u.membershipTier || null,
     membershipStatus: u.membership?.membershipStatus || null,
@@ -173,20 +178,12 @@ export const getMemberDetailForAdmin = async (userId) => {
     });
   paymentHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const certificates = await Promise.all(
-    user.businessCertificates.map(async (cert) => {
-      const { data } = await supabaseStorage.storage
-        .from(CERTIFICATES_BUCKET)
-        .createSignedUrl(cert.filePath, 600);
-      return { id: cert.id, fileName: cert.fileName, isVerified: cert.isVerified, signedUrl: data?.signedUrl || null };
-    })
-  );
-
   return {
     userId: user.id,
     fullName: user.memberProfile.fullName,
     profilePhoto: user.memberProfile.profilePhoto,
     location: user.memberProfile.location,
+    birthMonth: user.memberProfile.dateOfBirth ? user.memberProfile.dateOfBirth.getUTCMonth() + 1 : null, birthDay: user.memberProfile.dateOfBirth ? user.memberProfile.dateOfBirth.getUTCDate() : null,
     hub: user.memberProfile.hub ? { id: user.memberProfile.hub.id, name: user.memberProfile.hub.name } : null,
     joinedAt: user.membership?.joinedAt,
     expiresAt: user.membership?.expiresAt,
@@ -199,7 +196,6 @@ export const getMemberDetailForAdmin = async (userId) => {
     suspendedAt: user.membership?.suspendedAt || null,
     autoDeleteAt: user.membership?.autoDeleteAt || null,
     billingCycle: plan?.billingCycle || null,
-    certificates,
     eventRegistrations: user.eventRegistrations.map((r) => ({
       id: r.id, eventTitle: r.event.title, eventDate: r.event.eventDate, hub: r.event.location,
     })),
@@ -224,6 +220,9 @@ export const listHubs = async () => {
 };
 
 export const createMemberByAdmin = async (data, certificateFile) => {
+  if ((data.birthMonth == null) !== (data.birthDay == null) || (data.birthMonth && new Date(Date.UTC(2000, data.birthMonth - 1, data.birthDay)).getUTCMonth() !== data.birthMonth - 1)) {
+    throw new AppError("Choose a valid birthday day", 400);
+  }
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) throw new AppError("A member with this email already exists.", 409);
 
@@ -259,6 +258,7 @@ export const createMemberByAdmin = async (data, certificateFile) => {
         businessCategory: data.businessCategory,
         businessDescription: data.businessDescription,
         productsServices: data.productsServices,
+        dateOfBirth: data.birthMonth && data.birthDay ? new Date(Date.UTC(2000, data.birthMonth - 1, data.birthDay)) : null,
       },
     });
 
@@ -454,7 +454,18 @@ export const updateMember = async (userId, data) => {
   }
   if (data.membershipStatus === "SUSPENDED") throw new AppError("Use the Suspend action to suspend a member.", 400);
   return prisma.$transaction(async (tx) => {
-    await tx.memberProfile.update({ where: { userId }, data: { fullName: data.fullName, businessName: data.businessName, hubId: data.hubId ?? null } });
+    const birthday = data.birthMonth || data.birthDay ? { dateOfBirth: new Date(Date.UTC(2000, data.birthMonth - 1, data.birthDay)) } : { dateOfBirth: null };
+    if (data.birthMonth && new Date(Date.UTC(2000, data.birthMonth - 1, data.birthDay)).getUTCMonth() !== data.birthMonth - 1) throw new AppError("Choose a valid birthday day", 400);
+    await tx.memberProfile.update({ where: { userId }, data: {
+      fullName: data.fullName,
+      businessName: data.businessName,
+      businessCategory: data.businessCategory,
+      businessLocation: data.businessLocation,
+      businessDescription: data.businessDescription,
+      productsServices: data.productsServices,
+      hubId: data.hubId ?? null,
+      ...birthday,
+    } });
     const status = data.membershipStatus && data.membershipStatus !== user.membership.membershipStatus
       ? data.membershipStatus : undefined;
     if (status) await tx.user.update({ where: { id: userId }, data: { status: status === "ACTIVE" ? "ACTIVE" : "PENDING" } });
@@ -465,6 +476,10 @@ export const updateMember = async (userId, data) => {
 export const suspendMember = async (userId, now = new Date()) => {
   const user = await getActiveMember(userId);
   if (user.membership.membershipStatus === "SUSPENDED") throw new AppError("Member is already suspended.", 400);
+  let authUserId;
+  try { authUserId = await findSupabaseAuthUserId(userId, user.email); } catch (error) { throw new AppError("Could not verify the member's authentication account.", 502); }
+  const { error } = authUserId ? await supabaseStorage.auth.admin.updateUserById(authUserId, { ban_duration: "876000h" }) : { error: null };
+  if (error && !/not found|does not exist/i.test(error.message || "")) throw new AppError("Could not disable the member's login account.", 502);
   return prisma.$transaction(async (tx) => {
     await tx.user.update({ where: { id: userId }, data: { status: "SUSPENDED" } });
     return tx.membership.update({ where: { userId }, data: suspensionFields(user.membership.membershipStatus, now) });
@@ -474,6 +489,10 @@ export const suspendMember = async (userId, now = new Date()) => {
 export const reactivateMember = async (userId) => {
   const user = await getActiveMember(userId);
   if (user.membership.membershipStatus !== "SUSPENDED") throw new AppError("Only suspended members can be reactivated.", 400);
+  let authUserId;
+  try { authUserId = await findSupabaseAuthUserId(userId, user.email); } catch (error) { throw new AppError("Could not verify the member's authentication account.", 502); }
+  const { error } = authUserId ? await supabaseStorage.auth.admin.updateUserById(authUserId, { ban_duration: "none" }) : { error: null };
+  if (error && !/not found|does not exist/i.test(error.message || "")) throw new AppError("Could not re-enable the member's login account.", 502);
   const fields = reactivationFields(user.membership.previousStatus);
   return prisma.$transaction(async (tx) => {
     await tx.user.update({ where: { id: userId }, data: { status: fields.membershipStatus === "ACTIVE" ? "ACTIVE" : "PENDING" } });
@@ -481,13 +500,99 @@ export const reactivateMember = async (userId) => {
   });
 };
 
-export const softDeleteMember = async (userId, now = new Date()) => {
-  await getActiveMember(userId);
+const findSupabaseAuthUserId = async (userId, email) => {
+  const byId = await supabaseStorage.auth.admin.getUserById(userId);
+  if (byId.data?.user) return userId;
+  if (byId.error && !/not found|does not exist/i.test(byId.error.message || "")) throw byId.error;
+  for (let page = 1; ; page += 1) {
+    const { data, error } = await supabaseStorage.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    const match = data.users.find((authUser) => authUser.email?.toLowerCase() === email?.toLowerCase());
+    if (match) return match.id;
+    if (data.users.length < 1000) return null;
+  }
+};
+
+const isMissingStorageFileError = (error) => /not found|does not exist|object not found/i.test(error?.message || "");
+
+// Certificates are stored below a member-specific prefix. Listing the prefix
+// also catches a file whose database row was lost in an earlier failed delete.
+const listStorageFiles = async (bucket, path) => {
+  const { data, error } = await supabaseStorage.storage.from(bucket).list(path, { limit: 1000 });
+  if (error) throw error;
+
+  const files = [];
+  for (const item of data || []) {
+    const itemPath = `${path}/${item.name}`;
+    if (item.id) files.push(itemPath);
+    else files.push(...await listStorageFiles(bucket, itemPath));
+  }
+  return files;
+};
+
+const removeMemberStorageFiles = async (userId, certificatePaths) => {
+  let discoveredPaths;
+  try {
+    discoveredPaths = await listStorageFiles(CERTIFICATES_BUCKET, userId);
+  } catch (error) {
+    throw new AppError(`Could not list member documents: ${error.message}`, 500);
+  }
+
+  const paths = [...new Set([...certificatePaths, ...discoveredPaths])];
+  if (!paths.length) return;
+  const { error } = await supabaseStorage.storage.from(CERTIFICATES_BUCKET).remove(paths);
+  // Supabase Storage treats missing objects as successful in normal operation,
+  // but preserve that guarantee if a storage implementation reports it instead.
+  if (error && !isMissingStorageFileError(error)) {
+    throw new AppError(`Could not remove member documents: ${error.message}`, 500);
+  }
+};
+
+export const deleteMemberPermanently = async (userId) => {
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { memberProfile: true, membership: true, businessCertificates: true } });
+  if (!user?.memberProfile || user.role !== "MEMBER") throw new AppError("Member not found.", 404);
+
+  const [registrations, meetingPayments, invoices, expenses, referralsGiven, referralsReceived, businessReceived, businessReferred, attendance] = await Promise.all([
+    prisma.eventRegistration.count({ where: { userId } }), prisma.meetingFeePayment.count({ where: { userId } }), prisma.paymentInvoice.count({ where: { userId } }), prisma.expense.count({ where: { createdBy: userId } }), prisma.referralGiven.count({ where: { giverId: userId } }), prisma.referralGiven.count({ where: { receiverId: userId } }), prisma.businessReceived.count({ where: { receiverId: userId } }), prisma.businessReceived.count({ where: { referrerId: userId } }), prisma.meetingAttendance.count({ where: { userId } }),
+  ]);
+  const hasMembershipPayment = user.membership?.paymentStatus === "PAID" || !!user.membership?.paidAt;
+  if (hasMembershipPayment || registrations || meetingPayments || invoices || expenses || referralsGiven || referralsReceived || businessReceived || businessReferred || attendance) {
+    throw new AppError("This member has payment or activity history and cannot be permanently deleted. Suspend the member instead.", 409);
+  }
+
+  // This app predates Supabase Auth and has no auth_user_id column. Resolve an
+  // identity by matching UUID first, then the locally unique email.
+  let authUserId;
+  try { authUserId = await findSupabaseAuthUserId(userId, user.email); } catch (error) {
+    console.error("[MEMBER_AUTH_LOOKUP_FAILED]", { userId, message: error.message });
+    throw new AppError("Could not verify the member's authentication account. Please try again.", 502);
+  }
+
+  await removeMemberStorageFiles(userId, user.businessCertificates.map((certificate) => certificate.filePath));
+
+  // Keep the database deletion uncommitted until Supabase Auth confirms the
+  // identity is gone. This rolls local rows back if the Auth call fails.
   return prisma.$transaction(async (tx) => {
-    await tx.user.update({ where: { id: userId }, data: { status: "DELETED" } });
-    return tx.membership.update({ where: { userId }, data: {
-      membershipStatus: "DELETED", deletedAt: now, autoDeleteAt: null,
-    } });
+    // Explicitly remove every non-history relationship. Most have database
+    // cascades as a safety net; related notifications intentionally do not
+    // (they use SET NULL), so they must be removed here.
+    await tx.notification.deleteMany({ where: { OR: [{ userId }, { relatedUserId: userId }] } });
+    await tx.birthdayReminder.deleteMany({ where: { memberId: userId } });
+    await tx.manualPaymentSubmission.deleteMany({ where: { userId } });
+    await tx.businessCertificate.deleteMany({ where: { userId } });
+    await tx.notificationLog.deleteMany({ where: { memberId: userId } });
+    await tx.whatsAppDeliveryLog.deleteMany({ where: { memberId: userId } });
+    await tx.emailDeliveryLog.deleteMany({ where: { memberId: userId } });
+    await tx.memberProfile.deleteMany({ where: { userId } });
+    await tx.membership.deleteMany({ where: { userId } });
+    await tx.user.delete({ where: { id: userId } });
+    if (!authUserId) return { status: "deleted", authUserAlreadyMissing: true };
+    const { error: authDeleteError } = await supabaseStorage.auth.admin.deleteUser(authUserId);
+    if (authDeleteError && !/not found|does not exist/i.test(authDeleteError.message || "")) {
+      console.error("[MEMBER_AUTH_DELETE_FAILED]", { userId, message: authDeleteError.message });
+      throw new AppError("Could not remove the member's authentication account. No member data was deleted.", 502);
+    }
+    return { status: "deleted" };
   });
 };
 

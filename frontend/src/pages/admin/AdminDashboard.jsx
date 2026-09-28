@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Users, Building2, Calendar, IndianRupee, TrendingUp } from "lucide-react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
-import { getAdminDashboard } from "../../services/adminService";
+import { getAdminDashboard, getUpcomingBirthdays } from "../../services/adminService";
 import Table, { Cell, HeaderCell } from "../../components/ui/Table";
 import { Avatar } from "../../components/ui/Avatar";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
@@ -25,8 +26,10 @@ const AdminDashboard = () => {
   const [data, setData] = useState(null);
   const [recentPage, setRecentPage] = useState(1);
   const [recentRows, setRecentRows] = useState(10);
+  const [birthdays, setBirthdays] = useState([]);
 
   useEffect(() => { getAdminDashboard().then(setData); }, []);
+  useEffect(() => { getUpcomingBirthdays().then(setBirthdays).catch(() => {}); }, []);
 
   if (!data) return null;
 
@@ -62,6 +65,8 @@ const AdminDashboard = () => {
               <Pagination page={recentPage} onPageChange={setRecentPage} rowsPerPage={recentRows} onRowsPerPageChange={(value) => { setRecentRows(value); setRecentPage(1); }} total={recentMembers.length} />
             </div>
           </div>
+
+          <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6"><h3 className="font-bold text-gray-900">Upcoming Birthdays</h3><p className="mb-4 text-sm text-gray-400">Members celebrating in the next 30 days</p><div className="space-y-2">{birthdays.length ? birthdays.map((birthday) => <Link key={birthday.userId} to={`/admin/members/${birthday.userId}`} className="flex items-center justify-between rounded-xl bg-amber-50/50 px-3 py-2 text-sm hover:bg-amber-50"><span className="font-medium text-gray-900">{birthday.fullName} <span className="font-normal text-gray-500">· {birthday.hub}</span></span><span className="text-amber-800">{new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2000, birthday.birthMonth - 1, birthday.birthDay)))} · {birthday.daysLeft === 0 ? "Today" : `${birthday.daysLeft}d`}</span></Link>) : <p className="text-sm text-gray-400">No upcoming birthdays.</p>}</div></div>
 
           <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
             <h3 className="font-bold text-gray-900 mb-1">Event Registrations</h3>

@@ -87,6 +87,22 @@ function buildEventData(input, existingEvent = null) {
 
 const POSTERS_BUCKET = "event-posters";
 
+const getPosterPath = (imageUrl) => {
+  if (!imageUrl) return null;
+  const publicUrl = supabaseStorage.storage.from(POSTERS_BUCKET).getPublicUrl("").data.publicUrl;
+  const publicPrefix = publicUrl.endsWith("/") ? publicUrl : `${publicUrl}/`;
+  return imageUrl.startsWith(publicPrefix) ? imageUrl.slice(publicPrefix.length) : null;
+};
+
+const removePoster = async (imageUrl) => {
+  const path = getPosterPath(imageUrl);
+  if (!path) return;
+  const { error } = await supabaseStorage.storage.from(POSTERS_BUCKET).remove([path]);
+  // A database operation must not be reported as failed merely because a
+  // best-effort cleanup failed. The file path is scoped to this bucket/event.
+  if (error) console.error("[EVENT_POSTER_DELETE_FAILED]", { path, message: error.message });
+};
+
 const sanitizePosterFilename = (filename) => {
   const normalizedName = filename.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
   const extensionIndex = normalizedName.lastIndexOf(".");
@@ -111,9 +127,18 @@ const uploadPoster = async (eventId, poster) => {
 
 export async function createEvent(input, poster) {
   let event = await prisma.event.create({ data: buildEventData(input) });
-  if (poster) {
-    const imageUrl = await uploadPoster(event.id, poster);
-    event = await prisma.event.update({ where: { id: event.id }, data: { imageUrl } });
+  let imageUrl = null;
+  try {
+    if (poster) {
+      imageUrl = await uploadPoster(event.id, poster);
+      event = await prisma.event.update({ where: { id: event.id }, data: { imageUrl } });
+    }
+  } catch (error) {
+    // Do not leave a newly-created event around when its requested poster
+    // could not be persisted.
+    await prisma.event.delete({ where: { id: event.id } }).catch(() => {});
+    await removePoster(imageUrl);
+    throw error;
   }
   await notifyActiveMembersAboutEvent(event);
   return event;
@@ -125,14 +150,30 @@ export async function updateEvent(id, input, poster) {
     throw new AppError("Event not found", 404);
   }
   const data = buildEventData(input, event);
-  if (poster) data.imageUrl = await uploadPoster(id, poster);
-  return prisma.event.update({ where: { id }, data });
+  if (!poster) return prisma.event.update({ where: { id }, data });
+
+  const imageUrl = await uploadPoster(id, poster);
+  try {
+    const updatedEvent = await prisma.event.update({ where: { id }, data: { ...data, imageUrl } });
+    await removePoster(event.imageUrl);
+    return updatedEvent;
+  } catch (error) {
+    await removePoster(imageUrl);
+    throw error;
+  }
 }
 
 export async function deleteEvent(id) {
-  const event = await prisma.event.findUnique({ where: { id } });
+  const event = await prisma.event.findUnique({
+    where: { id },
+    include: { _count: { select: { registrations: true } } },
+  });
   if (!event) {
     throw new AppError("Event not found", 404);
   }
+  if (event._count.registrations > 0) {
+    throw new AppError(`This event has ${event._count.registrations} registration${event._count.registrations === 1 ? "" : "s"} and cannot be deleted.`, 409);
+  }
   await prisma.event.delete({ where: { id } });
+  await removePoster(event.imageUrl);
 }

@@ -43,11 +43,14 @@ const uploadProfilePhoto = (req, res, next) => {
 
 // Dashboard
 router.get("/dashboard", requireAuth, requireAdmin, adminController.getDashboard);
+router.get("/birthdays/upcoming", requireAuth, requireAdmin, adminController.getUpcomingBirthdays);
 router.get("/leaderboard", requireAuth, requireAdmin, validateQuery(leaderboardQuerySchema), adminLeaderboard);
 
 // Members
 router.get("/members", requireAuth, requireAdmin, adminController.listMembers);
 router.get("/members/:userId", requireAuth, requireAdmin, adminController.getMemberDetail);
+router.get("/members/:userId/documents", requireAuth, requireAdmin, adminController.listMemberDocuments);
+router.get("/members/:userId/documents/:id/url", requireAuth, requireAdmin, adminController.getMemberDocumentUrl);
 router.post("/members/:userId/resend-credentials", requireAuth, requireAdmin, adminController.resendCredentials);
 router.patch("/members/:userId", requireAuth, requireAdmin, validate(editMemberSchema), adminController.updateMember);
 router.patch("/members/:userId/suspend", requireAuth, requireAdmin, adminController.suspendMember);

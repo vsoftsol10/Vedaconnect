@@ -41,8 +41,10 @@ const DashboardHeader = () => {
   };
 
   return (
-    <header className="relative flex min-h-[68px] items-center gap-3 overflow-hidden bg-white px-4 py-3 pl-16 sm:px-6 sm:pl-16 md:gap-6 md:px-8 md:py-5">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(95,194,51,0.18)_0%,rgba(95,194,51,0.07)_45%,rgba(255,255,255,0)_75%)]" />
+    <header className="relative flex min-h-[68px] items-center gap-3 overflow-visible px-4 py-3 pl-16 sm:px-6 sm:pl-16 md:gap-6 md:px-8 md:py-5">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden bg-white">
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(95,194,51,0.18)_0%,rgba(95,194,51,0.07)_45%,rgba(255,255,255,0)_75%)]" />
+      </div>
       <div className="relative z-10 min-w-0 flex-1 pr-1">
         <p className="truncate text-base font-semibold tracking-tight text-gray-900 sm:text-lg">
           Welcome, {isLoading ? "…" : formatGreetingName(profile?.fullName)}

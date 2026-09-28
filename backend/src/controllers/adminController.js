@@ -1,4 +1,7 @@
 import * as adminService from "../services/adminService.js";
+import { getUpcomingBirthdays as listUpcomingBirthdays } from "../services/birthdayService.js";
+import * as documentService from "../services/documentService.js";
+export const getUpcomingBirthdays = async (req, res, next) => { try { res.json({ success: true, data: await listUpcomingBirthdays(Math.min(365, Math.max(1, Number(req.query.days) || 30)) ) }); } catch (err) { next(err); } };
 
 export const getDashboard = async (req, res, next) => {
   try {
@@ -30,6 +33,8 @@ export const assignHub = async (req, res, next) => {
     res.json({ success: true, data: await adminService.assignMemberHub(req.params.userId, req.body.hubId) });
   } catch (err) { next(err); }
 };
+export const listMemberDocuments = async (req, res, next) => { try { res.json({ success: true, data: await documentService.listAdminMemberDocuments(req.params.userId) }); } catch (err) { next(err); } };
+export const getMemberDocumentUrl = async (req, res, next) => { try { res.json({ success: true, data: await documentService.getAdminMemberDocumentUrl(req.params.userId, req.params.id) }); } catch (err) { next(err); } };
 
 export const updateJoinedDate = async (req, res, next) => {
   try {
@@ -50,7 +55,7 @@ export const reactivateMember = async (req, res, next) => {
   catch (err) { next(err); }
 };
 export const deleteMember = async (req, res, next) => {
-  try { res.json({ success: true, data: await adminService.softDeleteMember(req.params.userId) }); }
+  try { res.json({ success: true, data: await adminService.deleteMemberPermanently(req.params.userId) }); }
   catch (err) { next(err); }
 };
 export const resendCredentials = async (req, res, next) => {

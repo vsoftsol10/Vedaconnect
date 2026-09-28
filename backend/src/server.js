@@ -18,6 +18,7 @@ import meetingFeeRoutes from "./routes/meetingFeeRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import { scheduleMemberLifecycleJob } from "./jobs/memberLifecycleJob.js";
 import { scheduleMonthlyExpenseNotificationJob } from "./jobs/monthlyExpenseNotificationJob.js";
+import { scheduleBirthdayReminderJob } from "./jobs/birthdayReminderJob.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -73,3 +74,4 @@ app.listen(PORT, () => {
 
 scheduleMemberLifecycleJob();
 scheduleMonthlyExpenseNotificationJob();
+scheduleBirthdayReminderJob();

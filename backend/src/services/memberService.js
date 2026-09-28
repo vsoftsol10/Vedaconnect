@@ -20,6 +20,7 @@ export const getMyProfile = async (userId) => {
     hub: user.memberProfile?.hub || null,
     location: user.memberProfile?.location || "",
     profilePhoto: user.memberProfile?.profilePhoto || null,
+    birthMonth: user.memberProfile?.dateOfBirth ? user.memberProfile.dateOfBirth.getUTCMonth() + 1 : null, birthDay: user.memberProfile?.dateOfBirth ? user.memberProfile.dateOfBirth.getUTCDate() : null,
     email: user.email,
     memberId: user.membership?.memberId || null,
     membershipType: user.membership?.membershipType || null,
@@ -133,7 +134,7 @@ export const listMembers = async ({ search, category, location, membershipStatus
 export const getMemberDetail = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { memberProfile: true, membership: true, businessCertificates: true },
+    include: { memberProfile: true, membership: true },
   });
 
   if (!user || !user.memberProfile || user.status === "DELETED" || user.membership?.deletedAt) throw new AppError("Member not found.", 404);
@@ -157,10 +158,6 @@ export const getMemberDetail = async (userId) => {
     isVerified: user.businessCertificates.some((c) => c.isVerified),
   };
 };
-import { supabaseStorage } from "../config/supabaseStorageClient.js";
-
-const CERTIFICATES_BUCKET = "business-certificates";
-
 export const getMyFullProfile = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -173,26 +170,12 @@ export const getMyFullProfile = async (userId) => {
     ? await prisma.membershipPlan.findUnique({ where: { planCode: user.membership.membershipType } })
     : null;
 
-  // Private bucket - generate a temporary signed link per certificate, valid 10 minutes
-  const certificates = await Promise.all(
-    user.businessCertificates.map(async (cert) => {
-      const { data } = await supabaseStorage.storage
-        .from(CERTIFICATES_BUCKET)
-        .createSignedUrl(cert.filePath, 600);
-      return {
-        id: cert.id,
-        fileName: cert.fileName,
-        isVerified: cert.isVerified,
-        signedUrl: data?.signedUrl || null,
-      };
-    })
-  );
-
   return {
     fullName: user.memberProfile.fullName,
     email: user.email,
     registeredAt: user.createdAt,
     phone: user.memberProfile.phone,
+    birthMonth: user.memberProfile.dateOfBirth ? user.memberProfile.dateOfBirth.getUTCMonth() + 1 : null, birthDay: user.memberProfile.dateOfBirth ? user.memberProfile.dateOfBirth.getUTCDate() : null,
     location: user.memberProfile.location,
     profilePhoto: user.memberProfile.profilePhoto,
     businessName: user.memberProfile.businessName,
@@ -214,19 +197,18 @@ export const getMyFullProfile = async (userId) => {
     billingCycle: plan?.billingCycle || null,
     joinedAt: user.membership?.joinedAt,
     expiresAt: user.membership?.expiresAt || null,
-    certificates,
   };
 };
 
 export const updateMyProfile = async (userId, data) => {
-  const allowedFields = [
+  const profileFields = [
     "fullName", "phone", "location",
     "businessName", "businessCategory", "businessLocation",
     "businessDescription", "productsServices",
   ];
 
   const updateData = {};
-  for (const key of allowedFields) {
+  for (const key of profileFields) {
     if (data[key] !== undefined) updateData[key] = data[key];
   }
 
@@ -237,6 +219,19 @@ export const updateMyProfile = async (userId, data) => {
     }
     updateData.phone = normalizedPhone;
   }
+  if (data.birthMonth !== undefined || data.birthDay !== undefined) {
+    updateData.dateOfBirth = data.birthMonth === null && data.birthDay === null
+      ? null
+      : new Date(Date.UTC(2000, data.birthMonth - 1, data.birthDay));
+  }
 
   return prisma.memberProfile.update({ where: { userId }, data: updateData });
+};
+
+const indiaDateParts = (date = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date).reduce((out, item) => ({ ...out, [item.type]: item.value }), {});
+export const getBirthdayToday = async (userId) => {
+  const profile = await prisma.memberProfile.findUnique({ where: { userId }, select: { dateOfBirth: true, fullName: true } });
+  const today = indiaDateParts();
+  const birthday = profile?.dateOfBirth ? indiaDateParts(profile.dateOfBirth) : null;
+  return { isBirthday: !!birthday && birthday.month === today.month && birthday.day === today.day, fullName: profile?.fullName || "" };
 };

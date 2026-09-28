@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Calendar, UserPlus, Users, Loader2 } from "lucide-react";
+import { ShieldCheck, Calendar, UserPlus, Users, Loader2, X } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import StatCard from "../components/dashboard/StatCard";
 import EventCard from "../components/dashboard/EventCard";
 import AttendanceWidget from "../components/dashboard/AttendanceWidget";
 import Leaderboard from "../components/dashboard/Leaderboard";
-import { getMyProfile, getMyStats, getMyUpcomingEvents } from "../services/memberService";
+import { getBirthdayToday, getMyProfile, getMyStats, getMyUpcomingEvents } from "../services/memberService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +16,8 @@ const Dashboard = () => {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [birthday, setBirthday] = useState(null);
+  const [birthdayDismissed, setBirthdayDismissed] = useState(false);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -38,6 +40,7 @@ const Dashboard = () => {
     };
 
     loadDashboard();
+    getBirthdayToday().then((data) => { setBirthday(data); setBirthdayDismissed(localStorage.getItem(`birthday-dismissed-${new Date().toDateString()}`) === "true"); }).catch(() => {});
   }, []);
 
   return (
@@ -57,6 +60,8 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
+              {birthday?.isBirthday && !birthdayDismissed && <div className="relative mb-6 overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-5 shadow-sm"><div aria-hidden="true" className="birthday-confetti" /><button onClick={() => { localStorage.setItem(`birthday-dismissed-${new Date().toDateString()}`, "true"); setBirthdayDismissed(true); }} className="absolute right-3 top-3 rounded-lg p-2 text-gray-400 hover:bg-white hover:text-gray-700" aria-label="Dismiss birthday greeting"><X className="h-4 w-4" /></button><p className="text-xl font-bold text-gray-900">Happy Birthday, {birthday.fullName.split(" ")[0]} 🎂</p><p className="mt-1 text-sm text-gray-600">Wishing you a wonderful year ahead from VedaConnect.</p></div>}
+              {!profile?.birthMonth && <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><span>Add your birthday so we can celebrate with you.</span><button onClick={() => navigate("/profile")} className="font-semibold text-green-700">Add your birthday</button></div>}
               <p className="text-gray-500 mb-8">
                 Here's what's happening in your VedaConnect community.
               </p>

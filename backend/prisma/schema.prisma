@@ -101,6 +101,7 @@ model User {
   whatsAppDeliveryLogs  WhatsAppDeliveryLog[]
   emailDeliveryLogs     EmailDeliveryLog[]
   manualPaymentSubmissions ManualPaymentSubmission[]
+  birthdayReminders      BirthdayReminder[]
 
   @@map("users")
 }
@@ -110,6 +111,7 @@ model MemberProfile {
   userId              String   @unique @map("user_id") @db.Uuid
   fullName            String?  @map("full_name")
   phone               String?
+  dateOfBirth         DateTime? @map("date_of_birth") @db.Date
   onboardingStatus    OnboardingStatus @default(ONLINE) @map("onboarding_status")
   location            String?
   profilePhoto        String?  @map("profile_photo")
@@ -130,6 +132,19 @@ model MemberProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("member_profiles")
+}
+
+model BirthdayReminder {
+  id           String   @id @default(uuid()) @db.Uuid
+  memberId     String   @map("member_id") @db.Uuid
+  year         Int
+  reminderType String   @map("reminder_type")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  member User @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, year, reminderType])
+  @@map("birthday_reminders")
 }
 
 model ManualPaymentSubmission {
@@ -207,6 +222,8 @@ model BusinessCertificate {
   userId        String   @map("user_id") @db.Uuid
   filePath      String   @map("file_path")
   fileName      String   @map("file_name")
+  title         String?
+  documentType  String   @default("BUSINESS_CERTIFICATE") @map("document_type")
   fileSizeBytes Int      @map("file_size_bytes")
   mimeType      String   @map("mime_type")
   isVerified    Boolean  @default(false) @map("is_verified")

@@ -29,6 +29,7 @@ const AdminMembers = () => {
   const [editingMember, setEditingMember] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [isActing, setIsActing] = useState(false);
+  const [actionError, setActionError] = useState("");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -46,12 +47,14 @@ const AdminMembers = () => {
   const confirmAction = async () => {
     if (!confirmation) return;
     setIsActing(true);
+    setActionError("");
     try {
       if (confirmation.type === "suspend") await suspendMember(confirmation.member.userId);
       else await deleteMember(confirmation.member.userId);
       setConfirmation(null);
       refreshMembers();
-    } finally { setIsActing(false); }
+    } catch (error) { setActionError(error.message || "Could not update member."); }
+    finally { setIsActing(false); }
   };
 
   const reactivate = async (member) => {
@@ -151,6 +154,7 @@ const AdminMembers = () => {
       )}
       {editingMember && <EditMemberModal member={editingMember} onClose={() => setEditingMember(null)} onSuccess={() => { setEditingMember(null); refreshMembers(); }} />}
       {confirmation && <MemberConfirmModal type={confirmation.type} member={confirmation.member} onClose={() => setConfirmation(null)} onConfirm={confirmAction} isSubmitting={isActing} />}
+      {actionError && <div role="alert" className="fixed bottom-5 right-5 z-[70] rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white shadow-lg">{actionError}</div>}
     </div>
   );
 };

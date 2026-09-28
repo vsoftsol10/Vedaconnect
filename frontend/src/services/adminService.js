@@ -1,9 +1,12 @@
 import api from "./api";
 
 export const getAdminDashboard = async () => (await api.get("/admin/dashboard")).data.data;
+export const getUpcomingBirthdays = async (days = 30) => (await api.get("/admin/birthdays/upcoming", { params: { days } })).data.data;
 export const getAdminLeaderboard = async (params = {}) => (await api.get("/admin/leaderboard", { params })).data.data;
 export const listAdminMembers = async (params = {}) => (await api.get("/admin/members", { params })).data.data;
 export const getAdminMemberDetail = async (userId) => (await api.get(`/admin/members/${userId}`)).data.data;
+export const getAdminMemberDocuments = async (userId) => (await api.get(`/admin/members/${userId}/documents`)).data.data;
+export const getAdminMemberDocumentUrl = async (userId, id) => (await api.get(`/admin/members/${userId}/documents/${id}/url`)).data.data;
 export const assignMemberHub = async (userId, hubId) => (await api.patch(`/admin/members/${userId}/hub`, { hubId })).data.data;
 export const updateMemberJoinedDate = async (userId, joinedAt) => (await api.patch(`/admin/members/${userId}/joined-date`, { joinedAt })).data.data;
 export const updateMember = async (userId, data) => (await api.patch(`/admin/members/${userId}`, data)).data.data;

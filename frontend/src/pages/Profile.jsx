@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, Eye, Download, X, Check, Loader2, Lock } from "lucide-react";
+import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, X, Check, Loader2, Lock, CalendarDays } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import { changeMyPassword, getMyFullProfile, updateMyProfile } from "../services/memberService";
+import BirthdayFields, { birthdayLabel } from "../components/ui/BirthdayFields";
+import DocumentsCard from "../components/documents/DocumentsCard";
 
 const PHONE_ERROR = "Enter a valid 10-digit phone number";
 const normalizePhone = (value = "") => {
@@ -21,6 +23,8 @@ const EDITABLE_FIELDS = [
   { key: "businessDescription", label: "Description", multiline: true },
   { key: "productsServices", label: "Products / Services", multiline: true },
 ];
+
+const PROFILE_UPDATE_FIELDS = [...EDITABLE_FIELDS.map(({ key }) => key), "birthMonth", "birthDay"];
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -66,7 +70,8 @@ const Profile = () => {
     setIsSaving(true);
     setSaveError("");
     try {
-      await updateMyProfile(form);
+      const payload = Object.fromEntries(PROFILE_UPDATE_FIELDS.map((field) => [field, form[field] ?? ""]));
+      await updateMyProfile(payload);
       await load();
       setIsEditing(false);
     } catch (err) {
@@ -208,6 +213,7 @@ const Profile = () => {
                 <InfoRow icon={Mail} label="Email" value={profile.email} />
                 <InfoRow icon={Phone} label="Phone" value={profile.phone} editable={isEditing} field="phone" form={form} onChange={handleChange} error={errors.phone} />
                 <InfoRow icon={MapPin} label="Location" value={profile.location} editable={isEditing} field="location" form={form} onChange={handleChange} />
+                <BirthdayRow icon={CalendarDays} profile={profile} form={form} editable={isEditing} onChange={handleChange} />
               </div>
             </div>
 
@@ -286,7 +292,7 @@ const Profile = () => {
               </div>
             </div>
           </div>
-          {saveError && <p className="mt-4 text-sm text-red-500">{saveError}</p>}
+          {saveError && <div role="alert" className="fixed bottom-5 right-5 z-[70] max-w-sm rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white shadow-lg">{saveError}</div>}
 
           <section className="mt-6 max-w-2xl rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
             <h3 className="mb-1 flex items-center gap-2 font-bold text-gray-900"><Lock className="h-5 w-5 text-green-600" /> Change Password</h3>
@@ -300,40 +306,14 @@ const Profile = () => {
             </form>
           </section>
 
-          {/* Business Certificate */}
-          {profile.certificates?.length > 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm mt-6 sm:p-6">
-              <h3 className="font-bold text-gray-900 mb-4">Business Certificate</h3>
-              {profile.certificates.map((cert) => (
-                <div key={cert.id} className="bg-gray-50 rounded-xl p-4 flex items-center gap-3 mb-3">
-                  <span className="h-10 w-10 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
-                    <Package className="h-5 w-5 text-gray-400" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 truncate">{cert.fileName}</p>
-                    <p className="text-xs text-gray-400">Uploaded during onboarding</p>
-                  </div>
-                </div>
-              ))}
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <a href={profile.certificates[0]?.signedUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 py-2.5 font-medium text-gray-700 transition-colors hover:border-green-400">
-                  <Eye className="h-4 w-4" /> View
-                </a>
-                <a href={profile.certificates[0]?.signedUrl} download
-                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 py-2.5 font-medium text-gray-700 transition-colors hover:border-green-400">
-                  <Download className="h-4 w-4" /> Download
-                </a>
-              </div>
-            </div>
-          )}
+          <DocumentsCard />
         </main>
       </div>
     </div>
   );
 };
 
-const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, error }) => (
+const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, error, type = "text" }) => (
   <div className="flex items-start gap-3">
     <span className="h-9 w-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
       <Icon className="h-4 w-4 text-gray-400" />
@@ -342,7 +322,7 @@ const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, er
       <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-0.5">{label}</p>
       {editable ? (
         <>
-          <input value={form[field] || ""} onChange={onChange(field)}
+          <input type={type} value={form[field] || ""} onChange={onChange(field)}
             className={`min-h-11 w-full rounded-lg border px-2 py-1 text-sm outline-none ${
               error
                 ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
@@ -358,3 +338,5 @@ const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, er
 );
 
 export default Profile;
+
+const BirthdayRow = ({ icon: Icon, profile, form, editable, onChange }) => <div className="flex items-start gap-3"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-50"><Icon className="h-4 w-4 text-gray-400" /></span><div className="flex-1">{editable ? <BirthdayFields month={form.birthMonth} day={form.birthDay} onChange={(field, value) => onChange(field)({ target: { value } })} /> : <><p className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-gray-400">Birthday (day and month)</p><p className="font-semibold text-gray-900">{birthdayLabel(profile.birthMonth, profile.birthDay)}</p></>}</div></div>;

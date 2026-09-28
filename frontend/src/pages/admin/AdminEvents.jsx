@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Eye, Pencil } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Plus, Calendar, CheckCircle2 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
-import { getAdminEvents } from '../../services/adminEventService';
+import { deleteEvent, getAdminEvents } from '../../services/adminEventService';
+import EventActionMenu from '../../components/admin/EventActionMenu';
+import EventDeleteModal from '../../components/admin/EventDeleteModal';
 
 export default function AdminEvents() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState(location.state?.toast || '');
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -24,6 +30,27 @@ export default function AdminEvents() {
     };
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(''), 4000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const handleDelete = async () => {
+    if (!eventToDelete || deleting) return;
+    try {
+      setDeleting(true);
+      await deleteEvent(eventToDelete.id);
+      setEvents((current) => current.filter((event) => event.id !== eventToDelete.id));
+      setEventToDelete(null);
+      setToast('Event deleted successfully');
+    } catch (err) {
+      setToast(err.message || 'Could not delete event.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -54,7 +81,7 @@ export default function AdminEvents() {
                   <th className="px-6 py-4">Hub</th>
                   <th className="px-6 py-4">Registrations</th>
                   <th className="px-6 py-4">Event Fee</th>
-                  <th className="px-6 py-4">Actions</th>
+                  <th className="w-24 py-4 pr-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,20 +118,9 @@ export default function AdminEvents() {
                       <td className="px-6 py-4 font-medium text-gray-900">
                         {ev.eventType === 'NO_FEE' ? 'No fee' : `₹${ev.registrationAmount}`}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => navigate(`/admin/events/${ev.id}`)}
-                            className="flex items-center gap-1.5 border border-gray-200 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all duration-300 px-3 py-1.5 rounded-lg text-gray-700 font-medium"
-                          >
-                            <Eye size={14} /> View
-                          </button>
-                          <button
-                            onClick={() => navigate(`/admin/events/${ev.id}/edit`)}
-                            className="flex items-center gap-1.5 text-gray-500 hover:text-amber-500 font-medium"
-                          >
-                            <Pencil size={14} /> Edit
-                          </button>
+                      <td className="w-24 py-4 pr-6">
+                        <div className="flex justify-end">
+                          <EventActionMenu event={ev} onView={() => navigate(`/admin/events/${ev.id}`)} onEdit={() => navigate(`/admin/events/${ev.id}/edit`)} onDelete={() => setEventToDelete(ev)} />
                         </div>
                       </td>
                     </tr>
@@ -115,6 +131,8 @@ export default function AdminEvents() {
           </div>
         </main>
       </div>
+      {eventToDelete && <EventDeleteModal event={eventToDelete} onClose={() => !deleting && setEventToDelete(null)} onConfirm={handleDelete} isSubmitting={deleting} />}
+      {toast && <div role="status" className={`fixed bottom-5 right-5 z-[70] flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg ${toast === 'Event deleted successfully' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}><CheckCircle2 className="h-4 w-4" />{toast}</div>}
     </div>
   );
 }

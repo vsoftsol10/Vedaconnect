@@ -1,0 +1,3 @@
+import { runBirthdayReminderJob } from "../services/birthdayService.js";
+const delayToEightIndia = () => { const now = new Date(); const india = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); const next = new Date(india); next.setHours(8, 0, 0, 0); if (next <= india) next.setDate(next.getDate() + 1); return next - india; };
+export const scheduleBirthdayReminderJob = () => setTimeout(function start() { runBirthdayReminderJob().catch((error) => console.error("[BIRTHDAY_REMINDER_JOB]", error)); setInterval(() => runBirthdayReminderJob().catch((error) => console.error("[BIRTHDAY_REMINDER_JOB]", error)), 86400000); }, delayToEightIndia());

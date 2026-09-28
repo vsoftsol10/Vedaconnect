@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2, User, Mail, Phone, MapPin } from "lucide-react";
+import BirthdayFields from "../../components/ui/BirthdayFields";
 import OnboardingHeader from "../../components/onboarding/OnboardingHeader";
 import OnboardingProgress from "../../components/onboarding/OnboardingProgress";
 import OnboardingCard from "../../components/onboarding/OnboardingCard";
@@ -21,6 +22,7 @@ const PersonalDetails = () => {
     email: "",
     phone: "",
     location: "",
+    birthMonth: "", birthDay: "",
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -169,6 +171,9 @@ const PersonalDetails = () => {
                 {errors.location && (
                   <p className="mt-1.5 text-xs text-red-500">{errors.location}</p>
                 )}
+              </div>
+              <div>
+                <BirthdayFields month={form.birthMonth} day={form.birthDay} onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))} />
               </div>
             </div>
           </div>

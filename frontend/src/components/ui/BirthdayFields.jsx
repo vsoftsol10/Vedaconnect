@@ -1,0 +1,8 @@
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const daysInMonth = (month) => month === 2 ? 29 : [4, 6, 9, 11].includes(Number(month)) ? 30 : 31;
+
+export default function BirthdayFields({ month, day, onChange, className = "" }) {
+  return <div className={`flex flex-wrap items-end gap-2 ${className}`}><label className="flex-1 text-sm font-semibold text-gray-800">Birthday (day and month)<select value={month || ""} onChange={(event) => onChange("birthMonth", event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-amber-400"><option value="">Month</option>{MONTHS.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}</select></label><label className="w-24 text-sm font-semibold text-gray-800">Day<select value={day || ""} onChange={(event) => onChange("birthDay", event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-amber-400"><option value="">Day</option>{Array.from({ length: daysInMonth(Number(month)) }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>{(month || day) && <button type="button" onClick={() => { onChange("birthMonth", ""); onChange("birthDay", ""); }} className="min-h-11 text-sm font-medium text-red-600 hover:text-red-700">Clear</button>}</div>;
+}
+
+export const birthdayLabel = (month, day) => month && day ? `${day} ${MONTHS[month - 1].slice(0, 3)}` : "Not added";

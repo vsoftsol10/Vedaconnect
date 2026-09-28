@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const optionalBirthdayValue = z.preprocess((value) => value === "" ? null : value, z.coerce.number().int().min(1).max(31).nullable().optional());
+
 export const addMemberSchema = z.object({
   fullName: z.string().trim().min(2, "Full name is required"),
   email: z.string().trim().email("Enter a valid email"),
@@ -16,6 +18,7 @@ export const addMemberSchema = z.object({
   hubId: z.string().uuid("Please select a hub"),
   planCode: z.string().trim().min(1, "Please select a membership plan"),
   joinedAt: z.string().optional().nullable(),
+  birthMonth: optionalBirthdayValue.refine((value) => value === undefined || value === null || value <= 12, "Choose a valid birthday month"), birthDay: optionalBirthdayValue, dateOfBirth: z.never().optional(),
 });
 
 export const joinedDateSchema = z.object({
@@ -30,9 +33,14 @@ export const manualPaymentVerificationSchema = z.object({
 export const editMemberSchema = z.object({
   fullName: z.string().trim().min(2, "Full name is required"),
   businessName: z.string().trim().min(1, "Business name is required"),
+  businessCategory: z.string().trim().optional().default(""),
+  businessLocation: z.string().trim().optional().default(""),
+  businessDescription: z.string().trim().max(1000).optional().default(""),
+  productsServices: z.string().trim().max(1000).optional().default(""),
   hubId: z.string().uuid("Please select a hub").nullable().optional(),
   membershipType: z.string().trim().min(1, "Membership type is required"),
   membershipStatus: z.enum(["PENDING_PAYMENT", "ACTIVE", "SUSPENDED", "CANCELLED"]).optional(),
+  birthMonth: optionalBirthdayValue.refine((value) => value === undefined || value === null || value <= 12, "Choose a valid birthday month"), birthDay: optionalBirthdayValue, dateOfBirth: z.never().optional(),
 });
 
 export const subscriptionSchema = z.object({

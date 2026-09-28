@@ -31,3 +31,7 @@ export const updateEvent = async (id, payload) => {
   });
   return res.data.data;
 };
+
+export const deleteEvent = async (id) => {
+  await api.delete(`/admin/events/${id}`);
+};

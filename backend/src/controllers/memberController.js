@@ -1,4 +1,5 @@
 import * as memberService from "../services/memberService.js";
+import * as documentService from "../services/documentService.js";
 
 export const getMe = async (req, res, next) => {
   try {
@@ -52,10 +53,15 @@ export const getMyFullProfile = async (req, res, next) => {
 
 export const updateMyProfile = async (req, res, next) => {
   try {
-    const updated = await memberService.updateMyProfile(req.user.userId, req.body);
+    const updated = await memberService.updateMyProfile(req.user.userId, req.validatedBody);
     res.status(200).json({ success: true, data: updated });
   } catch (err) { next(err); }
 };
+export const listMyDocuments = async (req, res, next) => { try { res.json({ success: true, data: await documentService.listMemberDocuments(req.user.userId) }); } catch (err) { next(err); } };
+export const uploadMyDocument = async (req, res, next) => { try { res.status(201).json({ success: true, data: await documentService.uploadMemberDocument(req.user.userId, req.body, req.file) }); } catch (err) { next(err); } };
+export const getMyDocumentUrl = async (req, res, next) => { try { res.json({ success: true, data: await documentService.getMemberDocumentUrl(req.user.userId, req.params.id) }); } catch (err) { next(err); } };
+export const deleteMyDocument = async (req, res, next) => { try { res.json({ success: true, data: await documentService.deleteMemberDocument(req.user.userId, req.params.id) }); } catch (err) { next(err); } };
+export const getBirthdayToday = async (req, res, next) => { try { res.json({ success: true, data: await memberService.getBirthdayToday(req.user.userId) }); } catch (err) { next(err); } };
 
 export const changeMyPassword = async (req, res, next) => {
   try {

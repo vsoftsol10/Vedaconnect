@@ -27,3 +27,5 @@ body {
   font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   background-color: #fafaf9;
 }
+
+@media (prefers-reduced-motion: no-preference) { .birthday-confetti { position:absolute; inset:0; pointer-events:none; opacity:.35; background-image:radial-gradient(circle, #fbbf24 2px, transparent 3px),radial-gradient(circle, #65a30d 2px, transparent 3px); background-size:36px 36px, 53px 53px; animation:birthday-confetti 4s linear infinite; } @keyframes birthday-confetti { to { background-position:36px 72px,-53px 106px; } } }

@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Clock, MapPin, Users, Heart, Lightbulb, Sparkles }
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import { getEventDetail, registerForEvent } from "../services/eventService";
+import EventPoster from "../components/ui/EventPoster";
 
 const ICONS = { Users, Heart, Lightbulb, Sparkles };
 
@@ -49,10 +50,10 @@ const EventDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <div className="relative h-56 rounded-2xl overflow-hidden bg-gray-100 sm:h-72">
-                {event.imageUrl && <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />}
+                <EventPoster src={event.imageUrl} alt={event.title} className="h-full w-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 sm:p-6">
                   <div className="flex gap-2 mb-3">
-                    {event.tags.map((tag) => (
+                    {(event.tags || []).map((tag) => (
                       <span key={tag} className="bg-white/90 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">{tag}</span>
                     ))}
                   </div>

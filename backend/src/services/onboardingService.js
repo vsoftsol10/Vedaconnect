@@ -56,7 +56,10 @@ const getPlanPriceBreakdown = (plan) => {
  * insert fails, the user insert rolls back too. Returns userId for the
  * frontend to carry through steps 2-5.
  */
-export const submitPersonalDetails = async ({ fullName, email, phone, location }) => {
+export const submitPersonalDetails = async ({ fullName, email, phone, location, birthMonth, birthDay }) => {
+  if ((birthMonth == null) !== (birthDay == null) || (birthMonth && new Date(Date.UTC(2000, birthMonth - 1, birthDay)).getUTCMonth() !== birthMonth - 1)) {
+    throw new AppError("Choose a valid birthday day", 400);
+  }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     throw new AppError("An account with this email already exists.", 409);
@@ -73,6 +76,7 @@ export const submitPersonalDetails = async ({ fullName, email, phone, location }
         fullName,
         phone,
         location,
+        dateOfBirth: birthMonth && birthDay ? new Date(Date.UTC(2000, birthMonth - 1, birthDay)) : null,
       },
     });
 

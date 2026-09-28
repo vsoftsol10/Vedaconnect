@@ -1,13 +1,12 @@
 import { Calendar, Clock, MapPin } from "lucide-react";
+import EventPoster from "../ui/EventPoster";
 
 const EventCard = ({ event }) => (
   <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
     <div className="relative h-44 bg-gray-100">
-      {event.imageUrl && (
-        <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
-      )}
+      <EventPoster src={event.imageUrl} alt={event.title} className="h-full w-full object-cover" />
       <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
-        {event.tags.map((tag) => (
+        {(event.tags || []).map((tag) => (
           <span key={tag} className="bg-white/90 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">
             {tag}
           </span>

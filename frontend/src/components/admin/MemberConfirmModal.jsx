@@ -3,7 +3,7 @@ import { AlertTriangle, X } from "lucide-react";
 const MemberConfirmModal = ({ type, member, onClose, onConfirm, isSubmitting }) => {
   const deleting = type === "delete";
   const title = deleting ? `Delete ${member.fullName}?` : `Suspend ${member.fullName}?`;
-  const body = deleting ? "This will permanently delete this member. This cannot be undone." : "They will lose access to community benefits. If not reactivated within 6 months, this member will be automatically and permanently deleted.";
+  const body = deleting ? "This permanently deletes the member, their login account, files and related data. This cannot be undone." : "They will lose access to community benefits. If not reactivated within 6 months, this member will be automatically and permanently deleted.";
   return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="member-confirm-title">
     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
       <div className="flex items-start justify-between gap-4"><div className={`rounded-xl p-2.5 ${deleting ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}`}><AlertTriangle className="h-5 w-5" /></div><button onClick={onClose} className="text-gray-400 hover:text-gray-700" aria-label="Close"><X className="h-5 w-5" /></button></div>
