@@ -58,16 +58,6 @@ enum NetworkingPartyType {
   EXTERNAL @map("external")
 }
 
-enum ExpenseCategory {
-  VENUE
-  FOOD
-  PRINTING
-  DECORATION
-  GUEST_SPEAKER
-  MISCELLANEOUS
-  OTHER
-}
-
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   fullName     String?    @map("full_name")
@@ -371,6 +361,13 @@ model MeetingFeePayment {
   razorpayPaymentId String?  @map("razorpay_payment_id")
   razorpaySignature String?  @map("razorpay_signature")
   paidAt            DateTime? @map("paid_at")
+  paymentSource     String   @default("ONLINE") @map("payment_source")
+  paymentMode       String?  @map("payment_mode")
+  note              String?  @db.VarChar(200)
+  receiptPath       String?  @map("receipt_path")
+  recordedBy        String?  @map("recorded_by") @db.Uuid
+  recordedAt        DateTime? @map("recorded_at")
+  meetingWeek       DateTime? @map("meeting_week")
   createdAt         DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -379,6 +376,7 @@ model MeetingFeePayment {
   @@index([month, paymentStatus])
   @@index([month, paidAt])
   @@index([month, amount])
+  @@index([paymentSource, month])
   @@map("meeting_fee_payments")
 }
 
@@ -426,7 +424,7 @@ model Expense {
   id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hubId       String          @map("hub_id") @db.Uuid
   date        DateTime
-  category    ExpenseCategory
+  category    String          @db.VarChar(60)
   amount      Decimal         @db.Decimal(10, 2)
   description String
   receiptUrl  String?         @map("receipt_url")

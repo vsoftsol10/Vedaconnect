@@ -110,6 +110,7 @@ export const verifyMeetingFeePayment = async ({
     where: { id: payment.id },
     data: {
       paymentStatus: "PAID",
+      paymentSource: "ONLINE",
       razorpayPaymentId: razorpay_payment_id,
       razorpaySignature: razorpay_signature,
       paidAt: new Date(),
@@ -140,6 +141,7 @@ export const getMyMeetingFeeStatus = async (userId) => {
     amount: MEETING_FEE_AMOUNT,
     paymentStatus: payment?.paymentStatus || "PENDING",
     paidAt: payment?.paidAt || null,
+    paymentSource: payment?.paymentSource || "ONLINE",
     renewalAmount: plan ? Number(plan.amount) : null,
   };
 };
@@ -164,6 +166,7 @@ export const getMyMeetingFeeHistory = async (userId) => {
       amount: Number(payment?.amount || MEETING_FEE_AMOUNT),
       paymentStatus: payment?.paymentStatus || (cursor < currentMonth ? "OVERDUE" : "PENDING"),
       paidAt: payment?.paidAt || null,
+      paymentSource: payment?.paymentSource || "ONLINE",
     });
     cursor.setMonth(cursor.getMonth() + 1);
   }
@@ -248,6 +251,7 @@ export const getMonthlyMeetingFeeList = async (month = getCurrentMonthKey()) => 
       amount: MEETING_FEE_AMOUNT,
       paymentStatus: payment?.paymentStatus || "PENDING",
       paidAt: payment?.paidAt || null,
+      paymentSource: payment?.paymentSource || "ONLINE",
     };
   });
 };

@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Trophy } from "lucide-react";
+import { Link } from "react-router-dom";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
-import { getWeeklyAttendance } from "../../services/attendanceService";
-import { getMonthlyMeetingFees } from "../../services/meetingFeeService";
-import { getAdminLeaderboard } from "../../services/adminService";
+import { getAdminAttendance, getAdminLeaderboard, getAdminMeetingFees } from "../../services/adminService";
 import { getHubs } from "../../services/hubService";
 import Dropdown from "../../components/ui/Dropdown";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
@@ -21,14 +20,15 @@ const statusClass = (status) => {
   return "bg-amber-50 text-amber-700";
 };
 
-const isoDate = (date) => date.toISOString().slice(0, 10);
+const isoDate = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const monthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const startOfWeek = (date = new Date()) => {
   const value = new Date(date);
   value.setHours(0, 0, 0, 0);
-  const daysSinceMonday = (value.getDay() + 6) % 7;
-  value.setDate(value.getDate() - daysSinceMonday);
+  const daysSinceSaturday = (value.getDay() + 1) % 7;
+  value.setDate(value.getDate() - daysSinceSaturday);
   return value;
 };
 
@@ -46,6 +46,14 @@ const weekLabel = (weekStart) => {
     day: "numeric",
     month: "short",
   })}`;
+};
+
+const queryString = (values) => {
+  const params = new URLSearchParams();
+  Object.entries(values).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  return params.toString();
 };
 
 const LeaderboardTable = ({ rows }) => {
@@ -98,8 +106,13 @@ const AdminLeaderboard = () => {
   const [years, setYears] = useState([new Date().getFullYear()]);
   const [hubs, setHubs] = useState([]);
   const [leaderboard, setLeaderboard] = useState({ rows: [] });
-  const [attendance, setAttendance] = useState([]);
-  const [meetingFees, setMeetingFees] = useState([]);
+  const [attendance, setAttendance] = useState({ rows: [], filteredCount: 0 });
+  const [meetingFees, setMeetingFees] = useState({ rows: [], filteredTotals: { count: 0, collected: 0, pendingAmount: 0 } });
+  const [attendanceSearch, setAttendanceSearch] = useState("");
+  const [attendanceStatus, setAttendanceStatus] = useState("");
+  const [feeSearch, setFeeSearch] = useState("");
+  const [feeStatus, setFeeStatus] = useState("");
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -107,16 +120,12 @@ const AdminLeaderboard = () => {
     const load = async () => {
       setIsLoading(true);
       setError("");
-      const [leaderboardData, attendanceRows, feeRows, hubRows] = await Promise.all([
+      const [leaderboardData, hubRows] = await Promise.all([
         getAdminLeaderboard({ period, value, hub, sort }),
-        getWeeklyAttendance(),
-        getMonthlyMeetingFees(),
         getHubs(),
       ]);
       setLeaderboard(leaderboardData);
       if (leaderboardData.years?.length) setYears(leaderboardData.years);
-      setAttendance(attendanceRows);
-      setMeetingFees(feeRows);
       setHubs(hubRows);
       setIsLoading(false);
     };
@@ -125,6 +134,41 @@ const AdminLeaderboard = () => {
       setIsLoading(false);
     });
   }, [period, value, hub, sort]);
+
+  const previewWeekStart = period === "week" ? value : isoDate(startOfWeek());
+  const previewMonth = period === "week" ? value.slice(0, 7) : period === "month" ? value : monthKey(new Date());
+  const previewHub = hub === "all" ? undefined : hub;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsPreviewLoading(true);
+      Promise.all([
+        getAdminAttendance({
+          weekStart: previewWeekStart,
+          hub: previewHub,
+          search: attendanceSearch.trim() || undefined,
+          status: attendanceStatus || undefined,
+          page: 1,
+          pageSize: 10,
+        }),
+        getAdminMeetingFees({
+          month: previewMonth,
+          hub: previewHub,
+          search: feeSearch.trim() || undefined,
+          status: feeStatus || undefined,
+          page: 1,
+          pageSize: 10,
+        }),
+      ])
+        .then(([attendanceData, feeData]) => {
+          setAttendance(attendanceData);
+          setMeetingFees(feeData);
+        })
+        .catch((err) => setError(err.message))
+        .finally(() => setIsPreviewLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [previewWeekStart, previewMonth, previewHub, attendanceSearch, attendanceStatus, feeSearch, feeStatus]);
 
   const handlePeriodChange = (nextPeriod) => {
     setPeriod(nextPeriod);
@@ -220,64 +264,39 @@ const AdminLeaderboard = () => {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
-                  <h2 className="font-bold text-gray-900 mb-4">This Week's Attendance</h2>
-                  <Table minWidth="min-w-[520px]">
-                    <thead>
-                      <tr className="text-left text-xs text-gray-400 uppercase">
-                        <th className="pb-3">Member</th>
-                        <th className="pb-3">Status</th>
-                        <th className="pb-3">Responded</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendance.map((row) => (
-                        <tr key={row.userId} className="border-t border-gray-50">
-                          <td className="py-3">
-                            <p className="font-semibold text-gray-900">{row.fullName}</p>
-                            <p className="text-xs text-gray-400">{row.businessName || "-"}</p>
-                          </td>
-                          <td className="py-3">
-                            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(row.status)}`}>
-                              {row.status}
-                            </span>
-                          </td>
-                          <td className="py-3 text-gray-500">
-                            {row.respondedAt ? new Date(row.respondedAt).toLocaleString("en-IN") : "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
+                <div className="min-w-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="font-bold text-gray-900">This Week's Attendance</h2>
+                      <p className="mt-1 text-sm text-gray-500">{attendance.filteredCount || 0} members match</p>
+                    </div>
+                    <Link to={`/admin/attendance?${queryString({ search: attendanceSearch.trim(), status: attendanceStatus, hub: previewHub, weekStart: previewWeekStart })}`} className="text-sm font-semibold text-green-700 hover:text-green-800">
+                      View all with filters
+                    </Link>
+                  </div>
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+                    <input value={attendanceSearch} onChange={(event) => setAttendanceSearch(event.target.value)} placeholder="Search member or business" className="min-h-10 flex-1 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100" />
+                    <select value={attendanceStatus} onChange={(event) => setAttendanceStatus(event.target.value)} className="min-h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100">
+                      <option value="">All statuses</option><option value="CONFIRMED">Confirmed</option><option value="PENDING">Pending</option><option value="ABSENT">Absent</option>
+                    </select>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table minWidth="min-w-[500px]">
+                      <thead><tr className="text-left text-xs text-gray-400 uppercase"><th className="pb-3">Member</th><th className="pb-3 whitespace-nowrap">Status</th><th className="pb-3 whitespace-nowrap">Responded</th></tr></thead>
+                      <tbody>{attendance.rows?.length ? attendance.rows.map((row) => (
+                        <tr key={row.userId} className="border-t border-gray-50"><td className="py-3"><p className="font-semibold text-gray-900">{row.fullName}</p><p className="text-xs text-gray-400">{row.businessName || "-"}</p></td><td className="py-3 whitespace-nowrap"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(row.status)}`}>{row.status}</span></td><td className="py-3 whitespace-nowrap text-gray-500">{row.respondedAt ? new Date(row.respondedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "-"}</td></tr>
+                      )) : <tr><td colSpan={3} className="py-6 text-center text-sm text-gray-400">{isPreviewLoading ? "Loading…" : "No members match your filters."}</td></tr>}</tbody>
+                    </Table>
+                  </div>
                 </div>
 
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
-                  <h2 className="font-bold text-gray-900 mb-4">Meeting Fee Status</h2>
-                  <Table minWidth="min-w-[520px]">
-                    <thead>
-                      <tr className="text-left text-xs text-gray-400 uppercase">
-                        <th className="pb-3">Member</th>
-                        <th className="pb-3">Amount</th>
-                        <th className="pb-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {meetingFees.map((row) => (
-                        <tr key={row.userId} className="border-t border-gray-50">
-                          <td className="py-3">
-                            <p className="font-semibold text-gray-900">{row.fullName}</p>
-                            <p className="text-xs text-gray-400">{row.businessName || "-"}</p>
-                          </td>
-                          <td className="py-3 text-gray-600">{formatCurrency(row.amount)}</td>
-                          <td className="py-3">
-                            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(row.paymentStatus)}`}>
-                              {row.paymentStatus}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
+                <div className="min-w-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div><h2 className="font-bold text-gray-900">Meeting Fee Status</h2><p className="mt-1 text-sm text-gray-500">{meetingFees.filteredTotals?.count || 0} members · {formatCurrency(meetingFees.filteredTotals?.collected)} collected · {formatCurrency(meetingFees.filteredTotals?.pendingAmount)} pending</p></div>
+                    <Link to={`/admin/meeting-fees?${queryString({ search: feeSearch.trim(), status: feeStatus, hub: previewHub, month: previewMonth, weekStart: previewWeekStart })}`} className="text-sm font-semibold text-green-700 hover:text-green-800">View all with filters</Link>
+                  </div>
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row"><input value={feeSearch} onChange={(event) => setFeeSearch(event.target.value)} placeholder="Search member or business" className="min-h-10 flex-1 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100" /><select value={feeStatus} onChange={(event) => setFeeStatus(event.target.value)} className="min-h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"><option value="">All statuses</option><option value="PAID">Paid</option><option value="PENDING">Pending</option></select></div>
+                  <div className="overflow-x-auto"><Table minWidth="min-w-[500px]"><thead><tr className="text-left text-xs text-gray-400 uppercase"><th className="pb-3">Member</th><th className="pb-3 whitespace-nowrap">Amount</th><th className="pb-3 whitespace-nowrap">Status</th></tr></thead><tbody>{meetingFees.rows?.length ? meetingFees.rows.map((row) => (<tr key={row.userId} className="border-t border-gray-50"><td className="py-3"><p className="font-semibold text-gray-900">{row.fullName}</p><p className="text-xs text-gray-400">{row.businessName || "-"}</p></td><td className="py-3 whitespace-nowrap text-gray-600">{formatCurrency(row.amount)}</td><td className="py-3 whitespace-nowrap"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(row.paymentStatus)}`}>{row.paymentStatus}</span>{row.paymentStatus === "PAID" && row.paymentSource === "MANUAL" && <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Manual</span>}</td></tr>)) : <tr><td colSpan={3} className="py-6 text-center text-sm text-gray-400">{isPreviewLoading ? "Loading…" : "No members match your filters."}</td></tr>}</tbody></Table></div>
                 </div>
               </div>
             </>

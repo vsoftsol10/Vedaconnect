@@ -18,6 +18,7 @@ import {
 import { leaderboardQuerySchema, validateQuery } from "../validations/networkingValidation.js";
 import { meetingFeeListQuerySchema, memberFeeHistoryQuerySchema, attendanceListQuerySchema } from "../validations/adminMeetingListValidation.js";
 import * as adminMeetingListsController from "../controllers/adminMeetingListsController.js";
+import * as expenseController from "../controllers/expenseController.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -51,6 +52,7 @@ router.get("/meeting-fees", requireAuth, requireAdmin, validateQuery(meetingFeeL
 router.get("/meeting-fees/export", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.exportMeetingFees);
 router.get("/attendance", requireAuth, requireAdmin, validateQuery(attendanceListQuerySchema), adminMeetingListsController.listAttendance);
 router.get("/attendance/export", requireAuth, requireAdmin, validateQuery(attendanceListQuerySchema), adminMeetingListsController.exportAttendance);
+router.get("/expenses/categories", requireAuth, requireAdmin, expenseController.categories);
 
 // Members
 router.get("/members", requireAuth, requireAdmin, adminController.listMembers);
