@@ -45,7 +45,7 @@ const AdminSidebar = () => {
         <button type="button" onClick={() => setIsOpen(false)} className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 md:hidden" aria-label="Close admin navigation"><X className="h-5 w-5" /></button>
       </div>
 
-      <nav className="space-y-1 flex-1">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
         {MENU_ITEMS.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={linkClasses} onClick={() => setIsOpen(false)}>
             <Icon className="h-4.5 w-4.5" />

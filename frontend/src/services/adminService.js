@@ -9,7 +9,8 @@ export const getAdminMeetingFees = async (params) => (await api.get("/admin/meet
 export const getAdminAttendance = async (params) => (await api.get("/admin/attendance", { params })).data.data;
 export const getAdminMemberMeetingFees = async (userId, params) => (await api.get(`/admin/members/${userId}/meeting-fees`, { params })).data.data;
 export const exportAdminMeetingList = async (type, params) => {
-  const response = await api.get(`/admin/${type === "fees" ? "meeting-fees" : "attendance"}/export`, { params, responseType: "blob" });
+  const cleanParams = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== "" && value !== "false"));
+  const response = await api.get(`/admin/${type === "fees" ? "meeting-fees" : "attendance"}/export`, { params: cleanParams, responseType: "blob" });
   const url = URL.createObjectURL(response.data); const link = document.createElement("a"); link.href = url; link.download = `${type}.csv`; link.click(); URL.revokeObjectURL(url);
 };
 export const getAdminMemberDocuments = async (userId) => (await api.get(`/admin/members/${userId}/documents`)).data.data;
