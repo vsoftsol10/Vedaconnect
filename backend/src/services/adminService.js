@@ -103,7 +103,7 @@ export const listAllMembers = async ({ search, hubId, status, membershipType, me
       { memberProfile: { businessName: { contains: search, mode: "insensitive" } } },
     ];
   }
-  if (hubId) where.memberProfile = { ...where.memberProfile, hubId };
+  if (hubId) where.memberProfile = { is: { hubId } };
   if (status) where.membership = { ...where.membership, membershipStatus: status };
   if (membershipType) where.membership = { ...where.membership, membershipType };
   if (membershipTier) where.membershipTier = membershipTier;
