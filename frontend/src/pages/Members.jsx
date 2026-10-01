@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
@@ -13,6 +13,7 @@ const Members = () => {
   const [members, setMembers] = useState([]);
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersRef = useRef(null);
   const [filters, setFilters] = useState({ location: "", category: "", status: "", tier: "", alphabetical: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,6 +22,22 @@ const Members = () => {
 
   useEffect(() => {
     listMembers().then(setMembers).catch((err) => setError(err.message || "Could not load members.")).finally(() => setIsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event) => {
+      if (filtersRef.current && !filtersRef.current.contains(event.target)) setFiltersOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setFiltersOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
   }, []);
 
   const locations = useMemo(() => uniqueValues(members.map((member) => member.hub || member.location)), [members]);
@@ -44,7 +61,7 @@ const Members = () => {
 
   return <div className="flex min-h-screen bg-stone-50"><Sidebar /><div className="min-w-0 flex-1"><DashboardHeader /><main className="px-4 py-6 sm:px-6 md:p-8">
     <h1 className="mb-1 text-2xl font-bold text-gray-900">Members</h1><p className="mb-6 text-gray-500">Connect with members of the VedaConnect community.</p>
-    <div className="relative mb-6 flex flex-col gap-3 sm:flex-row sm:items-center"><div className="relative flex-1"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search members..." className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100" /></div><button type="button" onClick={() => setFiltersOpen((open) => !open)} aria-expanded={filtersOpen} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-gray-700 transition-colors hover:border-green-300 sm:justify-start"><SlidersHorizontal className="h-4 w-4" /> Filters{activeFilterCount > 0 && <span className="rounded-full bg-green-600 px-1.5 py-0.5 text-xs font-bold text-white">{activeFilterCount}</span>}</button>
+    <div ref={filtersRef} className="relative mb-6 flex flex-col gap-3 sm:flex-row sm:items-center"><div className="relative flex-1"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search members..." className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-gray-900 outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-100" /></div><button type="button" onClick={() => setFiltersOpen((open) => !open)} aria-expanded={filtersOpen} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-gray-700 transition-colors hover:border-green-300 sm:justify-start"><SlidersHorizontal className="h-4 w-4" /> Filters{activeFilterCount > 0 && <span className="rounded-full bg-green-600 px-1.5 py-0.5 text-xs font-bold text-white">{activeFilterCount}</span>}</button>
       {filtersOpen && <div className="z-10 w-full rounded-2xl border border-gray-100 bg-white p-4 shadow-lg sm:absolute sm:right-0 sm:top-14 sm:w-[34rem]"><div className="mb-4 flex items-center justify-between"><h2 className="font-bold text-gray-900">Filter members</h2><button type="button" onClick={clearFilters} disabled={!activeFilterCount} className="text-sm font-medium text-green-600 disabled:text-gray-400">Clear filters</button></div><div className="grid gap-3 sm:grid-cols-2"><FilterSelect label="Location / Hub" value={filters.location} onChange={setFilter("location")} options={locations} /><FilterSelect label="Category / Business type" value={filters.category} onChange={setFilter("category")} options={categories} /><FilterSelect label="Membership status" value={filters.status} onChange={setFilter("status")} options={["ACTIVE", "INACTIVE"]} labels={{ ACTIVE: "Active", INACTIVE: "Inactive" }} /><FilterSelect label="Sort" value={filters.alphabetical} onChange={setFilter("alphabetical")} options={["AZ"]} labels={{ AZ: "Alphabetical (A–Z)" }} /></div></div>}
     </div>
     <div className="mb-4 w-full sm:w-52"><Dropdown value={filters.tier} onChange={(value) => setFilters((current) => ({ ...current, tier: value }))} placeholder="All Membership Tiers" options={[{ value: "FOUNDING_MEMBER", label: "Founding Member" }, { value: "MEMBER", label: "Member" }]} /></div>
