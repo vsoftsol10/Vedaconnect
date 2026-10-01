@@ -1,13 +1,14 @@
 import { ChevronDown } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "../notifications/NotificationBell";
+import HeaderSearch from "../navigation/HeaderSearch";
 
 const AdminHeader = ({ title = "Dashboard" }) => {
   const { user } = useAuth();
 
   return (
-    <header className="flex min-h-[68px] items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-3 pl-16 sm:px-6 sm:pl-16 md:px-8 md:py-5">
-      <h1 className="truncate text-lg font-bold text-gray-900 sm:text-xl">{title}</h1>
+    <header className="flex min-h-[68px] items-center gap-3 border-b border-gray-100 bg-white px-4 py-3 pl-16 sm:px-6 sm:pl-16 md:px-8 md:py-5">
+      <HeaderSearch role={user?.role || "ADMIN"} />
 
       <div className="flex flex-shrink-0 items-center gap-2 sm:gap-6">
         <NotificationBell badgeClass="bg-red-500 text-white" />

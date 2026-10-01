@@ -1,19 +1,10 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutGrid, Users, Calendar, CircleUser, Handshake, CreditCard, Menu, X, WalletCards } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getMyProfile } from "../../services/memberService";
 import logo from "../../assets/images/vedaconnect-logo.png";
-
-const MENU_ITEMS = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { to: "/members", label: "Members", icon: Users },
-  { to: "/networking", label: "Networking", icon: Handshake },
-  { to: "/events", label: "Events", icon: Calendar },
-  { to: "/meeting-fee", label: "Meeting Fee", icon: CreditCard },
-  { to: "/meeting-expenses", label: "Meeting Expenses", icon: WalletCards },
-  { to: "/profile", label: "Profile", icon: CircleUser },
-];
+import { itemsForRole } from "../../config/navigation";
 
 const Sidebar = () => {
   const { user } = useAuth();
@@ -60,7 +51,7 @@ const Sidebar = () => {
 
       <p className="px-4 text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-2">Menu</p>
       <nav className="space-y-1 mb-8">
-        {MENU_ITEMS.map(({ to, label, icon: Icon }) => (
+        {itemsForRole("MEMBER").filter((item) => !item.to.startsWith("/admin/")).map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={linkClasses} onClick={() => setIsOpen(false)}>
             {({ isActive }) => (
               <>

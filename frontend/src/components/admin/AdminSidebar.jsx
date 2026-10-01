@@ -1,22 +1,9 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutGrid, Users, Building2, Calendar, CreditCard, Receipt, CircleUser, LogOut, Trophy, Menu, X, WalletCards } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/images/vedaconnect-logo.png";
-
-const MENU_ITEMS = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { to: "/admin/members", label: "Members", icon: Users },
-  { to: "/admin/hubs", label: "Hubs", icon: Building2 },
-  { to: "/admin/events", label: "Events", icon: Calendar },
-  { to: "/admin/leaderboard", label: "Awards", icon: Trophy },
-  { to: "/admin/attendance", label: "Attendance", icon: Calendar },
-  { to: "/admin/meeting-fees", label: "Meeting Fees", icon: Receipt },
-  { to: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
-  { to: "/admin/payment-history", label: "Payment History", icon: Receipt },
-  { to: "/admin/expenses", label: "Expenses", icon: WalletCards },
-  { to: "/admin/profile", label: "Profile", icon: CircleUser },
-];
+import { itemsForRole } from "../../config/navigation";
 
 const AdminSidebar = () => {
   const navigate = useNavigate();
@@ -46,7 +33,7 @@ const AdminSidebar = () => {
       </div>
 
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
-        {MENU_ITEMS.map(({ to, label, icon: Icon }) => (
+        {itemsForRole(user?.role || "ADMIN").filter((item) => item.to.startsWith("/admin/")).map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={linkClasses} onClick={() => setIsOpen(false)}>
             <Icon className="h-4.5 w-4.5" />
             {label}

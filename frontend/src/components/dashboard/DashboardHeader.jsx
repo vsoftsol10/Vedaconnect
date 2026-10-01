@@ -5,6 +5,7 @@ import { getMyProfile } from "../../services/memberService";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "../notifications/NotificationBell";
 import Dropdown from "../ui/Dropdown";
+import HeaderSearch from "../navigation/HeaderSearch";
 
 const DashboardHeader = () => {
   const navigate = useNavigate();
