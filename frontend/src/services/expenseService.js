@@ -2,6 +2,7 @@ import api from "./api";
 
 export const getExpenseSummary = async (params = {}) => (await api.get("/expenses/summary", { params })).data.data;
 export const getExpenses = async (params = {}) => (await api.get("/expenses", { params })).data.data;
+export const getFinanceHistory = async (params = {}) => (await api.get("/expenses/history", { params })).data.data;
 const expenseFormData = (payload, receipt) => {
   const data = new FormData();
   data.append("data", JSON.stringify({ ...payload, receiptUrl: payload.receiptUrl || null }));
