@@ -1,14 +1,9 @@
-import { prisma } from "../config/prismaClient.js";
-import { sendMonthlyExpenseSummaryForHub } from "../services/monthlyExpenseNotificationService.js";
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const runMonthlyExpenseNotificationJob = async (now = new Date()) => {
-  if (process.env.ENABLE_MONTHLY_EXPENSE_NOTIFICATION !== "true" || now.getDate() !== 1) return { skipped: true };
-  const previous = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const hubs = await prisma.hub.findMany({ where: { isActive: true }, select: { id: true } });
-  const results = await Promise.allSettled(hubs.map((hub) => sendMonthlyExpenseSummaryForHub(hub.id, previous.getMonth() + 1, previous.getFullYear())));
-  return { skipped: false, hubs: results.length };
+  if (process.env.ENABLE_MONTHLY_EXPENSE_PDF_AUTOMATION !== "true" || now.getDate() !== 1) return { skipped: true };
+  console.info("[MONTHLY_EXPENSE_NOTIFICATION_JOB] Skipped: an admin-selected PDF is required; the scheduler will not send the document template or fall back to the legacy template.");
+  return { skipped: true, reason: "admin-selected-pdf-required" };
 };
 
 export const scheduleMonthlyExpenseNotificationJob = () => {
