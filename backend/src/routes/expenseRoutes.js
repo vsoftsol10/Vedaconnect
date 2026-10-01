@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { validate } from "../validations/onboardingValidation.js";
 import { validateQuery } from "../validations/networkingValidation.js";
-import { expenseNotificationSchema, expenseQuerySchema, expenseSchema, manualFeeQuerySchema, manualFeeSchema } from "../validations/expenseValidation.js";
+import { expenseNotificationSchema, expenseQuerySchema, expenseSchema, financeHistoryQuerySchema, manualFeeQuerySchema, manualFeeSchema } from "../validations/expenseValidation.js";
 import * as controller from "../controllers/expenseController.js";
 
 const router = Router();
@@ -18,6 +18,7 @@ const manualReceiptUpload = multer({ storage: multer.memoryStorage(), limits: { 
 const parseData = (req, res, next) => { if (req.body?.data) req.body = JSON.parse(req.body.data); next(); };
 
 router.get("/summary", requireAuth, validateQuery(expenseQuerySchema), controller.summary);
+router.get("/history", requireAuth, validateQuery(financeHistoryQuerySchema), controller.history);
 router.get("/notification-logs", requireAuth, requireAdmin, validateQuery(expenseNotificationSchema), controller.notificationLogs);
 router.get("/categories", requireAuth, requireAdmin, controller.categories);
 router.post("/notify", requireAuth, requireAdmin, validate(expenseNotificationSchema), controller.notify);
