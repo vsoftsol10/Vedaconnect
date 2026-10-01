@@ -16,12 +16,7 @@ const CERTIFICATES_BUCKET = "business-certificates";
 export const getDashboardStats = async () => {
   const totalMembers = await prisma.membership.count({ where: { membershipStatus: "ACTIVE" } });
 
-  const distinctLocations = await prisma.memberProfile.findMany({
-    where: { location: { not: null } },
-    select: { location: true },
-    distinct: ["location"],
-  });
-  const totalHubs = distinctLocations.length;
+  const totalHubs = await prisma.hub.count({ where: { isActive: true } });
 
   const upcomingEvents = await prisma.event.count({
     where: { status: "PUBLISHED", eventDate: { gte: new Date() } },
@@ -45,17 +40,20 @@ export const getDashboardStats = async () => {
 
 export const getMembersByHub = async () => {
   const profiles = await prisma.memberProfile.findMany({
-    where: { location: { not: null }, user: { status: { not: "DELETED" }, membership: { deletedAt: null } } },
-    select: { location: true },
+    where: { user: { status: { not: "DELETED" }, membership: { deletedAt: null } } },
+    select: { hub: { select: { id: true, name: true, isActive: true } } },
   });
 
-  const counts = {};
+  const counts = new Map();
   profiles.forEach((p) => {
-    counts[p.location] = (counts[p.location] || 0) + 1;
+    const key = p.hub?.isActive ? p.hub.id : "unassigned";
+    const name = p.hub?.isActive ? p.hub.name : "Unassigned";
+    const current = counts.get(key) || { hub: name, count: 0 };
+    current.count += 1;
+    counts.set(key, current);
   });
 
-  return Object.entries(counts)
-    .map(([hub, count]) => ({ hub, count }))
+  return [...counts.values()]
     .sort((a, b) => b.count - a.count);
 };
 

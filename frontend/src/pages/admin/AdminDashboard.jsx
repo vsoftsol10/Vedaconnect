@@ -47,7 +47,7 @@ const AdminDashboard = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
             <StatCard icon={Users} iconBg="bg-amber-50 text-amber-600" value={stats.totalMembers} label="Total Members" />
-            <StatCard icon={Building2} iconBg="bg-green-50 text-green-600" value={stats.totalHubs} label="Total Hubs" trend="Based on member locations" />
+            <StatCard icon={Building2} iconBg="bg-green-50 text-green-600" value={stats.totalHubs} label="Total Hubs" trend="Active hubs" />
             <StatCard icon={Calendar} iconBg="bg-blue-50 text-blue-600" value={stats.upcomingEvents} label="Upcoming Events" />
             <StatCard icon={IndianRupee} iconBg="bg-amber-50 text-amber-600" value={`₹${stats.totalRevenue.toLocaleString("en-IN")}`} label="Total Revenue" />
           </div>
