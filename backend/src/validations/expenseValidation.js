@@ -18,6 +18,22 @@ export const expenseQuerySchema = z.object({
   year: z.coerce.number().int().min(2020).max(2100).optional(),
 });
 
+const historyDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD").optional();
+export const financeHistoryQuerySchema = z.object({
+  hubId: z.string().uuid("Hub must be a valid id").optional(),
+  month: z.coerce.number().int().min(1).max(12).optional(),
+  year: z.coerce.number().int().min(2020).max(2100).optional(),
+  startDate: historyDate,
+  endDate: historyDate,
+  type: z.enum(["income", "expense"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+}).superRefine((value, ctx) => {
+  if ((value.month == null) !== (value.year == null)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["month"], message: "Month and year must be provided together." });
+  if ((value.startDate && !value.endDate) || (!value.startDate && value.endDate)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["startDate"], message: "Start date and end date must be provided together." });
+  if (value.startDate && value.endDate && value.startDate > value.endDate) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["endDate"], message: "End date must be on or after start date." });
+});
+
 export const expenseNotificationSchema = z.object({
   hubId: z.string().uuid("Please select a hub"),
   month: z.coerce.number().int().min(1).max(12),

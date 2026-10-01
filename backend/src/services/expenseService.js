@@ -66,6 +66,27 @@ export const getExpenses = async ({ hubId, month, year } = {}) => {
   return expenses.map(serializeExpense);
 };
 
+export const getFinanceHistory = async ({ hubId, month, year, startDate, endDate, type, page = 1, limit = 50 } = {}) => {
+  const dateFilter = startDate && endDate ? { gte: new Date(`${startDate}T00:00:00.000Z`), lt: new Date(`${endDate}T23:59:59.999Z`) } : month && year ? dateRange(month, year) : undefined;
+  const expenseWhere = { ...(hubId ? { hubId } : {}), ...(dateFilter ? { date: dateFilter } : {}) };
+  const paymentWhere = { paymentStatus: "PAID", ...(hubId ? { user: { memberProfile: { hubId } } } : {}), ...(month && year ? { month: `${year}-${String(month).padStart(2, "0")}` } : {}) };
+  const [expenses, income] = await Promise.all([
+    prisma.expense.findMany({ where: expenseWhere, select: { id: true, date: true, category: true, description: true, amount: true }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] }),
+    prisma.meetingFeePayment.findMany({ where: paymentWhere, select: { id: true, paidAt: true, amount: true, paymentSource: true, paymentMode: true, note: true }, orderBy: { paidAt: "desc" } }),
+  ]);
+  const allTransactions = [
+    ...income.filter((item) => item.paidAt).filter((item) => !dateFilter || (item.paidAt >= dateFilter.gte && item.paidAt < dateFilter.lt)).map((item) => ({ id: `income-${item.id}`, date: item.paidAt, type: "income", category: item.note || "Meeting fee collected", amount: Number(item.amount) })),
+    ...expenses.map((item) => ({ id: `expense-${item.id}`, date: item.date, type: "expense", category: item.category, description: item.description, amount: Number(item.amount) })),
+  ].filter((item) => !type || item.type === type).sort((a, b) => new Date(b.date) - new Date(a.date) || a.id.localeCompare(b.id));
+  let runningBalance = 0;
+  const withBalances = [...allTransactions].reverse().map((item) => { runningBalance += item.type === "income" ? item.amount : -item.amount; return { ...item, runningBalance }; }).reverse();
+  const totalIncome = allTransactions.filter((item) => item.type === "income").reduce((sum, item) => sum + item.amount, 0);
+  const totalExpenses = allTransactions.filter((item) => item.type === "expense").reduce((sum, item) => sum + item.amount, 0);
+  const categoryTotals = [...allTransactions.filter((item) => item.type === "expense").reduce((map, item) => { const current = map.get(item.category) || { category: item.category, entries: 0, total: 0 }; current.entries += 1; current.total += item.amount; map.set(item.category, current); return map; }, new Map()).values()].sort((a, b) => b.total - a.total);
+  const start = (page - 1) * limit; const transactions = withBalances.slice(start, start + limit);
+  return { transactions, totals: { income: totalIncome, expenses: totalExpenses, balance: totalIncome - totalExpenses }, categoryTotals, pagination: { page, limit, total: withBalances.length, totalPages: Math.max(1, Math.ceil(withBalances.length / limit)), showingFrom: withBalances.length ? start + 1 : 0, showingTo: Math.min(start + limit, withBalances.length) } };
+};
+
 export const updateExpense = async (id, data, receiptFile) => {
   const current = await prisma.expense.findUnique({ where: { id } });
   if (!current) throw new AppError("Expense not found.", 404);
