@@ -440,19 +440,41 @@ model Expense {
 }
 
 model NotificationLog {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  memberId     String   @map("member_id") @db.Uuid
-  hubId        String   @map("hub_id") @db.Uuid
-  type         String
-  period       String
-  status       String
-  errorMessage String?  @map("error_message")
-  sentAt       DateTime @default(now()) @map("sent_at")
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runId         String?  @map("run_id") @db.Uuid
+  memberId      String   @map("member_id") @db.Uuid
+  hubId         String   @map("hub_id") @db.Uuid
+  type          String
+  period        String
+  status        String
+  metaMessageId String?  @unique @map("meta_message_id")
+  acceptedAt    DateTime? @map("accepted_at")
+  errorMessage  String?  @map("error_message")
+  sentAt        DateTime @default(now()) @map("sent_at")
 
   member User @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  run    MonthlyExpenseSummaryRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
 
   @@index([hubId, type, sentAt])
+  @@index([runId, memberId, sentAt])
   @@map("notification_logs")
+}
+
+model MonthlyExpenseSummaryRun {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hubId              String   @map("hub_id") @db.Uuid
+  period             String   @db.VarChar(7)
+  state              String   @db.VarChar(32)
+  startedAt          DateTime @default(now()) @map("started_at")
+  completedAt        DateTime? @map("completed_at")
+  failedBeforeSendAt DateTime? @map("failed_before_send_at")
+  errorMessage       String?  @map("error_message")
+
+  attempts NotificationLog[]
+
+  @@unique([hubId, period])
+  @@index([state, startedAt])
+  @@map("monthly_expense_summary_runs")
 }
 
 model WhatsAppDeliveryLog {
