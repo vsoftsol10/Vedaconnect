@@ -7,6 +7,7 @@ backend/.env.local
 frontend/.env
 frontend/.env.local
 backend/backups/
+backend/test-files/
 tmp/
 
 # Local visual-verification captures (not application assets)

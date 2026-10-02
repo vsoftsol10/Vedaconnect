@@ -1,3 +1,5 @@
+import { sanitizeProviderErrorText } from "./sanitizeProviderError.js";
+
 const getMetaWhatsAppMessagesUrl = () => {
   const accessToken = process.env.META_WHATSAPP_ACCESS_TOKEN?.trim();
   const phoneNumberId = process.env.META_WHATSAPP_PHONE_NUMBER_ID?.trim();
@@ -9,6 +11,8 @@ const getMetaWhatsAppMessagesUrl = () => {
 
   return `https://graph.facebook.com/${graphApiVersion}/${phoneNumberId}/messages`;
 };
+
+const getMetaWhatsAppMediaUrl = () => getMetaWhatsAppMessagesUrl().replace(/\/messages$/, "/media");
 
 const redactPhone = (phone) => {
   const digits = String(phone || "").replace(/\D/g, "");
@@ -75,4 +79,55 @@ export const sendWhatsAppMessage = async (phone, templateName, variables) => {
     });
     throw error;
   }
+};
+
+/** Uploads an in-memory PDF for use by a document-header template. */
+export const uploadWhatsAppPdf = async ({ buffer, filename }) => {
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("file", new Blob([buffer], { type: "application/pdf" }), filename);
+
+  const response = await fetch(getMetaWhatsAppMediaUrl(), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.META_WHATSAPP_ACCESS_TOKEN.trim()}` },
+    body: form,
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !body?.id) throw new Error(sanitizeProviderErrorText(`Meta media upload returned ${response.status}: ${body?.error?.message || "No media ID returned"}`));
+  return body.id;
+};
+
+/** Sends the approved document-header template. Kept separate from the legacy five-variable flow. */
+export const sendWhatsAppDocumentTemplate = async ({ phone, templateName, mediaId, filename, variables }) => {
+  if (!phone?.trim()) throw new Error("Recipient phone number is required");
+  if (!templateName?.trim()) throw new Error("WhatsApp document template is not configured");
+  if (!mediaId || !filename || !Array.isArray(variables) || variables.length !== 4 || variables.some((value) => typeof value !== "string")) {
+    throw new Error("Invalid WhatsApp document template payload");
+  }
+  const recipientPhone = normalizeWhatsAppPhone(phone);
+  if (!/^\d+$/.test(recipientPhone)) throw new Error("Recipient phone number must contain only digits with country code");
+
+  const response = await fetch(getMetaWhatsAppMessagesUrl(), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.META_WHATSAPP_ACCESS_TOKEN.trim()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: recipientPhone,
+      type: "template",
+      template: {
+        name: templateName.trim(),
+        language: { code: "en_US" },
+        components: [
+          { type: "header", parameters: [{ type: "document", document: { id: mediaId, filename } }] },
+          { type: "body", parameters: variables.map((text) => ({ type: "text", text })) },
+        ],
+      },
+    }),
+  });
+  const body = response.status === 204 ? null : await response.json().catch(() => null);
+  if (!response.ok) throw new Error(sanitizeProviderErrorText(`Meta WhatsApp Cloud API returned ${response.status}: ${body?.error?.message || "Unknown provider error"}`));
+  return body;
 };
