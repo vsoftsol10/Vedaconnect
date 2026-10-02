@@ -8,6 +8,7 @@ import EventCard from "../components/dashboard/EventCard";
 import AttendanceWidget from "../components/dashboard/AttendanceWidget";
 import Leaderboard from "../components/dashboard/Leaderboard";
 import { getBirthdayToday, getMyProfile, getMyStats, getMyUpcomingEvents } from "../services/memberService";
+import { getPosters } from "../services/posterService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Dashboard = () => {
   const [error, setError] = useState("");
   const [birthday, setBirthday] = useState(null);
   const [birthdayDismissed, setBirthdayDismissed] = useState(false);
+  const [latestPoster, setLatestPoster] = useState(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -41,6 +43,7 @@ const Dashboard = () => {
 
     loadDashboard();
     getBirthdayToday().then((data) => { setBirthday(data); setBirthdayDismissed(localStorage.getItem(`birthday-dismissed-${new Date().toDateString()}`) === "true"); }).catch(() => {});
+    getPosters().then((items) => setLatestPoster(items.find((item) => item.isPinned) || items[0] || null)).catch(() => {});
   }, []);
 
   return (
@@ -95,6 +98,7 @@ const Dashboard = () => {
               </div>
 
               <AttendanceWidget />
+              {latestPoster && <section className="mb-8 overflow-hidden rounded-2xl border bg-white p-4 shadow-sm sm:flex sm:items-center sm:gap-5"><div className="h-20 w-full shrink-0 overflow-hidden rounded-xl bg-stone-100 sm:w-28">{latestPoster.fileType === "IMAGE" && <img src={latestPoster.fileUrl} alt="" className="h-full w-full object-cover" />}</div><div className="mt-3 min-w-0 sm:mt-0"><p className="text-xs font-semibold uppercase tracking-wide text-green-700">Latest guide</p><h2 className="font-bold text-gray-900">{latestPoster.title}</h2><p className="truncate text-sm text-gray-500">{latestPoster.caption}</p></div><button onClick={() => navigate("/posters")} className="mt-3 shrink-0 text-sm font-semibold text-green-700 sm:ml-auto sm:mt-0">View all</button></section>}
               <Leaderboard />
 
               <div className="flex items-center justify-between gap-3 mb-4">

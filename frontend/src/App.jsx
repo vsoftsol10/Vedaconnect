@@ -39,6 +39,8 @@ import AdminProfile from "./pages/admin/AdminProfile";
 import AdminLeaderboard from "./pages/admin/AdminLeaderboard";
 import Expenses from "./pages/admin/Expenses";
 import MeetingExpenses from "./pages/MeetingExpenses";
+import Posters from "./pages/Posters";
+import AdminPosters from "./pages/admin/AdminPosters";
 
 
 
@@ -150,6 +152,7 @@ const App = () => {
               path="/profile"
               element={<ProtectedRoute><Profile /></ProtectedRoute>}
             />
+            <Route path="/posters" element={<ProtectedRoute><Posters /></ProtectedRoute>} />
             <Route
               path="/admin/dashboard" 
               element={<AdminRoute><AdminDashboard /></AdminRoute>}
@@ -173,6 +176,7 @@ const App = () => {
             <Route path="/admin/attendance" element={<AdminRoute><AdminMeetingLists type="attendance" /></AdminRoute>} />
             <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
             <Route path="/admin/profile" element={<AdminRoute><AdminProfile /></AdminRoute>} />
+            <Route path="/admin/posters" element={<AdminRoute><AdminPosters /></AdminRoute>} />
 
           </Routes>
         </OnboardingProvider>

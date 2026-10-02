@@ -1,0 +1,28 @@
+import { Router } from "express";
+import multer from "multer";
+import { requireAuth } from "../middleware/authMiddleware.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
+import { AppError } from "../middleware/errorHandler.js";
+import { validatePoster } from "../validations/posterValidation.js";
+import * as controller from "../controllers/posterController.js";
+const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const uploadFile = (req, res, next) => upload.single("file")(req, res, (error) => {
+  if (!error) return next();
+  if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") return next(new AppError("Poster must be 5 MB or smaller.", 400));
+  return next(new AppError(error.message || "Could not upload poster.", 400));
+});
+const requireMember = (req, res, next) => req.user?.role === "MEMBER" ? next() : next(new AppError("Member access required.", 403));
+router.get("/", requireAuth, requireMember, controller.listMember);
+router.get("/:id", requireAuth, requireMember, controller.getMember);
+export const adminPosterRoutes = Router();
+adminPosterRoutes.use(requireAuth, requireAdmin);
+adminPosterRoutes.get("/", controller.listAdmin);
+adminPosterRoutes.post("/", uploadFile, validatePoster, controller.create);
+adminPosterRoutes.patch("/:id", validatePoster, controller.update);
+adminPosterRoutes.post("/:id/publish", controller.publish);
+adminPosterRoutes.post("/:id/unpublish", controller.unpublish);
+adminPosterRoutes.post("/:id/pin", controller.pin);
+adminPosterRoutes.post("/:id/unpin", controller.unpin);
+adminPosterRoutes.delete("/:id", controller.remove);
+export default router;

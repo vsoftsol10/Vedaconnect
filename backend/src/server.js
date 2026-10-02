@@ -16,6 +16,7 @@ import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import meetingFeeRoutes from "./routes/meetingFeeRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import posterRoutes, { adminPosterRoutes } from "./routes/posterRoutes.js";
 import { scheduleMemberLifecycleJob } from "./jobs/memberLifecycleJob.js";
 import { scheduleMonthlyExpenseNotificationJob } from "./jobs/monthlyExpenseNotificationJob.js";
 import { scheduleBirthdayReminderJob } from "./jobs/birthdayReminderJob.js";
@@ -60,7 +61,9 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/meeting-fee", meetingFeeRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/posters", posterRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/posters", adminPosterRoutes);
 app.use("/api/admin/hubs", hubRoutes);
 app.use("/api/admin/events", adminEventRoutes);
 

@@ -92,6 +92,7 @@ model User {
   emailDeliveryLogs     EmailDeliveryLog[]
   manualPaymentSubmissions ManualPaymentSubmission[]
   birthdayReminders      BirthdayReminder[]
+  createdPosters         Poster[] @relation("PosterCreatedBy")
 
   @@map("users")
 }
@@ -222,6 +223,30 @@ model BusinessCertificate {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("business_certificates")
+}
+
+model Poster {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String   @db.VarChar(150)
+  caption       String?
+  category      String   @db.VarChar(32)
+  audience      String   @default("ALL_MEMBERS") @db.VarChar(32)
+  fileUrl       String   @map("file_url")
+  filePath      String   @map("file_path")
+  fileType      String   @map("file_type") @db.VarChar(16)
+  mimeType      String?  @map("mime_type") @db.VarChar(100)
+  fileSizeBytes Int?     @map("file_size_bytes")
+  isPublished   Boolean  @default(false) @map("is_published")
+  isPinned      Boolean  @default(false) @map("is_pinned")
+  publishedAt   DateTime? @map("published_at")
+  createdBy     String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  creator User? @relation("PosterCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([isPublished, isPinned, publishedAt])
+  @@map("posters")
 }
 
 model Event {

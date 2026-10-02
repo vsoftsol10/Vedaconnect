@@ -1,0 +1,11 @@
+import * as posters from "../services/posterService.js";
+export const create = async (req, res, next) => { try { res.status(201).json({ success: true, data: await posters.createPoster(req.user.userId, req.validatedBody, req.file) }); } catch (error) { next(error); } };
+export const listAdmin = async (req, res, next) => { try { res.json({ success: true, data: await posters.listAdminPosters() }); } catch (error) { next(error); } };
+export const update = async (req, res, next) => { try { res.json({ success: true, data: await posters.updatePoster(req.params.id, req.validatedBody) }); } catch (error) { next(error); } };
+export const publish = async (req, res, next) => { try { res.json({ success: true, data: await posters.publishPoster(req.params.id) }); } catch (error) { next(error); } };
+export const unpublish = async (req, res, next) => { try { res.json({ success: true, data: await posters.unpublishPoster(req.params.id) }); } catch (error) { next(error); } };
+export const pin = async (req, res, next) => { try { res.json({ success: true, data: await posters.pinPoster(req.params.id) }); } catch (error) { next(error); } };
+export const unpin = async (req, res, next) => { try { res.json({ success: true, data: await posters.unpinPoster(req.params.id) }); } catch (error) { next(error); } };
+export const remove = async (req, res, next) => { try { res.json({ success: true, data: await posters.deletePoster(req.params.id) }); } catch (error) { next(error); } };
+export const listMember = async (req, res, next) => { try { res.json({ success: true, data: await posters.listMemberPosters(req.user.userId) }); } catch (error) { next(error); } };
+export const getMember = async (req, res, next) => { try { res.json({ success: true, data: await posters.getMemberPoster(req.user.userId, req.params.id) }); } catch (error) { next(error); } };
