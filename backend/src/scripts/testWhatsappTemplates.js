@@ -51,6 +51,11 @@ if (!testPhone) {
     console.log(`[WHATSAPP_TEMPLATE_TEST] Sending ${template.name}`, { variables: template.variables });
     try {
       const metaResponse = await sendWhatsAppMessage(testPhone, template.name, template.variables);
+      if (metaResponse?.skipped) {
+        console.log(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: SKIPPED - notifications disabled`);
+        results.push({ template: template.name, status: "SKIPPED", detail: "notifications disabled" });
+        continue;
+      }
       const detail = metaResponse ? JSON.stringify(metaResponse) : "HTTP 204 (no response body)";
       console.log(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: SUCCESS - ${detail}`);
       results.push({ template: template.name, status: "SUCCESS", detail });

@@ -12,16 +12,28 @@ import { expenseNotificationSchema } from "../src/validations/expenseValidation.
 const hubId = "a0c69832-6015-4601-a96f-fa06a79452a4";
 const pdf = () => ({ mimetype: "application/pdf", size: 8, buffer: Buffer.from("%PDF-1.7") });
 const member = (id, name, phone) => ({ id, memberProfile: { fullName: name, phone } });
-const fakePrisma = (members = [member("one", "Asha", "919999999803")]) => ({
+const fakePrisma = (members = [member("one", "Asha", "919999999803")]) => {
+  const runs = []; let nextRunId = 1;
+  const matchingRun = (where) => where.id ? runs.find((run) => run.id === where.id) : runs.find((run) => run.hubId === where.hubId_period.hubId && run.period === where.hubId_period.period);
+  return {
   hub: { findUnique: async () => ({ name: "Tirunelveli" }) },
   user: { findMany: async () => members },
   notificationLog: { create: async () => ({}) },
-});
+  monthlyExpenseSummaryRun: {
+    findUnique: async ({ where }) => matchingRun(where) || null,
+    create: async ({ data }) => { if (runs.some((run) => run.hubId === data.hubId && run.period === data.period)) { const error = new Error("Unique constraint"); error.code = "P2002"; throw error; } const run = { id: String(nextRunId++), ...data, startedAt: new Date() }; runs.push(run); return run; },
+    updateMany: async ({ where, data }) => { const run = matchingRun(where); if (!run || (where.state && run.state !== where.state)) return { count: 0 }; Object.assign(run, data); return { count: 1 }; },
+    update: async ({ where, data }) => { const run = matchingRun(where); Object.assign(run, data); return run; },
+  },
+  __runs: runs,
+};
+};
 const withTemplate = async (value, callback) => {
-  const previous = process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE;
+  const previous = process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE; const previousNotifications = process.env.ENABLE_WHATSAPP_NOTIFICATIONS;
   if (value === undefined) delete process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE;
   else process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE = value;
-  try { return await callback(); } finally { if (previous === undefined) delete process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE; else process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE = previous; }
+  process.env.ENABLE_WHATSAPP_NOTIFICATIONS = "true";
+  try { return await callback(); } finally { if (previous === undefined) delete process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE; else process.env.WHATSAPP_EXPENSE_SUMMARY_PDF_TEMPLATE = previous; if (previousNotifications === undefined) delete process.env.ENABLE_WHATSAPP_NOTIFICATIONS; else process.env.ENABLE_WHATSAPP_NOTIFICATIONS = previousNotifications; }
 };
 const dependencies = (members, metaClient) => ({ prismaClient: fakePrisma(members), getMonthlySummary: async () => ({ totalCollected: 100, totalSpent: 40, balance: 60 }), metaClient });
 
@@ -34,9 +46,9 @@ test("PDF payload has one document header and exactly four body variables", asyn
 }));
 
 test("Meta request contains only the required document header and four-variable body", async () => {
-  const oldFetch = globalThis.fetch; const oldToken = process.env.META_WHATSAPP_ACCESS_TOKEN; const oldPhoneId = process.env.META_WHATSAPP_PHONE_NUMBER_ID; const oldVersion = process.env.META_GRAPH_API_VERSION;
+  const oldFetch = globalThis.fetch; const oldToken = process.env.META_WHATSAPP_ACCESS_TOKEN; const oldPhoneId = process.env.META_WHATSAPP_PHONE_NUMBER_ID; const oldVersion = process.env.META_GRAPH_API_VERSION; const oldNotifications = process.env.ENABLE_WHATSAPP_NOTIFICATIONS;
   let request;
-  process.env.META_WHATSAPP_ACCESS_TOKEN = "test-token"; process.env.META_WHATSAPP_PHONE_NUMBER_ID = "phone-id"; process.env.META_GRAPH_API_VERSION = "v20.0";
+  process.env.META_WHATSAPP_ACCESS_TOKEN = "test-token"; process.env.META_WHATSAPP_PHONE_NUMBER_ID = "phone-id"; process.env.META_GRAPH_API_VERSION = "v20.0"; process.env.ENABLE_WHATSAPP_NOTIFICATIONS = "true";
   globalThis.fetch = async (url, options) => { request = { url, options }; return { ok: true, status: 200, json: async () => ({ messages: [{ id: "wamid" }] }) }; };
   try {
     await sendWhatsAppDocumentTemplate({ phone: "919999999803", templateName: "pdf_template", mediaId: "media-123", filename: "accounts.pdf", variables: ["September 2026", "100", "40", "60"] });
@@ -50,6 +62,7 @@ test("Meta request contains only the required document header and four-variable 
     if (oldToken === undefined) delete process.env.META_WHATSAPP_ACCESS_TOKEN; else process.env.META_WHATSAPP_ACCESS_TOKEN = oldToken;
     if (oldPhoneId === undefined) delete process.env.META_WHATSAPP_PHONE_NUMBER_ID; else process.env.META_WHATSAPP_PHONE_NUMBER_ID = oldPhoneId;
     if (oldVersion === undefined) delete process.env.META_GRAPH_API_VERSION; else process.env.META_GRAPH_API_VERSION = oldVersion;
+    if (oldNotifications === undefined) delete process.env.ENABLE_WHATSAPP_NOTIFICATIONS; else process.env.ENABLE_WHATSAPP_NOTIFICATIONS = oldNotifications;
   }
 });
 
@@ -132,10 +145,34 @@ test("lock returns 409 while running and releases after success and failure", as
   await new Promise((resolve) => setImmediate(resolve));
   await assert.rejects(() => sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, slow), { statusCode: 409 });
   release(); await first;
-  await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, dependencies(undefined, { uploadPdf: async () => "media-123", sendDocumentTemplate: async () => {} }));
-  await assert.rejects(() => sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 10, year: 2026, file: pdf() }, dependencies(undefined, { uploadPdf: async () => { throw new Error("failure"); }, sendDocumentTemplate: async () => {} })));
   await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 10, year: 2026, file: pdf() }, dependencies(undefined, { uploadPdf: async () => "media-123", sendDocumentTemplate: async () => {} }));
+  await assert.rejects(() => sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 11, year: 2026, file: pdf() }, dependencies(undefined, { uploadPdf: async () => { throw new Error("failure"); }, sendDocumentTemplate: async () => {} })));
+  await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 11, year: 2026, file: pdf() }, dependencies(undefined, { uploadPdf: async () => "media-123", sendDocumentTemplate: async () => {} }));
 }));
+
+test("persistent PDF run rejects a second completed send for the same month", async () => withTemplate("pdf_template", async () => {
+  const prismaClient = fakePrisma(); const metaClient = { uploadPdf: async () => "media-123", sendDocumentTemplate: async () => ({}) };
+  await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, { prismaClient, getMonthlySummary: async () => ({ totalCollected: 100, totalSpent: 40, balance: 60 }), metaClient });
+  await assert.rejects(() => sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, { prismaClient, getMonthlySummary: async () => ({}), metaClient }), { statusCode: 409 });
+  assert.equal(prismaClient.__runs[0].state, "COMPLETED");
+}));
+
+test("failed PDF send marks the run retryable", async () => withTemplate("pdf_template", async () => {
+  const prismaClient = fakePrisma(); const base = { prismaClient, getMonthlySummary: async () => ({ totalCollected: 100, totalSpent: 40, balance: 60 }) };
+  const failed = await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, { ...base, metaClient: { uploadPdf: async () => "media-123", sendDocumentTemplate: async () => { throw new Error("rejected"); } } });
+  assert.equal(failed.stopped, true); assert.equal(prismaClient.__runs[0].state, "FAILED_BEFORE_SEND");
+  await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, { ...base, metaClient: { uploadPdf: async () => "media-123", sendDocumentTemplate: async () => ({}) } });
+  assert.equal(prismaClient.__runs[0].state, "COMPLETED");
+}));
+
+test("disabled WhatsApp skips PDF delivery without creating or completing a run", async () => {
+  const previous = process.env.ENABLE_WHATSAPP_NOTIFICATIONS; delete process.env.ENABLE_WHATSAPP_NOTIFICATIONS;
+  const prismaClient = fakePrisma(); let uploadCalls = 0;
+  try {
+    const result = await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, { prismaClient, metaClient: { uploadPdf: async () => { uploadCalls += 1; }, sendDocumentTemplate: async () => { throw new Error("must not send"); } } });
+    assert.deepEqual(result, { skipped: true, reason: "notifications-disabled" }); assert.equal(uploadCalls, 0); assert.equal(prismaClient.__runs.length, 0);
+  } finally { if (previous === undefined) delete process.env.ENABLE_WHATSAPP_NOTIFICATIONS; else process.env.ENABLE_WHATSAPP_NOTIFICATIONS = previous; }
+});
 
 test("preview has no Meta activity and exposes only masked phones", async () => {
   const preview = await previewMonthlyExpensePdfRecipients({ hubId, month: 9, year: 2026 }, { prismaClient: fakePrisma(), getMonthlySummary: async () => ({ totalCollected: 100, totalSpent: 40, balance: 60 }) });

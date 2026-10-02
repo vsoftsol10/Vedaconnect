@@ -19,6 +19,11 @@ const redactPhone = (phone) => {
   return digits ? `***${digits.slice(-4)}` : "missing";
 };
 
+const notificationsDisabledResult = (templateName) => {
+  console.info("[WHATSAPP_SEND_SKIPPED] skipped: notifications disabled", { template: templateName });
+  return { skipped: true, reason: "notifications-disabled" };
+};
+
 export const normalizeWhatsAppPhone = (phone) => {
   const digits = String(phone || "").replace(/\D/g, "");
   if (/^[6-9]\d{9}$/.test(digits)) return `91${digits}`;
@@ -30,6 +35,7 @@ export const normalizeWhatsAppPhone = (phone) => {
  * Throws on delivery failures so callers can create an admin follow-up record.
  */
 export const sendWhatsAppMessage = async (phone, templateName, variables) => {
+  if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS !== "true") return notificationsDisabledResult(templateName);
   try {
     if (!phone?.trim()) throw new Error("Recipient phone number is required");
     if (!templateName?.trim()) throw new Error("WhatsApp template name is required");
@@ -99,6 +105,7 @@ export const uploadWhatsAppPdf = async ({ buffer, filename }) => {
 
 /** Sends the approved document-header template. Kept separate from the legacy five-variable flow. */
 export const sendWhatsAppDocumentTemplate = async ({ phone, templateName, mediaId, filename, variables }) => {
+  if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS !== "true") return notificationsDisabledResult(templateName);
   if (!phone?.trim()) throw new Error("Recipient phone number is required");
   if (!templateName?.trim()) throw new Error("WhatsApp document template is not configured");
   if (!mediaId || !filename || !Array.isArray(variables) || variables.length !== 4 || variables.some((value) => typeof value !== "string")) {

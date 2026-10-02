@@ -30,11 +30,15 @@ const sendAndMarkInvoice = async (invoice, data, invoiceDate) => {
   if (freshInvoice?.emailedAt) return { ...invoice, emailedAt: freshInvoice.emailedAt };
 
   try {
-    await sendWhatsAppMessage(data.phone, "payment_confirmation", [
+    const whatsAppResult = await sendWhatsAppMessage(data.phone, "payment_confirmation", [
       data.memberName,
       `₹${Number(data.totalAmount).toFixed(2)}`,
       data.itemName,
     ]);
+    if (whatsAppResult?.skipped) {
+      console.info("[PAYMENT_WHATSAPP_SKIPPED] skipped: notifications disabled", { invoiceId: invoice.id });
+      return invoice;
+    }
     return prisma.paymentInvoice.update({
       where: { id: invoice.id },
       data: { emailedAt: new Date() },

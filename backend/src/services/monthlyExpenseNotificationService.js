@@ -44,6 +44,10 @@ export const sendMonthlyExpenseSummaryForHub = async (hubId, month, year, depend
   if (process.env.ENABLE_MONTHLY_EXPENSE_NOTIFICATION !== "true") {
     return { skipped: true, reason: "monthly-expense-notifications-disabled" };
   }
+  if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS !== "true") {
+    console.info("[MONTHLY_EXPENSE_WHATSAPP_SKIPPED] skipped: notifications disabled", { hubId, period: periodFor(month, year) });
+    return { skipped: true, reason: "notifications-disabled" };
+  }
   const prismaClient = dependencies.prismaClient || prisma;
   const getSummary = dependencies.getSummary || getMonthlySummary;
   const sendMessage = dependencies.sendMessage || sendWhatsAppMessage;
@@ -64,6 +68,10 @@ export const sendMonthlyExpenseSummaryForHub = async (hubId, month, year, depend
       if (!phone) continue;
       try {
         const metaResponse = await sendMessage(phone, template, variables);
+        if (metaResponse?.skipped) {
+          await finishRun(prismaClient, run.id, RUN_STATE.FAILED_BEFORE_SEND, "WhatsApp notifications are disabled.");
+          return { skipped: true, reason: metaResponse.reason, runState: RUN_STATE.FAILED_BEFORE_SEND };
+        }
         acceptedCount += 1;
         await prismaClient.notificationLog.create({ data: { runId: run.id, memberId: member.id, hubId, type: TYPE, period, status: "accepted", metaMessageId: metaResponse?.messages?.[0]?.id || null, acceptedAt: new Date() } });
       } catch (error) {
