@@ -41,6 +41,9 @@ const acquireRun = async (prismaClient, hubId, period) => {
 const finishRun = async (prismaClient, runId, state, errorMessage = null) => prismaClient.monthlyExpenseSummaryRun.update({ where: { id: runId }, data: { state, completedAt: state === RUN_STATE.COMPLETED ? new Date() : null, failedBeforeSendAt: state === RUN_STATE.FAILED_BEFORE_SEND ? new Date() : null, errorMessage } });
 
 export const sendMonthlyExpenseSummaryForHub = async (hubId, month, year, dependencies = {}) => {
+  if (process.env.ENABLE_MONTHLY_EXPENSE_NOTIFICATION !== "true") {
+    return { skipped: true, reason: "monthly-expense-notifications-disabled" };
+  }
   const prismaClient = dependencies.prismaClient || prisma;
   const getSummary = dependencies.getSummary || getMonthlySummary;
   const sendMessage = dependencies.sendMessage || sendWhatsAppMessage;
