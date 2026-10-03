@@ -28,7 +28,16 @@ export const createPoster = async (adminId, data, file) => {
   const filePath = `posters/${crypto.randomUUID()}.${definition.ext}`;
   const fileUrl = publicUrlFor(filePath);
   const { error } = await supabaseStorage.storage.from(POSTERS_BUCKET).upload(filePath, file.buffer, { contentType: file.mimetype, upsert: false });
-  if (error) throw new AppError("Could not upload poster file.", 500);
+  if (error) {
+    console.error("[POSTER_UPLOAD_FAILED]", {
+      message: error.message,
+      status: error.status,
+      statusCode: error.statusCode,
+      name: error.name,
+      code: error.code,
+    });
+    throw new AppError("Could not upload poster file.", 500);
+  }
   try {
     return dto(await prisma.poster.create({ data: { ...data, filePath, fileUrl, fileType: definition.type, mimeType: file.mimetype, fileSizeBytes: file.size, createdBy: adminId } }));
   } catch (error) {
