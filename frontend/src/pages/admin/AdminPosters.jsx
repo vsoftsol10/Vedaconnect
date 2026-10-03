@@ -7,7 +7,7 @@ const blank = { title: "", caption: "", category: "GENERAL", audience: "ALL_MEMB
 export default function AdminPosters() {
   const [posters, setPosters] = useState([]), [form, setForm] = useState(blank), [file, setFile] = useState(null), [preview, setPreview] = useState(""), [editing, setEditing] = useState(null), [message, setMessage] = useState(""), [loading, setLoading] = useState(true);
   const load = () => getAdminPosters().then(setPosters).catch((e) => setMessage(e.message)).finally(() => setLoading(false));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
   const selectFile = (event) => { const next = event.target.files?.[0]; if (!next) return; if (next.size > 5 * 1024 * 1024) return setMessage("Poster must be 5 MB or smaller."); setFile(next); setPreview(next.type.startsWith("image/") ? URL.createObjectURL(next) : ""); };
   const submit = async (event) => { event.preventDefault(); try { if (!editing && !file) throw new Error("Choose a poster file."); const item = editing ? await updatePoster(editing.id, form) : await createPoster(form, file); setPosters((all) => editing ? all.map((p) => p.id === item.id ? item : p) : [item, ...all]); setForm(blank); setFile(null); setPreview(""); setEditing(null); setMessage(editing ? "Poster updated." : "Poster saved as draft."); } catch (e) { setMessage(e.message); } };
   const action = async (poster, name) => { try { const item = await posterAction(poster.id, name); setPosters((all) => all.map((p) => p.id === item.id ? item : p)); } catch (e) { setMessage(e.message); } };
