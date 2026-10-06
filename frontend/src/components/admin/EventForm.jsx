@@ -137,10 +137,10 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
               </button>
               <button type="button" onClick={() => handleChange('eventType', 'NO_FEE')} className={`flex items-center justify-center gap-2 rounded-xl py-3 font-medium border transition-all ${formData.eventType === 'NO_FEE' ? 'bg-green-50 border-green-500 text-gray-900' : 'border-gray-200 text-gray-500 bg-white'}`}>
                 <span className={`w-2.5 h-2.5 rounded-full border ${formData.eventType === 'NO_FEE' ? 'border-green-600 bg-green-500' : 'border-gray-300'}`} />
-                Weekly Meeting (No Fee)
+                Weekly Meeting
               </button>
             </div>
-            {formData.eventType === 'NO_FEE' && <p className="mt-2 text-sm text-green-700">This is an informational meeting. Members will be notified, with no payment or registration flow.</p>}
+            {formData.eventType === 'NO_FEE' && <p className="mt-2 text-sm text-green-700">Members will be notified about this weekly meeting. Meeting-fee collection is managed separately.</p>}
           </div>
 
           <div>
@@ -369,7 +369,7 @@ export default function EventForm({ initialValues, onSubmit, submitting, submitL
       </div>}
 
       <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t border-gray-100 px-8 py-4 flex items-center justify-between">
-        <span className="text-sm text-gray-500">{footerLabel} · {formData.eventType === 'FEE' ? `₹${formData.registrationAmount || 0}` : 'No fee'}</span>
+        <span className="text-sm text-gray-500">{footerLabel}{formData.eventType === 'FEE' ? ` · ₹${formData.registrationAmount || 0}` : ''}</span>
         <div className="flex gap-3">
           <button
             type="button"

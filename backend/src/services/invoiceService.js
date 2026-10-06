@@ -39,6 +39,19 @@ const sendAndMarkInvoice = async (invoice, data, invoiceDate) => {
       console.info("[PAYMENT_WHATSAPP_SKIPPED] skipped: notifications disabled", { invoiceId: invoice.id });
       return invoice;
     }
+    // HTTP 200 means accepted by Meta, not delivered. The webhook advances this row.
+    try {
+      await prisma.whatsAppDeliveryLog.create({ data: {
+        memberId: data.userId,
+        template: "payment_confirmation",
+        status: "accepted",
+        metaMessageId: whatsAppResult?.messages?.[0]?.id || null,
+        acceptedAt: new Date(),
+      } });
+    } catch (logError) {
+      // A logging outage must not cause a second payment-confirmation message.
+      console.error("[PAYMENT_WHATSAPP_ACCEPTANCE_LOG_FAILED]", { invoiceId: invoice.id, userId: data.userId, message: logError?.message });
+    }
     return prisma.paymentInvoice.update({
       where: { id: invoice.id },
       data: { emailedAt: new Date() },

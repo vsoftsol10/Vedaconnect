@@ -474,6 +474,11 @@ model NotificationLog {
   status        String
   metaMessageId String?  @unique @map("meta_message_id")
   acceptedAt    DateTime? @map("accepted_at")
+  statusAt      DateTime? @map("status_at")
+  statusRank    Int?      @map("status_rank")
+  errorCode     String?   @map("error_code")
+  errorTitle    String?   @map("error_title")
+  errorDetails  String?   @map("error_details")
   errorMessage  String?  @map("error_message")
   sentAt        DateTime @default(now()) @map("sent_at")
 
@@ -508,6 +513,12 @@ model WhatsAppDeliveryLog {
   template      String
   status        String
   metaMessageId String?  @map("meta_message_id")
+  acceptedAt    DateTime? @map("accepted_at")
+  statusAt      DateTime? @map("status_at")
+  statusRank    Int?      @map("status_rank")
+  errorCode     String?   @map("error_code")
+  errorTitle    String?   @map("error_title")
+  errorDetails  String?   @map("error_details")
   errorMessage  String?  @map("error_message")
   sentAt        DateTime @default(now()) @map("sent_at")
 

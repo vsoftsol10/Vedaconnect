@@ -32,7 +32,8 @@ export const normalizeWhatsAppPhone = (phone) => {
 
 /**
  * Sends an approved WhatsApp template through Meta's WhatsApp Cloud API.
- * Throws on delivery failures so callers can create an admin follow-up record.
+ * A successful HTTP response means Meta accepted the request; delivery is only
+ * known later from the signed WhatsApp status webhook.
  */
 export const sendWhatsAppMessage = async (phone, templateName, variables) => {
   if (process.env.ENABLE_WHATSAPP_NOTIFICATIONS !== "true") return notificationsDisabledResult(templateName);

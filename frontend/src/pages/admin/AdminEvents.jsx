@@ -80,15 +80,14 @@ export default function AdminEvents() {
                   <th className="px-6 py-4">Date</th>
                   <th className="px-6 py-4">Hub</th>
                   <th className="px-6 py-4">Registrations</th>
-                  <th className="px-6 py-4">Event Fee</th>
                   <th className="w-24 py-4 pr-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="px-6 py-6 text-gray-500">Loading events...</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-6 text-gray-500">Loading events...</td></tr>
                 ) : events.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-6 text-gray-500">No events yet.</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-6 text-gray-500">No events yet.</td></tr>
                 ) : (
                   events.map((ev) => (
                     <tr key={ev.id} className="border-b border-gray-50 last:border-0">
@@ -96,7 +95,7 @@ export default function AdminEvents() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-gray-900">{ev.title}</span>
                           <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${ev.eventType === 'NO_FEE' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                            {ev.eventType === 'NO_FEE' ? 'No Fee' : 'Fee'}
+                            {ev.eventType === 'NO_FEE' ? 'Weekly Meeting' : 'Special Event'}
                           </span>
                           {ev.isPast && (
                             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
@@ -114,9 +113,6 @@ export default function AdminEvents() {
                       <td className="px-6 py-4 text-gray-600">{ev.hubName || 'All hubs'}</td>
                       <td className="px-6 py-4 text-gray-600">
                         {ev.registrationCount}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        {ev.eventType === 'NO_FEE' ? 'No fee' : `₹${ev.registrationAmount}`}
                       </td>
                       <td className="w-24 py-4 pr-6">
                         <div className="flex justify-end">

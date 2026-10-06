@@ -57,7 +57,7 @@ if (!testPhone) {
         continue;
       }
       const detail = metaResponse ? JSON.stringify(metaResponse) : "HTTP 204 (no response body)";
-      console.log(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: SUCCESS - ${detail}`);
+      console.log(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: ACCEPTED_BY_META - ${detail}`);
       results.push({ template: template.name, status: "SUCCESS", detail });
     } catch (error) {
       console.error(`[WHATSAPP_TEMPLATE_TEST] ${template.name}: FAILED - ${error.message}`);

@@ -45,6 +45,22 @@ test("PDF payload has one document header and exactly four body variables", asyn
   assert.equal(uploadCount, 1); assert.equal(payloads.length, 2); assert.deepEqual(payloads.map((payload) => payload.mediaId), ["media-123", "media-123"]); assert.equal(payloads[0].filename, "Vedaconnect-Tirunelveli-Accounts-September-2026.pdf"); assert.deepEqual(payloads[0].variables, ["September 2026", "100", "40", "60"]);
 }));
 
+test("PDF sends retain Meta's message ID for per-member delivery investigation", async () => withTemplate("pdf_template", async () => {
+  const rows = [];
+  const prismaClient = fakePrisma();
+  prismaClient.notificationLog.create = async ({ data }) => { rows.push(data); return {}; };
+  await sendMonthlyExpenseSummaryPdfForHub({ hubId, month: 9, year: 2026, file: pdf() }, {
+    prismaClient,
+    getMonthlySummary: async () => ({ totalCollected: 100, totalSpent: 40, balance: 60 }),
+    metaClient: { uploadPdf: async () => "media-123", sendDocumentTemplate: async () => ({ messages: [{ id: "wamid.test" }] }) },
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].status, "accepted");
+  assert.equal(rows[0].metaMessageId, "wamid.test");
+  assert.equal(rows[0].runId, "1");
+  assert.ok(rows[0].acceptedAt instanceof Date);
+}));
+
 test("Meta request contains only the required document header and four-variable body", async () => {
   const oldFetch = globalThis.fetch; const oldToken = process.env.META_WHATSAPP_ACCESS_TOKEN; const oldPhoneId = process.env.META_WHATSAPP_PHONE_NUMBER_ID; const oldVersion = process.env.META_GRAPH_API_VERSION; const oldNotifications = process.env.ENABLE_WHATSAPP_NOTIFICATIONS;
   let request;

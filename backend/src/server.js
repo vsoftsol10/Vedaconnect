@@ -20,6 +20,7 @@ import posterRoutes, { adminPosterRoutes } from "./routes/posterRoutes.js";
 import { scheduleMemberLifecycleJob } from "./jobs/memberLifecycleJob.js";
 import { scheduleMonthlyExpenseNotificationJob } from "./jobs/monthlyExpenseNotificationJob.js";
 import { scheduleBirthdayReminderJob } from "./jobs/birthdayReminderJob.js";
+import whatsappWebhookRoutes from "./routes/whatsappWebhookRoutes.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -47,6 +48,8 @@ app.use(
     credentials: true,
   })
 );
+// Meta signs the exact unparsed bytes, so this must precede express.json().
+app.use("/webhooks", express.raw({ type: "application/json", limit: "2mb" }), whatsappWebhookRoutes);
 app.use(express.json({ limit: "2mb" }));
 
 // Routes

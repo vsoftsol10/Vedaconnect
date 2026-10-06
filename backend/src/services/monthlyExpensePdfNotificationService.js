@@ -14,6 +14,7 @@ const monthLabel = (month, year) => new Date(year, month - 1, 1).toLocaleDateStr
 const amount = (value) => Number(value || 0).toString();
 const safeSegment = (value) => String(value || "Hub").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 60) || "Hub";
 const messageFor = (error) => error?.message?.slice(0, 1000) || "Unknown delivery error";
+const messageIdFor = (response) => response?.messages?.[0]?.id || null;
 
 // The unique hub/period row is the cross-process lock; activeSends below is only an extra local guard.
 const acquireRun = async (prismaClient, hubId, period) => {
@@ -128,7 +129,18 @@ export const sendMonthlyExpenseSummaryPdfForHub = async ({ hubId, month, year, f
           await finishRun(prismaClient, run.id, RUN_STATE.FAILED_BEFORE_SEND, "WhatsApp notifications are disabled.");
           return { skipped: true, reason: sendResult.reason, successCount, failureCount: 0, stopped: false };
         }
-        await prismaClient.notificationLog.create({ data: { memberId: member.id, hubId, type: TYPE, period: periodFor(month, year), status: "success" } });
+        await prismaClient.notificationLog.create({
+          data: {
+            runId: run.id,
+            memberId: member.id,
+            hubId,
+            type: TYPE,
+            period: periodFor(month, year),
+            status: "accepted",
+            metaMessageId: messageIdFor(sendResult),
+            acceptedAt: new Date(),
+          },
+        });
         successCount += 1;
       } catch (error) {
         const providerError = sanitizeProviderErrorText(error?.message);

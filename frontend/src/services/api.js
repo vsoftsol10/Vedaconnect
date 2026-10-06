@@ -51,6 +51,9 @@ api.interceptors.response.use(
       Object.assign(new Error(message), {
         status: error.response?.status,
         errors: data?.errors,
+        // Keep Axios response data available to callers that display the
+        // server's validation/authentication message.
+        response: error.response,
       })
     );
   }

@@ -78,7 +78,6 @@ const AdminDashboard = () => {
                   <th className="pb-2">Date</th>
                   <th className="pb-2">Hub</th>
                   <th className="pb-2">Registered Members</th>
-                  <th className="pb-2">Event Fee</th>
                 </tr>
               </thead>
               <tbody>
@@ -88,7 +87,6 @@ const AdminDashboard = () => {
                     <td className="py-3 text-gray-600">{new Date(e.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td>
                     <td className="py-3 text-gray-600">{e.location}</td>
                     <td className="py-3 font-semibold text-gray-900">{e.registeredCount}</td>
-                    <td className="py-3 text-gray-600">{e.fee === 0 ? "Free" : `₹${e.fee}`}</td>
                   </tr>
                 ))}
               </tbody>

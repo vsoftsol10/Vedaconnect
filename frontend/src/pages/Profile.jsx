@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, X, Check, Loader2, Lock, CalendarDays } from "lucide-react";
+import { Pencil, Mail, Phone, MapPin, Building2, Briefcase, Package, ShieldCheck, X, Check, Loader2, Lock, CalendarDays, Eye, EyeOff } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import { changeMyPassword, getMyFullProfile, updateMyProfile } from "../services/memberService";
@@ -39,6 +39,7 @@ const Profile = () => {
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [passwordMessage, setPasswordMessage] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState({ currentPassword: false, newPassword: false, confirmPassword: false });
 
   const load = async () => {
     setLoadError("");
@@ -298,9 +299,9 @@ const Profile = () => {
             <h3 className="mb-1 flex items-center gap-2 font-bold text-gray-900"><Lock className="h-5 w-5 text-green-600" /> Change Password</h3>
             <p className="mb-4 text-sm text-gray-500">Use your current password to set a new one.</p>
             <form onSubmit={handlePasswordChange} className="space-y-3">
-              <input type="password" required value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))} placeholder="Current password" className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
-              <input type="password" required minLength="6" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))} placeholder="New password (at least 6 characters)" className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
-              <input type="password" required minLength="6" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} placeholder="Confirm new password" className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500" />
+              <PasswordInput field="currentPassword" placeholder="Current password" value={passwordForm.currentPassword} visible={visiblePasswords.currentPassword} onChange={(value) => setPasswordForm((prev) => ({ ...prev, currentPassword: value }))} onToggle={() => setVisiblePasswords((prev) => ({ ...prev, currentPassword: !prev.currentPassword }))} />
+              <PasswordInput field="newPassword" placeholder="New password (at least 6 characters)" value={passwordForm.newPassword} visible={visiblePasswords.newPassword} minLength={6} onChange={(value) => setPasswordForm((prev) => ({ ...prev, newPassword: value }))} onToggle={() => setVisiblePasswords((prev) => ({ ...prev, newPassword: !prev.newPassword }))} />
+              <PasswordInput field="confirmPassword" placeholder="Confirm new password" value={passwordForm.confirmPassword} visible={visiblePasswords.confirmPassword} minLength={6} onChange={(value) => setPasswordForm((prev) => ({ ...prev, confirmPassword: value }))} onToggle={() => setVisiblePasswords((prev) => ({ ...prev, confirmPassword: !prev.confirmPassword }))} />
               <button disabled={isChangingPassword} className="inline-flex min-h-11 items-center rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-green-600 hover:text-white disabled:opacity-60">{isChangingPassword ? "Changing..." : "Change Password"}</button>
               {passwordMessage && <p className="text-sm text-gray-600">{passwordMessage}</p>}
             </form>
@@ -312,6 +313,23 @@ const Profile = () => {
     </div>
   );
 };
+
+const PasswordInput = ({ field, placeholder, value, visible, minLength, onChange, onToggle }) => (
+  <div className="relative">
+    <input
+      type={visible ? "text" : "password"}
+      required
+      minLength={minLength}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder}
+      className="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-3 pr-11 text-sm outline-none focus:border-green-500"
+    />
+    <button type="button" onClick={onToggle} aria-label={visible ? `Hide ${placeholder}` : `Show ${placeholder}`} className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:text-green-600">
+      {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  </div>
+);
 
 const InfoRow = ({ icon: Icon, label, value, editable, field, form, onChange, error, type = "text" }) => (
   <div className="flex items-start gap-3">
