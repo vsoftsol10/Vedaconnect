@@ -31,6 +31,7 @@ router.get("/categories", requireAuth, requireAdmin, controller.categories);
 router.post("/notify", requireAuth, requireAdmin, validate(expenseNotificationSchema), controller.notify);
 router.post("/notify-pdf/preview", requireAuth, requireAdmin, validate(expenseNotificationSchema), controller.previewPdfRecipients);
 router.post("/notify-pdf", requireAuth, requireAdmin, uploadAccountsPdf, validate(expenseNotificationSchema), controller.notifyPdf);
+router.get("/accounts-pdf", requireAuth, requireAdmin, validateQuery(expenseNotificationSchema), controller.downloadAccountsPdf);
 router.get("/manual-fees", requireAuth, requireAdmin, validateQuery(manualFeeQuerySchema), controller.listManualFees);
 router.get("/manual-fees/:id/receipt-url", requireAuth, requireAdmin, controller.manualFeeReceiptUrl);
 router.post("/manual-fees", requireAuth, requireAdmin, manualReceiptUpload.single("receipt"), parseData, validate(manualFeeSchema), controller.createManualFee);

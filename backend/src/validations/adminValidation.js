@@ -1,6 +1,32 @@
 import { z } from "zod";
 
 const optionalBirthdayValue = z.preprocess((value) => value === "" ? null : value, z.coerce.number().int().min(1).max(31).nullable().optional());
+const saturdayWeekStart = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Week must be YYYY-MM-DD").refine(
+  (value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && date.getUTCDay() === 6;
+  },
+  "Choose a Saturday week start"
+);
+
+export const manualWeeklyAwardSchema = z.object({
+  hubId: z.string().uuid("Select a valid hub"),
+  userId: z.string().uuid("Select a valid member"),
+  weekStart: saturdayWeekStart,
+  referralAmount: z.coerce.number().min(0).max(99999999),
+  businessAmount: z.coerce.number().min(0).max(99999999),
+});
+
+export const manualAttendanceSchema = z.object({
+  userId: z.string().uuid("Select a valid member"),
+  weekStart: saturdayWeekStart,
+  status: z.enum(["CONFIRMED", "DECLINED"]),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Time must be HH:mm").optional(),
+}).superRefine((value, ctx) => {
+  if (value.status === "CONFIRMED" && !value.time) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["time"], message: "Attendance time is required for present members" });
+  }
+});
 
 export const addMemberSchema = z.object({
   fullName: z.string().trim().min(2, "Full name is required"),

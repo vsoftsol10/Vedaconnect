@@ -21,6 +21,17 @@ export const deleteExpense = async (id) => (await api.delete(`/expenses/${id}`))
 export const sendExpenseSummary = async (payload) => (await api.post("/expenses/notify", payload)).data.data;
 export const previewExpenseSummaryPdf = async (payload) => (await api.post("/expenses/notify-pdf/preview", payload)).data.data;
 export const sendExpenseSummaryPdf = async (payload, pdf) => { const data = new FormData(); data.append("hubId", payload.hubId); data.append("month", String(payload.month)); data.append("year", String(payload.year)); data.append("pdf", pdf); return (await api.post("/expenses/notify-pdf", data, { headers: { "Content-Type": "multipart/form-data" } })).data.data; };
+export const downloadMonthlyAccountsPdf = async (params, filename) => {
+  const response = await api.get("/expenses/accounts-pdf", { params, responseType: "blob" });
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
 export const getExpenseNotificationLogs = async (params) => (await api.get("/expenses/notification-logs", { params })).data.data;
 export const getExpenseCategories = async (q = "") => (await api.get("/admin/expenses/categories", { params: { q } })).data.data;
 const manualFeeFormData = (payload, receipt) => { const data = new FormData(); data.append("data", JSON.stringify(payload)); if (receipt) data.append("receipt", receipt); return data; };

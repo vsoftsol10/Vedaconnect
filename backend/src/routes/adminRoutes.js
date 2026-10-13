@@ -14,11 +14,14 @@ import {
   subscriptionSchema,
   adminProfileSchema,
   changePasswordSchema,
+  manualWeeklyAwardSchema,
+  manualAttendanceSchema,
 } from "../validations/adminValidation.js";
 import { leaderboardQuerySchema, validateQuery } from "../validations/networkingValidation.js";
 import { meetingFeeListQuerySchema, memberFeeHistoryQuerySchema, attendanceListQuerySchema } from "../validations/adminMeetingListValidation.js";
 import * as adminMeetingListsController from "../controllers/adminMeetingListsController.js";
 import * as expenseController from "../controllers/expenseController.js";
+import * as manualEntriesController from "../controllers/manualEntriesController.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -48,6 +51,8 @@ const uploadProfilePhoto = (req, res, next) => {
 router.get("/dashboard", requireAuth, requireAdmin, adminController.getDashboard);
 router.get("/birthdays/upcoming", requireAuth, requireAdmin, adminController.getUpcomingBirthdays);
 router.get("/leaderboard", requireAuth, requireAdmin, validateQuery(leaderboardQuerySchema), adminLeaderboard);
+router.put("/leaderboard/manual", requireAuth, requireAdmin, validate(manualWeeklyAwardSchema), manualEntriesController.saveWeeklyAward);
+router.put("/attendance/manual", requireAuth, requireAdmin, validate(manualAttendanceSchema), manualEntriesController.saveAttendance);
 router.get("/meeting-fees", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.listMeetingFees);
 router.get("/meeting-fees/export", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.exportMeetingFees);
 router.get("/attendance", requireAuth, requireAdmin, validateQuery(attendanceListQuerySchema), adminMeetingListsController.listAttendance);

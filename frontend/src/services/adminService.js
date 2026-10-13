@@ -3,10 +3,12 @@ import api from "./api";
 export const getAdminDashboard = async () => (await api.get("/admin/dashboard")).data.data;
 export const getUpcomingBirthdays = async (days = 30) => (await api.get("/admin/birthdays/upcoming", { params: { days } })).data.data;
 export const getAdminLeaderboard = async (params = {}) => (await api.get("/admin/leaderboard", { params })).data.data;
+export const saveManualWeeklyAward = async (data) => (await api.put("/admin/leaderboard/manual", data)).data.data;
 export const listAdminMembers = async (params = {}) => (await api.get("/admin/members", { params })).data.data;
 export const getAdminMemberDetail = async (userId) => (await api.get(`/admin/members/${userId}`)).data.data;
 export const getAdminMeetingFees = async (params) => (await api.get("/admin/meeting-fees", { params })).data.data;
 export const getAdminAttendance = async (params) => (await api.get("/admin/attendance", { params })).data.data;
+export const saveManualAttendance = async (data) => (await api.put("/admin/attendance/manual", data)).data.data;
 export const getAdminMemberMeetingFees = async (userId, params) => (await api.get(`/admin/members/${userId}/meeting-fees`, { params })).data.data;
 export const exportAdminMeetingList = async (type, params) => {
   const cleanParams = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== "" && value !== "false"));

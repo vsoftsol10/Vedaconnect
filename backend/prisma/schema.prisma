@@ -84,6 +84,7 @@ model User {
   businessReceivedAsReceiver BusinessReceived[] @relation("BusinessReceiver")
   businessReceivedAsReferrer BusinessReceived[] @relation("BusinessReferrer")
   meetingAttendance     MeetingAttendance[]
+  manualWeeklyAwards   ManualWeeklyAwardEntry[]
   meetingFeePayments    MeetingFeePayment[]
   invoices              PaymentInvoice[]
   createdExpenses       Expense[] @relation("ExpenseCreatedBy")
@@ -366,6 +367,7 @@ model MeetingAttendance {
   weekStart   DateTime @map("week_start")
   status      String   @default("PENDING")
   respondedAt DateTime? @map("responded_at")
+  source      String   @default("ONLINE")
   createdAt   DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -374,6 +376,24 @@ model MeetingAttendance {
   @@index([weekStart, status])
   @@index([weekStart, respondedAt])
   @@map("meeting_attendance")
+}
+
+model ManualWeeklyAwardEntry {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  weekStart      DateTime @map("week_start")
+  referralCount  Int      @default(0) @map("referral_count")
+  referralAmount Decimal  @default(0) @map("referral_amount") @db.Decimal(10, 2)
+  businessCount  Int      @default(0) @map("business_count")
+  businessAmount Decimal  @default(0) @map("business_amount") @db.Decimal(10, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([weekStart])
+  @@map("manual_weekly_award_entries")
 }
 
 model MeetingFeePayment {

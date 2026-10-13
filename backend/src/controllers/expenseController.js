@@ -1,6 +1,7 @@
 import * as expenseService from "../services/expenseService.js";
 import { getMonthlyExpenseNotificationLogs, sendMonthlyExpenseSummaryForHub } from "../services/monthlyExpenseNotificationService.js";
 import { previewMonthlyExpensePdfRecipients, sendMonthlyExpenseSummaryPdfForHub } from "../services/monthlyExpensePdfNotificationService.js";
+import { buildMonthlyAccountsPdf } from "../services/monthlyAccountsPdfService.js";
 
 export const create = async (req, res, next) => { try { res.status(201).json({ success: true, data: await expenseService.createExpense(req.validatedBody, req.user.userId, req.file) }); } catch (error) { next(error); } };
 export const list = async (req, res, next) => { try { res.json({ success: true, data: await expenseService.getExpenses(req.validatedQuery) }); } catch (error) { next(error); } };
@@ -11,6 +12,18 @@ export const summary = async (req, res, next) => { try { const hubId = req.user.
 export const notify = async (req, res, next) => { try { res.json({ success: true, data: await sendMonthlyExpenseSummaryForHub(req.validatedBody.hubId, req.validatedBody.month, req.validatedBody.year) }); } catch (error) { next(error); } };
 export const previewPdfRecipients = async (req, res, next) => { try { res.json({ success: true, data: await previewMonthlyExpensePdfRecipients(req.validatedBody) }); } catch (error) { next(error); } };
 export const notifyPdf = async (req, res, next) => { try { res.json({ success: true, data: await sendMonthlyExpenseSummaryPdfForHub({ ...req.validatedBody, file: req.file }) }); } catch (error) { next(error); } };
+export const downloadAccountsPdf = async (req, res, next) => {
+  try {
+    const { hubId, month, year } = req.validatedQuery;
+    const { buffer, filename } = await buildMonthlyAccountsPdf({ hubId, month, year });
+    res.setHeader("Cache-Control", "private, no-store");
+    res.type("application/pdf")
+      .attachment(filename)
+      .send(buffer);
+  } catch (error) {
+    next(error);
+  }
+};
 export const notificationLogs = async (req, res, next) => { try { res.json({ success: true, data: await getMonthlyExpenseNotificationLogs(req.validatedQuery) }); } catch (error) { next(error); } };
 export const categories = async (req, res, next) => { try { res.json({ success: true, data: await expenseService.getExpenseCategories(req.query.q) }); } catch (error) { next(error); } };
 export const listManualFees = async (req, res, next) => { try { res.json({ success: true, data: await expenseService.getManualFeeCollections(req.validatedQuery) }); } catch (error) { next(error); } };

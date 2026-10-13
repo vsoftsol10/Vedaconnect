@@ -6,6 +6,7 @@ import AdminHeader from '../../components/admin/AdminHeader';
 import { deleteEvent, getAdminEvents } from '../../services/adminEventService';
 import EventActionMenu from '../../components/admin/EventActionMenu';
 import EventDeleteModal from '../../components/admin/EventDeleteModal';
+import Pagination, { usePagination } from '../../components/ui/Pagination';
 
 export default function AdminEvents() {
   const navigate = useNavigate();
@@ -14,7 +15,10 @@ export default function AdminEvents() {
   const [loading, setLoading] = useState(true);
   const [eventToDelete, setEventToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [toast, setToast] = useState(location.state?.toast || '');
+  const visibleEvents = usePagination(events, page, rowsPerPage);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -89,7 +93,7 @@ export default function AdminEvents() {
                 ) : events.length === 0 ? (
                   <tr><td colSpan={5} className="px-6 py-6 text-gray-500">No events yet.</td></tr>
                 ) : (
-                  events.map((ev) => (
+                  visibleEvents.map((ev) => (
                     <tr key={ev.id} className="border-b border-gray-50 last:border-0">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -125,6 +129,7 @@ export default function AdminEvents() {
               </tbody>
             </table>
           </div>
+          {!loading && <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(value) => { setRowsPerPage(value); setPage(1); }} total={events.length} />}
         </main>
       </div>
       {eventToDelete && <EventDeleteModal event={eventToDelete} onClose={() => !deleting && setEventToDelete(null)} onConfirm={handleDelete} isSubmitting={deleting} />}

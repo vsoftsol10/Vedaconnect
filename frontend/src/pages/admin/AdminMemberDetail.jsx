@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, User, Building2, Crown, FileText, Calendar, CreditCard, Eye, Download } from "lucide-react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
+import Pagination, { usePagination } from "../../components/ui/Pagination";
 import { getAdminMemberDetail, getAdminMemberDocuments, getAdminMemberDocumentUrl, assignMemberHub, listAdminHubs, updateMemberJoinedDate } from "../../services/adminService";
 
 const formatDisplayDate = (value) =>
@@ -23,8 +24,11 @@ const AdminMemberDetail = () => {
   const [hubs, setHubs] = useState([]);
   const [isSavingHub, setIsSavingHub] = useState(false);
   const [isSavingJoinedDate, setIsSavingJoinedDate] = useState(false);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentRowsPerPage, setPaymentRowsPerPage] = useState(10);
 
   const load = () => getAdminMemberDetail(userId).then(setMember);
+  const visiblePayments = usePagination(member?.paymentHistory || [], paymentPage, paymentRowsPerPage);
 
   useEffect(() => { load(); listAdminHubs().then(setHubs); getAdminMemberDocuments(userId).then(setDocuments); }, [userId]);
   const openDocument = async (item, download = false) => { const { url } = await getAdminMemberDocumentUrl(userId, item.id); if (!download) return window.open(url, "_blank", "noopener,noreferrer"); const link = window.document.createElement("a"); link.href = url; link.download = item.fileName; link.click(); };
@@ -181,6 +185,7 @@ const AdminMemberDetail = () => {
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
             <h3 className="flex items-center gap-2 font-bold text-gray-900 mb-4"><CreditCard className="h-5 w-5 text-green-600" /> Payment History</h3>
             {member.paymentHistory.length > 0 ? (
+              <>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-gray-400 uppercase border-b border-gray-100">
@@ -188,7 +193,7 @@ const AdminMemberDetail = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {member.paymentHistory.map((p, i) => (
+                  {visiblePayments.map((p, i) => (
                     <tr key={i} className="border-b border-gray-50 last:border-0">
                       <td className="py-3 text-gray-600">{p.type}</td>
                       <td className="py-3 font-medium text-gray-900">{p.item}</td>
@@ -199,6 +204,8 @@ const AdminMemberDetail = () => {
                   ))}
                 </tbody>
               </table>
+              <Pagination page={paymentPage} onPageChange={setPaymentPage} rowsPerPage={paymentRowsPerPage} onRowsPerPageChange={(value) => { setPaymentRowsPerPage(value); setPaymentPage(1); }} total={member.paymentHistory.length} />
+              </>
             ) : <p className="text-sm text-gray-400">No payments recorded.</p>}
           </div>
         </main>

@@ -142,6 +142,7 @@ export const getMyMeetingFeeStatus = async (userId) => {
     paymentStatus: payment?.paymentStatus || "PENDING",
     paidAt: payment?.paidAt || null,
     paymentSource: payment?.paymentSource || "ONLINE",
+    paymentMode: payment?.paymentMode || null,
     renewalAmount: plan ? Number(plan.amount) : null,
   };
 };
@@ -167,6 +168,7 @@ export const getMyMeetingFeeHistory = async (userId) => {
       paymentStatus: payment?.paymentStatus || (cursor < currentMonth ? "OVERDUE" : "PENDING"),
       paidAt: payment?.paidAt || null,
       paymentSource: payment?.paymentSource || "ONLINE",
+      paymentMode: payment?.paymentMode || null,
     });
     cursor.setMonth(cursor.getMonth() + 1);
   }

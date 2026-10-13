@@ -18,6 +18,15 @@ const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
     Number(amount || 0)
   );
+const formatPaymentDate = (value) => new Intl.DateTimeFormat("en-IN", {
+  timeZone: "Asia/Kolkata",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+}).format(new Date(value));
+const paymentMethodLabel = (payment) => payment.paymentSource === "MANUAL"
+  ? `Manual payment${payment.paymentMode ? ` · ${payment.paymentMode.replace("_", " ").toLowerCase()}` : ""}`
+  : "Online payment";
 
 const loadRazorpayCheckout = () =>
   new Promise((resolve, reject) => {
@@ -163,8 +172,9 @@ const MeetingFeePayment = () => {
                 </div>
 
                 {!isRenewal && isPaid ? (
-                  <div className="rounded-xl border border-green-100 bg-green-50 px-5 py-4 text-green-700 font-semibold">
-                    Paid for {status?.month}
+                  <div className="rounded-xl border border-green-100 bg-green-50 px-5 py-4 text-green-700">
+                    <p className="font-semibold">Paid for {status?.month}</p>
+                    {status?.paidAt && <p className="mt-1 text-sm">Received {formatPaymentDate(status.paidAt)}{status.paymentSource === "MANUAL" && status.paymentMode ? ` · ${status.paymentMode.replace("_", " ")}` : ""}</p>}
                   </div>
                 ) : (
                   <button
@@ -190,7 +200,7 @@ const MeetingFeePayment = () => {
                   const paid = payment.paymentStatus === "PAID";
                   const overdue = payment.paymentStatus === "OVERDUE";
                   return <div key={payment.month} className="flex items-center justify-between gap-3 py-3">
-                    <div><p className="font-semibold text-gray-900">{payment.month}</p><p className="text-xs text-gray-500">{paid && payment.paidAt ? `Paid ${new Date(payment.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : overdue ? "Payment overdue" : "Awaiting payment"}</p></div>
+                    <div><p className="font-semibold text-gray-900">{payment.month}</p><p className="text-xs text-gray-500">{paid && payment.paidAt ? `Paid ${formatPaymentDate(payment.paidAt)} · ${paymentMethodLabel(payment)}` : overdue ? "Payment overdue" : "Awaiting payment"}</p></div>
                     <div className="text-right"><p className="font-semibold text-gray-900">{formatCurrency(payment.amount)}</p><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${paid ? "bg-green-50 text-green-700" : overdue ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}`}>{paid ? "Paid" : overdue ? "Overdue" : "Pending"}</span></div>
                   </div>;
                 })}

@@ -26,15 +26,22 @@ const AdminDashboard = () => {
   const [data, setData] = useState(null);
   const [recentPage, setRecentPage] = useState(1);
   const [recentRows, setRecentRows] = useState(10);
+  const [hubPage, setHubPage] = useState(1);
+  const [hubRows, setHubRows] = useState(10);
+  const [registrationPage, setRegistrationPage] = useState(1);
+  const [registrationRows, setRegistrationRows] = useState(10);
   const [birthdays, setBirthdays] = useState([]);
 
   useEffect(() => { getAdminDashboard().then(setData); }, []);
   useEffect(() => { getUpcomingBirthdays().then(setBirthdays).catch(() => {}); }, []);
 
+  const visibleRecent = usePagination(data?.recentMembers || [], recentPage, recentRows);
+  const visibleHubs = usePagination(data?.membersByHub || [], hubPage, hubRows);
+  const visibleRegistrations = usePagination(data?.eventRegistrations || [], registrationPage, registrationRows);
+
   if (!data) return null;
 
   const { stats, membersByHub, recentMembers, eventRegistrations } = data;
-  const visibleRecent = usePagination(recentMembers, recentPage, recentRows);
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -56,7 +63,8 @@ const AdminDashboard = () => {
             <div className="overflow-hidden bg-white border border-gray-100 rounded-2xl shadow-sm">
               <h3 className="px-4 pt-4 font-bold text-gray-900 mb-1 sm:px-6 sm:pt-6">Members by Hub</h3>
               <p className="px-4 text-sm text-gray-400 mb-4 sm:px-6">Distribution across active hubs</p>
-              <Table><thead><tr><HeaderCell>Hub</HeaderCell><HeaderCell align="right">Members</HeaderCell></tr></thead><tbody>{membersByHub.map(({ hub, count }) => <tr key={hub}><Cell title={hub}>{hub}</Cell><Cell align="right"><span className="font-bold text-gray-900">{count}</span></Cell></tr>)}</tbody></Table>
+              <Table><thead><tr><HeaderCell>Hub</HeaderCell><HeaderCell align="right">Members</HeaderCell></tr></thead><tbody>{visibleHubs.map(({ hub, count }) => <tr key={hub}><Cell title={hub}>{hub}</Cell><Cell align="right"><span className="font-bold text-gray-900">{count}</span></Cell></tr>)}</tbody></Table>
+              <Pagination page={hubPage} onPageChange={setHubPage} rowsPerPage={hubRows} onRowsPerPageChange={(value) => { setHubRows(value); setHubPage(1); }} total={membersByHub.length} />
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
@@ -81,7 +89,7 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {eventRegistrations.map((e) => (
+                {visibleRegistrations.map((e) => (
                   <tr key={e.id} className="border-t border-gray-50">
                     <td className="py-3 font-medium text-gray-900">{e.title}</td>
                     <td className="py-3 text-gray-600">{new Date(e.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td>
@@ -91,6 +99,7 @@ const AdminDashboard = () => {
                 ))}
               </tbody>
             </Table>
+            <Pagination page={registrationPage} onPageChange={setRegistrationPage} rowsPerPage={registrationRows} onRowsPerPageChange={(value) => { setRegistrationRows(value); setRegistrationPage(1); }} total={eventRegistrations.length} />
           </div>
         </main>
       </div>

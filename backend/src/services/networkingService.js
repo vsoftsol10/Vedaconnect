@@ -1,11 +1,10 @@
 import { prisma } from "../config/prismaClient.js";
 import { AppError } from "../middleware/errorHandler.js";
 import {
-  getCalendarWeekStart,
-  getCurrentCalendarWeekStart,
   getCurrentMonthKey,
   getCurrentWeekStart,
   getMonthRange,
+  getWeekStart,
   getYearRange,
 } from "../utils/weekUtils.js";
 import { notifyAdmins, notifyUser } from "./notificationService.js";
@@ -251,7 +250,7 @@ export const resolveLeaderboardRange = ({ period = "week", value } = {}) => {
     return { period, value: year, ...getYearRange(year) };
   }
 
-  const start = getCalendarWeekStart(value ? new Date(value) : getCurrentCalendarWeekStart());
+  const start = getWeekStart(value ? new Date(value) : getCurrentWeekStart());
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
   return { period: "week", value: start.toISOString().slice(0, 10), start, end };
@@ -338,18 +337,103 @@ const combineRows = (leaderboard, sort = "business") => {
 
   return [...rows.values()].sort((a, b) => {
     if (sort === "referrals") {
-      return b.referralCount - a.referralCount || b.referralAmount - a.referralAmount || b.businessAmount - a.businessAmount;
+      return b.referralAmount - a.referralAmount || b.referralCount - a.referralCount || b.businessAmount - a.businessAmount;
     }
     return b.businessAmount - a.businessAmount || b.businessCount - a.businessCount || b.referralCount - a.referralCount;
   });
 };
 
 export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => {
-  const leaderboard = await getLeaderboard({ period, value, hub, limit: null });
+  const range = resolveLeaderboardRange({ period, value });
+  const manualWhere = {
+    weekStart: { gte: range.start, lt: range.end },
+    ...hubUserWhere("user", hub),
+  };
+  const activityWhere = (party, userField) => ({
+    [party === "referral" ? "receiverType" : "referrerType"]: "MEMBER",
+    weekStart: { gte: range.start, lt: range.end },
+    ...hubUserWhere(userField, hub),
+  });
+  const [manualEntries, referrals, business] = await Promise.all([
+    prisma.manualWeeklyAwardEntry.findMany({
+      where: manualWhere,
+      select: { userId: true, weekStart: true, referralCount: true, referralAmount: true, businessCount: true, businessAmount: true },
+    }),
+    prisma.referralGiven.findMany({
+      where: activityWhere("referral", "giver"),
+      select: { giverId: true, amount: true, weekStart: true },
+    }),
+    prisma.businessReceived.findMany({
+      where: activityWhere("business", "receiver"),
+      select: { receiverId: true, amount: true, weekStart: true },
+    }),
+  ]);
+
+  const weekKey = (date) => date.toISOString().slice(0, 10);
+  const manualWeeks = new Set(manualEntries.map((entry) => `${entry.userId}:${weekKey(entry.weekStart)}`));
+  const totalsByUser = () => new Map();
+  const addTotal = (totals, userId, count, amount) => {
+    const current = totals.get(userId) || { count: 0, total: 0 };
+    current.count += count;
+    current.total += Number(amount || 0);
+    totals.set(userId, current);
+  };
+  const referralTotals = totalsByUser();
+  const businessTotals = totalsByUser();
+
+  referrals.forEach((row) => {
+    if (!manualWeeks.has(`${row.giverId}:${weekKey(row.weekStart)}`)) {
+      addTotal(referralTotals, row.giverId, 1, row.amount);
+    }
+  });
+  business.forEach((row) => {
+    if (!manualWeeks.has(`${row.receiverId}:${weekKey(row.weekStart)}`)) {
+      addTotal(businessTotals, row.receiverId, 1, row.amount);
+    }
+  });
+  manualEntries.forEach((entry) => {
+    addTotal(referralTotals, entry.userId, entry.referralCount, entry.referralAmount);
+    addTotal(businessTotals, entry.userId, entry.businessCount, entry.businessAmount);
+  });
+
+  const leaderboard = {
+    period: range.period,
+    value: range.value,
+    start: range.start,
+    end: range.end,
+    referralsGiven: await hydrateLeaderboard(
+      [...referralTotals].map(([giverId, total]) => ({ giverId, _count: { _all: total.count }, _sum: { amount: total.total } })),
+      "giverId"
+    ),
+    businessReceived: await hydrateLeaderboard(
+      [...businessTotals].map(([receiverId, total]) => ({ receiverId, _count: { _all: total.count }, _sum: { amount: total.total } })),
+      "receiverId"
+    ),
+  };
   return {
     ...leaderboard,
     rows: combineRows(leaderboard, sort),
   };
+};
+
+export const saveManualWeeklyAward = async ({ hubId, userId, weekStart, referralAmount, businessAmount }) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      role: "MEMBER",
+      status: { not: "DELETED" },
+      memberProfile: { is: { hubId } },
+    },
+    select: { id: true },
+  });
+  if (!user) throw new AppError("Selected member does not belong to the selected hub.", 400);
+
+  const start = new Date(`${weekStart}T00:00:00.000Z`);
+  return prisma.manualWeeklyAwardEntry.upsert({
+    where: { userId_weekStart: { userId, weekStart: start } },
+    update: { referralAmount, businessAmount },
+    create: { userId, weekStart: start, referralAmount, businessAmount },
+  });
 };
 
 export const getLeaderboardYears = async () => {

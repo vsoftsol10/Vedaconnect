@@ -1,4 +1,5 @@
 import { prisma } from "../config/prismaClient.js";
+import { AppError } from "../middleware/errorHandler.js";
 import { getCurrentWeekStart } from "../utils/weekUtils.js";
 
 const setAttendance = async (userId, status) => {
@@ -7,8 +8,8 @@ const setAttendance = async (userId, status) => {
 
   return prisma.meetingAttendance.upsert({
     where: { userId_weekStart: { userId, weekStart } },
-    update: { status, respondedAt: now },
-    create: { userId, weekStart, status, respondedAt: now },
+    update: { status, respondedAt: now, source: "ONLINE" },
+    create: { userId, weekStart, status, respondedAt: now, source: "ONLINE" },
   });
 };
 
@@ -51,6 +52,28 @@ export const getWeeklyAttendanceList = async (weekStart = getCurrentWeekStart())
       weekStart: week,
       status: attendance?.status || "PENDING",
       respondedAt: attendance?.respondedAt || null,
+      source: attendance?.source || null,
     };
+  });
+};
+
+export const saveManualAttendance = async ({ userId, weekStart, status, time }) => {
+  const member = await prisma.user.findFirst({
+    where: { id: userId, role: "MEMBER", status: { not: "DELETED" }, memberProfile: { isNot: null } },
+    select: { id: true },
+  });
+  if (!member) throw new AppError("Member not found.", 404);
+
+  const respondedAt = time ? new Date(`${weekStart}T${time}:00+05:30`) : null;
+  return prisma.meetingAttendance.upsert({
+    where: { userId_weekStart: { userId, weekStart: new Date(`${weekStart}T00:00:00.000Z`) } },
+    update: { status, respondedAt, source: "MANUAL" },
+    create: {
+      userId,
+      weekStart: new Date(`${weekStart}T00:00:00.000Z`),
+      status,
+      respondedAt,
+      source: "MANUAL",
+    },
   });
 };

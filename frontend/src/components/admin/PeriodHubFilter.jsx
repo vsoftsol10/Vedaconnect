@@ -14,7 +14,7 @@ const PeriodHubFilter = ({ periodState, hub, onHubChange, hubs = [], sort, onSor
       <button type="button" onClick={next} disabled={!canGoNext} className="p-2 text-gray-500 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-30" aria-label="Next period"><ChevronRight className="h-4 w-4" /></button>
     </div>
     <Dropdown value={hub} onChange={onHubChange} className="w-full sm:w-48" options={[{ value: "all", label: "All Hubs" }, ...hubs.map((row) => ({ value: row.id, label: row.name }))]} />
-    {onSortChange && <div className="flex rounded-xl border border-gray-100 bg-white p-1">{[["business", "Business"], ["referrals", "Referrals"]].map(([key, label]) => <button key={key} type="button" onClick={() => onSortChange(key)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${sort === key ? "bg-green-600 text-white" : "text-gray-500 hover:text-gray-900"}`}>{label}</button>)}</div>}
+    {onSortChange && <div className="flex rounded-xl border border-gray-100 bg-white p-1">{[["business", "Business Achiever"], ["referrals", "Business Giver"]].map(([key, label]) => <button key={key} type="button" onClick={() => onSortChange(key)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${sort === key ? "bg-green-600 text-white" : "text-gray-500 hover:text-gray-900"}`}>{label}</button>)}</div>}
   </div>;
 };
 
