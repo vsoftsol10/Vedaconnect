@@ -79,8 +79,8 @@ const drawSummaryRows = (doc, x, y, width, rows) => {
 const drawHeader = (doc, hubName, month, year, meetingDates) => {
   if (fs.existsSync(LOGO_IMAGE)) doc.image(LOGO_IMAGE, PAGE.margin, 22, { width: 82 });
   setFont(doc, true);
-  doc.fontSize(14).fillColor(COLORS.text).text(`VEDACONNECT ${hubName.toLocaleUpperCase()}`, 0, 24, { align: "center", lineBreak: false });
-  doc.fontSize(12).text(`${monthName(month, year).toLocaleUpperCase()} ${year} ACCOUNTS`, 0, 42, { align: "center", lineBreak: false });
+  doc.fontSize(14).fillColor(COLORS.text).text(`VEDACONNECT ${hubName.toLocaleUpperCase()}`, 0, 24, { width: PAGE.width, align: "center", lineBreak: false });
+  doc.fontSize(12).text(`${monthName(month, year).toLocaleUpperCase()} ${year} ACCOUNTS`, 0, 42, { width: PAGE.width, align: "center", lineBreak: false });
   setFont(doc);
   const meetingLine = meetingDates.length
     ? `Meetings held on ${meetingDates.map((date) => new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }).format(date)).join(", ")}`

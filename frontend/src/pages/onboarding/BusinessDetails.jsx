@@ -11,7 +11,7 @@ const BUSINESS_CATEGORIES = [
   "Herbal & Wellness",
   "Natural Products",
   "Food & Beverage",
-  "Handicrafts",
+  "Handcrafts",
   "Fashion & Textiles",
   "Beauty & Personal Care",
   "Other",
@@ -23,6 +23,7 @@ const BusinessDetails = () => {
   const [form, setForm] = useState({
     businessName: "",
     businessCategory: BUSINESS_CATEGORIES[0],
+    otherBusinessCategory: "",
     businessLocation: "",
     businessDescription: "",
   });
@@ -44,10 +45,24 @@ const BusinessDetails = () => {
       return;
     }
 
+    const businessCategory = form.businessCategory === "Other"
+      ? form.otherBusinessCategory.trim()
+      : form.businessCategory;
+    if (!businessCategory) {
+      setSubmitError("Please enter your business category.");
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError("");
     try {
-      await submitBusinessDetails({ userId, ...form });
+      await submitBusinessDetails({
+        userId,
+        businessName: form.businessName,
+        businessCategory,
+        businessLocation: form.businessLocation,
+        businessDescription: form.businessDescription,
+      });
       navigate("/onboarding/business-certificate");
     } catch (err) {
       setSubmitError(err.message);
@@ -108,6 +123,22 @@ const BusinessDetails = () => {
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 </div>
               </div>
+
+              {form.businessCategory === "Other" && (
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-900">
+                    Enter Business Category
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={form.otherBusinessCategory}
+                    onChange={handleChange("otherBusinessCategory")}
+                    placeholder="Enter your business category"
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3.5 text-gray-900 outline-none transition-colors hover:border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">

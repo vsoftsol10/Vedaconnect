@@ -11,6 +11,7 @@ import Pagination, { usePagination } from "../../components/ui/Pagination";
 import Table, { Cell, HeaderCell } from "../../components/ui/Table";
 
 const formatCurrency = (amount) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(amount || 0));
+const formatDate = (value) => new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(value));
 
 const LeaderboardTable = ({ rows }) => {
   const [page, setPage] = useState(1);
@@ -40,6 +41,34 @@ const LeaderboardTable = ({ rows }) => {
   );
 };
 
+const ManualAwardEntriesTable = ({ rows }) => {
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const visibleRows = usePagination(rows, page, rowsPerPage);
+  useEffect(() => setPage(1), [rows, rowsPerPage]);
+
+  return (
+    <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+      <h2 className="mb-4 font-bold text-gray-900">Manual Award Entries</h2>
+      <Table minWidth="min-w-[760px]">
+        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell></tr></thead>
+        <tbody>
+          {rows.length ? visibleRows.map((row) => (
+            <tr key={`${row.userId}-${row.weekStart}`}>
+              <Cell><p className="font-semibold text-gray-900">{row.fullName}</p><p className="text-xs text-gray-400">{row.businessName || "-"}</p></Cell>
+              <Cell>{row.hubName || "-"}</Cell>
+              <Cell>{formatDate(row.weekStart)}</Cell>
+              <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.referralAmount)}</p></Cell>
+              <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.businessAmount)}</p></Cell>
+            </tr>
+          )) : <tr><td colSpan={5} className="vc-cell text-center text-gray-400">No manual entries for this period.</td></tr>}
+        </tbody>
+      </Table>
+      <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(next) => { setRowsPerPage(next); setPage(1); }} total={rows.length} />
+    </div>
+  );
+};
+
 const getEntryWeekStart = (periodState) => {
   const start = new Date(periodState.range.start);
   let saturday = startOfWeek(start);
@@ -55,7 +84,7 @@ const AdminLeaderboard = () => {
   const [sort, setSort] = useState("business");
   const [hubs, setHubs] = useState([]);
   const [members, setMembers] = useState([]);
-  const [leaderboard, setLeaderboard] = useState({ rows: [] });
+  const [leaderboard, setLeaderboard] = useState({ rows: [], manualEntries: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
@@ -100,7 +129,12 @@ const AdminLeaderboard = () => {
             </div>
           </div>
           {error && <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>}
-          {isLoading ? <div className="flex items-center gap-2 text-gray-500"><Loader2 className="h-5 w-5 animate-spin" />Loading awards</div> : <LeaderboardTable rows={leaderboard.rows || []} />}
+          {isLoading ? <div className="flex items-center gap-2 text-gray-500"><Loader2 className="h-5 w-5 animate-spin" />Loading awards</div> : (
+            <>
+              <ManualAwardEntriesTable rows={leaderboard.manualEntries || []} />
+              <LeaderboardTable rows={leaderboard.rows || []} />
+            </>
+          )}
         </main>
       </div>
       <ManualWeeklyAwardModal

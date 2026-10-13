@@ -357,7 +357,26 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
   const [manualEntries, referrals, business] = await Promise.all([
     prisma.manualWeeklyAwardEntry.findMany({
       where: manualWhere,
-      select: { userId: true, weekStart: true, referralCount: true, referralAmount: true, businessCount: true, businessAmount: true },
+      select: {
+        userId: true,
+        weekStart: true,
+        referralCount: true,
+        referralAmount: true,
+        businessCount: true,
+        businessAmount: true,
+        user: {
+          select: {
+            email: true,
+            memberProfile: {
+              select: {
+                fullName: true,
+                businessName: true,
+                hub: { select: { name: true } },
+              },
+            },
+          },
+        },
+      },
     }),
     prisma.referralGiven.findMany({
       where: activityWhere("referral", "giver"),
@@ -413,6 +432,15 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
   return {
     ...leaderboard,
     rows: combineRows(leaderboard, sort),
+    manualEntries: manualEntries.map((entry) => ({
+      userId: entry.userId,
+      fullName: entry.user.memberProfile?.fullName || entry.user.email || "Member",
+      businessName: entry.user.memberProfile?.businessName || "",
+      hubName: entry.user.memberProfile?.hub?.name || "",
+      weekStart: entry.weekStart,
+      referralAmount: Number(entry.referralAmount),
+      businessAmount: Number(entry.businessAmount),
+    })),
   };
 };
 

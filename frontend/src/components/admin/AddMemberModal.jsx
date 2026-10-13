@@ -4,12 +4,12 @@ import { createMember, listAdminHubs, getMembershipPlansAdmin } from "../../serv
 import { HUB_OPTIONS } from "../../utils/hubs";
 
 const BUSINESS_TYPES = ["Individual / Sole Proprietor", "Partnership", "Private Limited Company", "Self-Help Group", "Other"];
-const BUSINESS_CATEGORIES = ["Herbal & Wellness", "Natural Products", "Food & Beverage", "Handicrafts", "Fashion & Textiles", "Beauty & Personal Care", "Other"];
+const BUSINESS_CATEGORIES = ["Herbal & Wellness", "Natural Products", "Food & Beverage", "Handcrafts", "Fashion & Textiles", "Beauty & Personal Care", "Other"];
 const todayInputValue = () => new Date().toISOString().slice(0, 10);
 
 const initialForm = {
   fullName: "", email: "", phone: "",
-  businessName: "", businessType: "", businessCategory: "", location: "",
+  businessName: "", businessType: "", businessCategory: "", otherBusinessCategory: "", location: "",
   businessDescription: "", hubId: "", planCode: "", joinedAt: todayInputValue(),
 };
 
@@ -29,6 +29,7 @@ const AddMemberModal = ({ onClose, onSuccess }) => {
   }, []);
 
   const handleChange = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const handleCategoryChange = (e) => setForm((prev) => ({ ...prev, businessCategory: e.target.value }));
 
   const addProduct = () => {
     if (productInput.trim()) {
@@ -40,10 +41,19 @@ const AddMemberModal = ({ onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (form.businessCategory === "Other" && !form.otherBusinessCategory.trim()) {
+      setError("Please enter the business category.");
+      return;
+    }
     setIsSubmitting(true);
     try {
+      const { otherBusinessCategory, ...memberForm } = form;
       await createMember(
-        { ...form, productsServices: products.join(", ") },
+        {
+          ...memberForm,
+          businessCategory: form.businessCategory === "Other" ? otherBusinessCategory.trim() : form.businessCategory,
+          productsServices: products.join(", "),
+        },
         certificate
       );
       onSuccess();
@@ -81,9 +91,14 @@ const AddMemberModal = ({ onClose, onSuccess }) => {
               <Select label="Business Type" required value={form.businessType} onChange={handleChange("businessType")} options={BUSINESS_TYPES} placeholder="Select type" />
             </div>
             <div className="grid grid-cols-1 gap-4 mb-4 sm:grid-cols-2">
-              <Select label="Business Category" required value={form.businessCategory} onChange={handleChange("businessCategory")} options={BUSINESS_CATEGORIES} placeholder="Select category" />
+              <Select label="Business Category" required value={form.businessCategory} onChange={handleCategoryChange} options={BUSINESS_CATEGORIES} placeholder="Select category" />
               <Select label="Location" required value={form.location} onChange={handleChange("location")} options={HUB_OPTIONS} placeholder="Select location" />
             </div>
+            {form.businessCategory === "Other" && (
+              <div className="mb-4">
+                <Input label="Enter Business Category" required value={form.otherBusinessCategory} onChange={handleChange("otherBusinessCategory")} placeholder="e.g. Renewable Energy" />
+              </div>
+            )}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-900 mb-2">Business Description</label>
               <textarea
