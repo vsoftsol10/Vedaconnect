@@ -1,9 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Building2, Calendar } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, Download } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import { getHubById } from '../../services/hubService';
+
+const csvValue = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+const downloadHubMembers = (hub) => {
+  const rows = [
+    ['Member Name', 'Business Name'],
+    ...hub.members.map((member) => [member.fullName, member.businessName]),
+  ];
+  const csv = `\uFEFF${rows.map((row) => row.map(csvValue).join(',')).join('\r\n')}`;
+  const blobUrl = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  const link = document.createElement('a');
+  const filename = hub.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'hub';
+  link.href = blobUrl;
+  link.download = `${filename}-members.csv`;
+  link.click();
+  URL.revokeObjectURL(blobUrl);
+};
 
 export default function AdminHubDetail() {
   const { id } = useParams();
@@ -89,8 +106,21 @@ export default function AdminHubDetail() {
               </div>
 
               <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
-                <h3 className="text-lg font-semibold text-gray-900">Members</h3>
-                <p className="text-gray-500 text-sm mb-4">{hub.memberCount} members in this hub</p>
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Members</h3>
+                    <p className="text-gray-500 text-sm">{hub.memberCount} members in this hub</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => downloadHubMembers(hub)}
+                    disabled={hub.members.length === 0}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
+                  >
+                    <Download size={16} />
+                    Download Members
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {hub.members.length === 0 ? (
                     <p className="text-gray-400 text-sm">No members yet.</p>

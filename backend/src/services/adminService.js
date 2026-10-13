@@ -380,6 +380,11 @@ export const toggleSubscriptionStatus = async (id) => {
 };
 export const listMembershipPayments = async () => {
   const memberships = await prisma.membership.findMany({
+    where: {
+      membershipStatus: { not: "DELETED" },
+      deletedAt: null,
+      user: { status: { not: "DELETED" } },
+    },
     orderBy: { createdAt: "desc" },
     include: { user: { include: { memberProfile: true } }, manualPaymentSubmissions: { orderBy: { submittedAt: "desc" }, take: 1 } },
   });

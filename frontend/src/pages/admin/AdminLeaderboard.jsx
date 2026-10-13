@@ -61,7 +61,7 @@ const ManualAwardEntriesTable = ({ rows }) => {
               <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.referralAmount)}</p></Cell>
               <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.businessAmount)}</p></Cell>
             </tr>
-          )) : <tr><td colSpan={5} className="vc-cell text-center text-gray-400">No manual entries for this period.</td></tr>}
+          )) : <tr><td colSpan={5} className="vc-cell text-center text-gray-400">No manual entries for this period and hub. Try the previous week to find earlier entries.</td></tr>}
         </tbody>
       </Table>
       <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(next) => { setRowsPerPage(next); setPage(1); }} total={rows.length} />
