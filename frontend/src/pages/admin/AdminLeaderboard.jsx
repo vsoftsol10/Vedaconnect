@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, Trophy } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Ellipsis, Eye, Loader2, Pencil, Plus, Trash2, Trophy, X } from "lucide-react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import PeriodHubFilter from "../../components/admin/PeriodHubFilter";
 import ManualWeeklyAwardModal from "../../components/admin/ManualWeeklyAwardModal";
-import { getAdminLeaderboard, listAdminMembers } from "../../services/adminService";
+import { deleteManualWeeklyAward, getAdminLeaderboard, listAdminMembers } from "../../services/adminService";
 import { getHubs } from "../../services/hubService";
 import { dateKey, startOfWeek, usePeriodRange } from "../../hooks/usePeriodRange";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
@@ -12,6 +13,40 @@ import Table, { Cell, HeaderCell } from "../../components/ui/Table";
 
 const formatCurrency = (amount) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(amount || 0));
 const formatDate = (value) => new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(value));
+
+const ManualAwardActionsMenu = ({ row, onView, onEdit, onDelete }) => {
+  const [position, setPosition] = useState(null);
+  const openMenu = (event) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setPosition({
+      top: Math.min(bounds.bottom, window.innerHeight - 140),
+      right: Math.max(8, window.innerWidth - bounds.right),
+    });
+  };
+  const choose = (action) => {
+    setPosition(null);
+    action(row);
+  };
+
+  return (
+    <>
+      <button type="button" aria-label={`Actions for ${row.fullName}`} aria-expanded={Boolean(position)} onClick={openMenu} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
+        <Ellipsis className="h-5 w-5" />
+      </button>
+      {position && createPortal(
+        <>
+          <button type="button" aria-label="Close actions menu" onClick={() => setPosition(null)} className="fixed inset-0 z-40 cursor-default" />
+          <div style={position} className="fixed z-50 w-36 rounded-xl border border-gray-100 bg-white p-1 text-left shadow-lg">
+            <button type="button" onClick={() => choose(onView)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Eye className="h-4 w-4" />View</button>
+            <button type="button" onClick={() => choose(onEdit)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Pencil className="h-4 w-4" />Edit</button>
+            <button type="button" onClick={() => choose(onDelete)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete</button>
+          </div>
+        </>,
+        document.body,
+      )}
+    </>
+  );
+};
 
 const LeaderboardTable = ({ rows }) => {
   const [page, setPage] = useState(1);
@@ -41,7 +76,7 @@ const LeaderboardTable = ({ rows }) => {
   );
 };
 
-const ManualAwardEntriesTable = ({ rows }) => {
+const ManualAwardEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const visibleRows = usePagination(rows, page, rowsPerPage);
@@ -50,18 +85,21 @@ const ManualAwardEntriesTable = ({ rows }) => {
   return (
     <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="mb-4 font-bold text-gray-900">Manual Award Entries</h2>
-      <Table minWidth="min-w-[760px]">
-        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell></tr></thead>
+      <Table minWidth="min-w-[820px]">
+        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell align="right">Actions</HeaderCell></tr></thead>
         <tbody>
           {rows.length ? visibleRows.map((row) => (
-            <tr key={`${row.userId}-${row.weekStart}`}>
+            <tr key={row.id}>
               <Cell><p className="font-semibold text-gray-900">{row.fullName}</p><p className="text-xs text-gray-400">{row.businessName || "-"}</p></Cell>
               <Cell>{row.hubName || "-"}</Cell>
               <Cell>{formatDate(row.weekStart)}</Cell>
               <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.referralAmount)}</p></Cell>
               <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.businessAmount)}</p></Cell>
+              <Cell align="right">
+                <ManualAwardActionsMenu row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} />
+              </Cell>
             </tr>
-          )) : <tr><td colSpan={5} className="vc-cell text-center text-gray-400">No manual entries for this period and hub. Try the previous week to find earlier entries.</td></tr>}
+          )) : <tr><td colSpan={6} className="vc-cell text-center text-gray-400">No manual entries for this period and hub. Try the previous week to find earlier entries.</td></tr>}
         </tbody>
       </Table>
       <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(next) => { setRowsPerPage(next); setPage(1); }} total={rows.length} />
@@ -88,6 +126,8 @@ const AdminLeaderboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [viewingEntry, setViewingEntry] = useState(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -110,6 +150,28 @@ const AdminLeaderboard = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  const saveEntry = (savedEntry) => {
+    setManualEntryOpen(false);
+    setEditingEntry(null);
+    const date = new Date(`${savedEntry.weekStart}T00:00:00`);
+    const isVisibleInPeriod = date >= periodState.range.start && date < periodState.range.end;
+    const isVisibleInHub = hub === "all" || hub === savedEntry.hubId;
+    if (!isVisibleInHub) setHub(savedEntry.hubId);
+    if (!isVisibleInPeriod) periodState.goToDate(date);
+    if (isVisibleInHub && isVisibleInPeriod) load();
+  };
+
+  const removeEntry = async (entry) => {
+    if (!window.confirm(`Delete the manual award entry for ${entry.fullName}?`)) return;
+    setError("");
+    try {
+      await deleteManualWeeklyAward(entry.id);
+      await load();
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || "Could not delete the award entry.");
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
@@ -123,7 +185,7 @@ const AdminLeaderboard = () => {
             </div>
             <div className="mt-5 flex flex-col gap-3">
               <PeriodHubFilter periodState={periodState} hub={hub} onHubChange={setHub} hubs={hubs} sort={sort} onSortChange={setSort} />
-              <button type="button" onClick={() => setManualEntryOpen(true)} className="inline-flex min-h-11 self-start items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-semibold text-gray-900 hover:bg-amber-300">
+              <button type="button" onClick={() => { setEditingEntry(null); setManualEntryOpen(true); }} className="inline-flex min-h-11 self-start items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-semibold text-gray-900 hover:bg-amber-300">
                 <Plus className="h-4 w-4" /> Manual weekly entry
               </button>
             </div>
@@ -131,7 +193,12 @@ const AdminLeaderboard = () => {
           {error && <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>}
           {isLoading ? <div className="flex items-center gap-2 text-gray-500"><Loader2 className="h-5 w-5 animate-spin" />Loading awards</div> : (
             <>
-              <ManualAwardEntriesTable rows={leaderboard.manualEntries || []} />
+              <ManualAwardEntriesTable
+                rows={leaderboard.manualEntries || []}
+                onView={setViewingEntry}
+                onEdit={(entry) => { setEditingEntry(entry); setManualEntryOpen(true); }}
+                onDelete={removeEntry}
+              />
               <LeaderboardTable rows={leaderboard.rows || []} />
             </>
           )}
@@ -139,12 +206,30 @@ const AdminLeaderboard = () => {
       </div>
       <ManualWeeklyAwardModal
         isOpen={manualEntryOpen}
-        onClose={() => setManualEntryOpen(false)}
-        onSaved={() => { setManualEntryOpen(false); load(); }}
+        onClose={() => { setManualEntryOpen(false); setEditingEntry(null); }}
+        onSaved={saveEntry}
         members={members}
         hubs={hubs}
         weekStart={getEntryWeekStart(periodState)}
+        entry={editingEntry}
       />
+      {viewingEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setViewingEntry(null); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="award-entry-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div><h2 id="award-entry-title" className="text-lg font-bold text-gray-900">Manual award entry</h2><p className="mt-1 text-sm text-gray-500">{viewingEntry.fullName}</p></div>
+              <button type="button" onClick={() => setViewingEntry(null)} aria-label="Close" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+            </div>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4"><dt className="text-gray-500">Business</dt><dd className="text-right font-medium text-gray-900">{viewingEntry.businessName || "-"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-gray-500">Hub</dt><dd className="text-right font-medium text-gray-900">{viewingEntry.hubName || "-"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-gray-500">Week starts</dt><dd className="text-right font-medium text-gray-900">{formatDate(viewingEntry.weekStart)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-gray-500">Business Giver</dt><dd className="text-right font-medium text-gray-900">{formatCurrency(viewingEntry.referralAmount)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-gray-500">Business Achiever</dt><dd className="text-right font-medium text-gray-900">{formatCurrency(viewingEntry.businessAmount)}</dd></div>
+            </dl>
+          </section>
+        </div>
+      )}
     </div>
   );
 };

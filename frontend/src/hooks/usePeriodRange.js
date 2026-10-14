@@ -40,5 +40,18 @@ export const usePeriodRange = (initialPeriod = "week") => {
   const [period, setPeriod] = useState(initialPeriod);
   const [offset, setOffset] = useState(0);
   const range = useMemo(() => ({ period, offset, ...getPeriodRange(period, offset) }), [period, offset]);
-  return { period, offset, range, setPeriod: (next) => { setPeriod(next); setOffset(0); }, previous: () => setOffset((value) => value - 1), next: () => setOffset((value) => Math.min(0, value + 1)), canGoNext: offset < 0 };
+  const goToDate = (value) => {
+    const target = new Date(value);
+    target.setHours(0, 0, 0, 0);
+    const current = new Date();
+    current.setHours(0, 0, 0, 0);
+    if (period === "week") {
+      setOffset(Math.round((startOfWeek(target) - startOfWeek(current)) / (7 * 24 * 60 * 60 * 1000)));
+    } else if (period === "month") {
+      setOffset((target.getFullYear() - current.getFullYear()) * 12 + target.getMonth() - current.getMonth());
+    } else {
+      setOffset(target.getFullYear() - current.getFullYear());
+    }
+  };
+  return { period, offset, range, setPeriod: (next) => { setPeriod(next); setOffset(0); }, goToDate, previous: () => setOffset((value) => value - 1), next: () => setOffset((value) => Math.min(0, value + 1)), canGoNext: offset < 0 };
 };

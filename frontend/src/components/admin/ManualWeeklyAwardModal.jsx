@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { saveManualWeeklyAward } from "../../services/adminService";
+import { saveManualWeeklyAward, updateManualWeeklyAward } from "../../services/adminService";
 
-const emptyForm = (weekStart) => ({
-  hubId: "",
-  userId: "",
-  weekStart,
-  referralAmount: "0",
-  businessAmount: "0",
+const emptyForm = (weekStart, entry) => ({
+  hubId: entry?.hubId || "",
+  userId: entry?.userId || "",
+  weekStart: entry?.weekStart ? new Date(entry.weekStart).toISOString().slice(0, 10) : weekStart,
+  referralAmount: String(entry?.referralAmount ?? 0),
+  businessAmount: String(entry?.businessAmount ?? 0),
 });
 
-export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, members, hubs, weekStart }) {
+export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, members, hubs, weekStart, entry = null }) {
   const [form, setForm] = useState(emptyForm(weekStart));
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -18,10 +18,10 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
 
   useEffect(() => {
     if (isOpen) {
-      setForm(emptyForm(weekStart));
+      setForm(emptyForm(weekStart, entry));
       setError("");
     }
-  }, [isOpen, weekStart]);
+  }, [isOpen, weekStart, entry]);
 
   if (!isOpen) return null;
 
@@ -35,12 +35,14 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
     }
     setSaving(true);
     try {
-      await saveManualWeeklyAward({
+      const payload = {
         ...form,
         referralAmount: Number(form.referralAmount),
         businessAmount: Number(form.businessAmount),
-      });
-      onSaved();
+      };
+      if (entry) await updateManualWeeklyAward(entry.id, payload);
+      else await saveManualWeeklyAward(payload);
+      onSaved(payload);
     } catch (err) {
       setError(err?.response?.data?.message || "Could not save the weekly award details.");
     } finally {
@@ -69,7 +71,7 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
       <form onSubmit={submit} className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Manual weekly award entry</h2>
+            <h2 className="text-lg font-bold text-gray-900">{entry ? "Edit manual award entry" : "Manual weekly award entry"}</h2>
             <p className="mt-1 text-sm text-gray-500">Enter the award amounts for one member and week.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"><X /></button>
@@ -101,7 +103,7 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
         </div>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onClose} className="rounded-xl border border-gray-200 px-4 py-2.5 font-semibold text-gray-700">Cancel</button>
-          <button type="submit" disabled={saving} className="rounded-xl bg-amber-400 px-4 py-2.5 font-semibold text-gray-900 disabled:opacity-50">{saving ? "Saving…" : "Save weekly figures"}</button>
+          <button type="submit" disabled={saving} className="rounded-xl bg-amber-400 px-4 py-2.5 font-semibold text-gray-900 disabled:opacity-50">{saving ? "Saving…" : entry ? "Save changes" : "Save weekly figures"}</button>
         </div>
       </form>
     </div>

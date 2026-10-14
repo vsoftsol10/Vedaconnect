@@ -358,6 +358,7 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
     prisma.manualWeeklyAwardEntry.findMany({
       where: manualWhere,
       select: {
+        id: true,
         userId: true,
         weekStart: true,
         referralCount: true,
@@ -371,6 +372,7 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
               select: {
                 fullName: true,
                 businessName: true,
+                hubId: true,
                 hub: { select: { name: true } },
               },
             },
@@ -433,7 +435,9 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
     ...leaderboard,
     rows: combineRows(leaderboard, sort),
     manualEntries: manualEntries.map((entry) => ({
+      id: entry.id,
       userId: entry.userId,
+      hubId: entry.user.memberProfile?.hubId || "",
       fullName: entry.user.memberProfile?.fullName || entry.user.email || "Member",
       businessName: entry.user.memberProfile?.businessName || "",
       hubName: entry.user.memberProfile?.hub?.name || "",
@@ -462,6 +466,41 @@ export const saveManualWeeklyAward = async ({ hubId, userId, weekStart, referral
     update: { referralAmount, businessAmount },
     create: { userId, weekStart: start, referralAmount, businessAmount },
   });
+};
+
+export const updateManualWeeklyAward = async (id, { hubId, userId, weekStart, referralAmount, businessAmount }) => {
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      role: "MEMBER",
+      status: { not: "DELETED" },
+      memberProfile: { is: { hubId } },
+    },
+    select: { id: true },
+  });
+  if (!user) throw new AppError("Selected member does not belong to the selected hub.", 400);
+
+  const existing = await prisma.manualWeeklyAwardEntry.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) throw new AppError("Award entry not found.", 404);
+
+  const start = new Date(`${weekStart}T00:00:00.000Z`);
+  const duplicate = await prisma.manualWeeklyAwardEntry.findFirst({
+    where: { userId, weekStart: start, NOT: { id } },
+    select: { id: true },
+  });
+  if (duplicate) throw new AppError("An award entry already exists for this member and week.", 409);
+
+  return prisma.manualWeeklyAwardEntry.update({
+    where: { id },
+    data: { userId, weekStart: start, referralAmount, businessAmount },
+  });
+};
+
+export const deleteManualWeeklyAward = async (id) => {
+  const existing = await prisma.manualWeeklyAwardEntry.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) throw new AppError("Award entry not found.", 404);
+  await prisma.manualWeeklyAwardEntry.delete({ where: { id } });
+  return { id };
 };
 
 export const getLeaderboardYears = async () => {

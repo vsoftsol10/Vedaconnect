@@ -72,10 +72,35 @@ export const getFinanceHistory = async ({ hubId, month, year, startDate, endDate
   const paymentWhere = { paymentStatus: "PAID", ...(hubId ? { user: { memberProfile: { hubId } } } : {}), ...(month && year ? { month: `${year}-${String(month).padStart(2, "0")}` } : {}) };
   const [expenses, income] = await Promise.all([
     prisma.expense.findMany({ where: expenseWhere, select: { id: true, date: true, category: true, description: true, amount: true }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] }),
-    prisma.meetingFeePayment.findMany({ where: paymentWhere, select: { id: true, paidAt: true, amount: true, paymentSource: true, paymentMode: true, note: true }, orderBy: { paidAt: "desc" } }),
+    prisma.meetingFeePayment.findMany({
+      where: paymentWhere,
+      select: {
+        id: true,
+        paidAt: true,
+        amount: true,
+        paymentSource: true,
+        paymentMode: true,
+        note: true,
+        user: {
+          select: {
+            email: true,
+            memberProfile: { select: { fullName: true, businessName: true } },
+          },
+        },
+      },
+      orderBy: { paidAt: "desc" },
+    }),
   ]);
   const allTransactions = [
-    ...income.filter((item) => item.paidAt).filter((item) => !dateFilter || (item.paidAt >= dateFilter.gte && item.paidAt < dateFilter.lt)).map((item) => ({ id: `income-${item.id}`, date: item.paidAt, type: "income", category: item.note || "Meeting fee collected", amount: Number(item.amount) })),
+    ...income.filter((item) => item.paidAt).filter((item) => !dateFilter || (item.paidAt >= dateFilter.gte && item.paidAt < dateFilter.lt)).map((item) => ({
+      id: `income-${item.id}`,
+      date: item.paidAt,
+      type: "income",
+      category: item.note || "Meeting fee collected",
+      description: item.user?.memberProfile?.businessName || "",
+      memberName: item.user?.memberProfile?.fullName || item.user?.email || "Member",
+      amount: Number(item.amount),
+    })),
     ...expenses.map((item) => ({ id: `expense-${item.id}`, date: item.date, type: "expense", category: item.category, description: item.description, amount: Number(item.amount) })),
   ].filter((item) => !type || item.type === type).sort((a, b) => new Date(b.date) - new Date(a.date) || a.id.localeCompare(b.id));
   let runningBalance = 0;

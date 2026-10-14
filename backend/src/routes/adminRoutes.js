@@ -5,7 +5,7 @@ import { adminLeaderboard } from "../controllers/networkingController.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { AppError } from "../middleware/errorHandler.js";
-import { validate } from "../validations/onboardingValidation.js";
+import { validate, validateParams } from "../validations/onboardingValidation.js";
 import {
   addMemberSchema,
   joinedDateSchema,
@@ -15,6 +15,7 @@ import {
   adminProfileSchema,
   changePasswordSchema,
   manualWeeklyAwardSchema,
+  manualWeeklyAwardIdSchema,
   manualAttendanceSchema,
 } from "../validations/adminValidation.js";
 import { leaderboardQuerySchema, validateQuery } from "../validations/networkingValidation.js";
@@ -52,6 +53,8 @@ router.get("/dashboard", requireAuth, requireAdmin, adminController.getDashboard
 router.get("/birthdays/upcoming", requireAuth, requireAdmin, adminController.getUpcomingBirthdays);
 router.get("/leaderboard", requireAuth, requireAdmin, validateQuery(leaderboardQuerySchema), adminLeaderboard);
 router.put("/leaderboard/manual", requireAuth, requireAdmin, validate(manualWeeklyAwardSchema), manualEntriesController.saveWeeklyAward);
+router.put("/leaderboard/manual/:id", requireAuth, requireAdmin, validate(manualWeeklyAwardSchema), manualEntriesController.updateWeeklyAward);
+router.delete("/leaderboard/manual/:id", requireAuth, requireAdmin, validateParams(manualWeeklyAwardIdSchema), manualEntriesController.deleteWeeklyAward);
 router.put("/attendance/manual", requireAuth, requireAdmin, validate(manualAttendanceSchema), manualEntriesController.saveAttendance);
 router.get("/meeting-fees", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.listMeetingFees);
 router.get("/meeting-fees/export", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.exportMeetingFees);
