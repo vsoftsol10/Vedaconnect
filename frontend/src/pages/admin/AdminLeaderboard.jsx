@@ -85,6 +85,7 @@ const ManualAwardEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
   return (
     <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="mb-4 font-bold text-gray-900">Manual Award Entries</h2>
+      <p className="mb-4 text-sm text-gray-500">All recorded weeks are shown. Use the hub filter to narrow the entries.</p>
       <Table minWidth="min-w-[820px]">
         <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell align="right" className="w-20">Actions</HeaderCell></tr></thead>
         <tbody>
@@ -99,7 +100,7 @@ const ManualAwardEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
                 <ManualAwardActionsMenu row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} />
               </Cell>
             </tr>
-          )) : <tr><td colSpan={6} className="vc-cell text-center text-gray-400">No manual entries for this period and hub. Try the previous week to find earlier entries.</td></tr>}
+          )) : <tr><td colSpan={6} className="vc-cell text-center text-gray-400">No manual award entries found for this hub.</td></tr>}
         </tbody>
       </Table>
       <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(next) => { setRowsPerPage(next); setPage(1); }} total={rows.length} />

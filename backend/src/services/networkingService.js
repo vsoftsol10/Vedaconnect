@@ -354,31 +354,37 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
     weekStart: { gte: range.start, lt: range.end },
     ...hubUserWhere(userField, hub),
   });
-  const [manualEntries, referrals, business] = await Promise.all([
-    prisma.manualWeeklyAwardEntry.findMany({
-      where: manualWhere,
+  const manualEntrySelect = {
+    id: true,
+    userId: true,
+    weekStart: true,
+    referralCount: true,
+    referralAmount: true,
+    businessCount: true,
+    businessAmount: true,
+    user: {
       select: {
-        id: true,
-        userId: true,
-        weekStart: true,
-        referralCount: true,
-        referralAmount: true,
-        businessCount: true,
-        businessAmount: true,
-        user: {
+        email: true,
+        memberProfile: {
           select: {
-            email: true,
-            memberProfile: {
-              select: {
-                fullName: true,
-                businessName: true,
-                hubId: true,
-                hub: { select: { name: true } },
-              },
-            },
+            fullName: true,
+            businessName: true,
+            hubId: true,
+            hub: { select: { name: true } },
           },
         },
       },
+    },
+  };
+  const [periodManualEntries, manualEntries, referrals, business] = await Promise.all([
+    prisma.manualWeeklyAwardEntry.findMany({
+      where: manualWhere,
+      select: manualEntrySelect,
+    }),
+    prisma.manualWeeklyAwardEntry.findMany({
+      where: hubUserWhere("user", hub),
+      orderBy: [{ weekStart: "desc" }, { createdAt: "desc" }],
+      select: manualEntrySelect,
     }),
     prisma.referralGiven.findMany({
       where: activityWhere("referral", "giver"),
@@ -391,7 +397,7 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
   ]);
 
   const weekKey = (date) => date.toISOString().slice(0, 10);
-  const manualWeeks = new Set(manualEntries.map((entry) => `${entry.userId}:${weekKey(entry.weekStart)}`));
+  const manualWeeks = new Set(periodManualEntries.map((entry) => `${entry.userId}:${weekKey(entry.weekStart)}`));
   const totalsByUser = () => new Map();
   const addTotal = (totals, userId, count, amount) => {
     const current = totals.get(userId) || { count: 0, total: 0 };
@@ -412,7 +418,7 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
       addTotal(businessTotals, row.receiverId, 1, row.amount);
     }
   });
-  manualEntries.forEach((entry) => {
+  periodManualEntries.forEach((entry) => {
     addTotal(referralTotals, entry.userId, entry.referralCount, entry.referralAmount);
     addTotal(businessTotals, entry.userId, entry.businessCount, entry.businessAmount);
   });
