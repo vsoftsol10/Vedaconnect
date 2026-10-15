@@ -19,7 +19,7 @@ const ManualAwardActionsMenu = ({ row, onView, onEdit, onDelete }) => {
   const openMenu = (event) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     setPosition({
-      top: Math.min(bounds.bottom, window.innerHeight - 140),
+      top: Math.max(8, Math.min(bounds.bottom, window.innerHeight - 140)),
       right: Math.max(8, window.innerWidth - bounds.right),
     });
   };
@@ -30,16 +30,16 @@ const ManualAwardActionsMenu = ({ row, onView, onEdit, onDelete }) => {
 
   return (
     <>
-      <button type="button" aria-label={`Actions for ${row.fullName}`} aria-expanded={Boolean(position)} onClick={openMenu} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
+      <button type="button" aria-label={`Actions for ${row.fullName}`} aria-haspopup="menu" aria-expanded={Boolean(position)} onClick={openMenu} className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-300">
         <Ellipsis className="h-5 w-5" />
       </button>
       {position && createPortal(
         <>
           <button type="button" aria-label="Close actions menu" onClick={() => setPosition(null)} className="fixed inset-0 z-40 cursor-default" />
-          <div style={position} className="fixed z-50 w-36 rounded-xl border border-gray-100 bg-white p-1 text-left shadow-lg">
-            <button type="button" onClick={() => choose(onView)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Eye className="h-4 w-4" />View</button>
-            <button type="button" onClick={() => choose(onEdit)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Pencil className="h-4 w-4" />Edit</button>
-            <button type="button" onClick={() => choose(onDelete)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete</button>
+          <div role="menu" aria-label={`Actions for ${row.fullName}`} style={position} className="fixed z-50 w-36 rounded-xl border border-gray-100 bg-white p-1 text-left shadow-lg">
+            <button type="button" role="menuitem" onClick={() => choose(onView)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Eye className="h-4 w-4" />View</button>
+            <button type="button" role="menuitem" onClick={() => choose(onEdit)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Pencil className="h-4 w-4" />Edit</button>
+            <button type="button" role="menuitem" onClick={() => choose(onDelete)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete</button>
           </div>
         </>,
         document.body,
@@ -86,7 +86,7 @@ const ManualAwardEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
     <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="mb-4 font-bold text-gray-900">Manual Award Entries</h2>
       <Table minWidth="min-w-[820px]">
-        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell align="right">Actions</HeaderCell></tr></thead>
+        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell align="right" className="w-20">Actions</HeaderCell></tr></thead>
         <tbody>
           {rows.length ? visibleRows.map((row) => (
             <tr key={row.id}>
@@ -95,7 +95,7 @@ const ManualAwardEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
               <Cell>{formatDate(row.weekStart)}</Cell>
               <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.referralAmount)}</p></Cell>
               <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.businessAmount)}</p></Cell>
-              <Cell align="right">
+              <Cell align="right" className="w-20">
                 <ManualAwardActionsMenu row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} />
               </Cell>
             </tr>
