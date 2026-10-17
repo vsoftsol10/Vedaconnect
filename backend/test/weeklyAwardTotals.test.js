@@ -80,7 +80,7 @@ test("manual weekly award totals replace member portal amounts and counts", () =
   }]);
 });
 
-test("leaderboard winner selection returns all top scorers and excludes lower totals", () => {
+test("leaderboard winner selection returns one deterministic top scorer", () => {
   const totals = [
     { userId: "leader-1", referralAmount: 900, referralCount: 2 },
     { userId: "leader-2", referralAmount: 900, referralCount: 3 },
@@ -91,7 +91,6 @@ test("leaderboard winner selection returns all top scorers and excludes lower to
     selectLeaderboardRows(totals, "referralAmount", "referralCount", { winnersOnly: true }),
     [
       { giverId: "leader-1", _sum: { amount: 900 }, _count: { _all: 2 } },
-      { giverId: "leader-2", _sum: { amount: 900 }, _count: { _all: 3 } },
     ],
   );
 });

@@ -308,6 +308,8 @@ export const selectLeaderboardRows = (memberTotals, amountKey, countKey, { winne
     const highestAmount = Math.max(...rows.map((row) => row[amountKey]));
     return rows
       .filter((row) => row[amountKey] === highestAmount)
+      .sort((a, b) => a.userId.localeCompare(b.userId))
+      .slice(0, 1)
       .map((row) => ({
         [amountKey === "referralAmount" ? "giverId" : "receiverId"]: row.userId,
         _sum: { amount: row[amountKey] },

@@ -95,8 +95,8 @@ const Leaderboard = () => {
         <p role="alert" className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error}</p>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <RankedList title="Business Giver Award Leader" rows={data.referralsGiven || []} />
-          <RankedList title="Business Achiever Award Leader" rows={data.businessReceived || []} />
+          <RankedList title="Business Giver Award Leader" rows={(data.referralsGiven || []).slice(0, 1)} />
+          <RankedList title="Business Achiever Award Leader" rows={(data.businessReceived || []).slice(0, 1)} />
         </div>
       )}
     </section>
