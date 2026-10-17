@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
-import Pagination, { usePagination } from "../components/ui/Pagination";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import {
@@ -53,8 +52,6 @@ const MeetingFeePayment = () => {
   const isRenewal = searchParams.get("renewal") === "1";
   const [status, setStatus] = useState(null);
   const [history, setHistory] = useState([]);
-  const [historyPage, setHistoryPage] = useState(1);
-  const [historyRowsPerPage, setHistoryRowsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState("");
@@ -131,8 +128,6 @@ const MeetingFeePayment = () => {
 
   const isPaid = status?.paymentStatus === "PAID";
   const paymentAmount = isRenewal ? status?.renewalAmount : status?.amount;
-  const visibleHistory = usePagination(history, historyPage, historyRowsPerPage);
-
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
@@ -196,7 +191,7 @@ const MeetingFeePayment = () => {
               <h2 className="font-bold text-gray-900">Payment History</h2>
               <p className="mb-4 text-sm text-gray-500">Your monthly meeting fee payments, newest first.</p>
               <div className="max-h-[28rem] divide-y divide-gray-100 overflow-y-auto">
-                {visibleHistory.map((payment) => {
+                {history.map((payment) => {
                   const paid = payment.paymentStatus === "PAID";
                   const overdue = payment.paymentStatus === "OVERDUE";
                   return <div key={payment.month} className="flex items-center justify-between gap-3 py-3">
@@ -206,7 +201,6 @@ const MeetingFeePayment = () => {
                 })}
                 {!history.length && <p className="py-5 text-sm text-gray-500">No payment records yet.</p>}
               </div>
-              <Pagination page={historyPage} onPageChange={setHistoryPage} rowsPerPage={historyRowsPerPage} onRowsPerPageChange={(value) => { setHistoryRowsPerPage(value); setHistoryPage(1); }} total={history.length} />
             </div>
           )}
           </div>

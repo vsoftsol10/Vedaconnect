@@ -1,6 +1,9 @@
 import { Calendar, Clock, MapPin } from "lucide-react";
 import EventPoster from "../ui/EventPoster";
 
+const attendedStatuses = ["ATTENDED", "PRESENT", "CONFIRMED"];
+const notAttendedStatuses = ["ABSENT", "NOT_ATTENDED"];
+
 const EventCard = ({ event }) => (
   <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
     <div className="relative h-44 bg-gray-100">
@@ -11,6 +14,9 @@ const EventCard = ({ event }) => (
             {tag}
           </span>
         ))}
+        {event.attendanceStatus && (
+          <AttendanceBadge status={event.attendanceStatus} />
+        )}
       </div>
     </div>
     <div className="p-4 sm:p-5">
@@ -27,5 +33,17 @@ const EventCard = ({ event }) => (
     </div>
   </div>
 );
+
+const AttendanceBadge = ({ status }) => {
+  const attended = attendedStatuses.includes(status);
+  const notAttended = notAttendedStatuses.includes(status);
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+      attended ? "bg-green-50 text-green-700" : notAttended ? "bg-red-50 text-red-600" : "bg-white/90 text-gray-600"
+    }`}>
+      {attended ? "Attended" : notAttended ? "Not attended" : "Attendance not marked"}
+    </span>
+  );
+};
 
 export default EventCard;

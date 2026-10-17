@@ -17,6 +17,7 @@ export const getUpcomingEvents = async (userId) => {
 export const getPastEvents = async (userId) => {
   return prisma.event.findMany({
     where: { status: "PUBLISHED", eventDate: { lt: new Date() }, ...(await eventVisibilityWhere(userId)) },
+    include: { registrations: { where: { userId }, select: { attendanceStatus: true } } },
     orderBy: { eventDate: "desc" },
   });
 };

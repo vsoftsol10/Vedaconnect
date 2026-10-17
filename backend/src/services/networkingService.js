@@ -454,6 +454,24 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
   };
 };
 
+export const getManualWeeklyAwardActivity = async ({ userId, weekStart }) => {
+  const start = new Date(`${weekStart}T00:00:00.000Z`);
+  const [referrals, business] = await Promise.all([
+    prisma.referralGiven.aggregate({
+      where: { giverId: userId, receiverType: "MEMBER", weekStart: start },
+      _count: { _all: true },
+      _sum: { amount: true },
+    }),
+    prisma.businessReceived.aggregate({
+      where: { receiverId: userId, referrerType: "MEMBER", weekStart: start },
+      _count: { _all: true },
+      _sum: { amount: true },
+    }),
+  ]);
+  const summarize = (result) => ({ count: result._count._all, amount: Number(result._sum.amount || 0) });
+  return { referrals: summarize(referrals), business: summarize(business) };
+};
+
 export const saveManualWeeklyAward = async ({ hubId, userId, weekStart, referralAmount, businessAmount }) => {
   const user = await prisma.user.findFirst({
     where: {

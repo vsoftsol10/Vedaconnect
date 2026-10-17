@@ -17,6 +17,11 @@ export const manualWeeklyAwardSchema = z.object({
   businessAmount: z.coerce.number().min(0).max(99999999),
 });
 
+export const manualWeeklyAwardActivityQuerySchema = z.object({
+  userId: z.string().uuid("Select a valid member"),
+  weekStart: saturdayWeekStart,
+});
+
 export const manualWeeklyAwardIdSchema = z.object({
   id: z.string().uuid("Select a valid award entry"),
 });

@@ -125,6 +125,7 @@ export const listMembers = async ({ search, category, location, membershipStatus
     businessCategory: u.memberProfile.businessCategory,
     businessType: u.memberProfile.businessType,
     location: u.memberProfile.location,
+    hubId: u.memberProfile.hubId,
     hub: u.memberProfile.hub?.name || null,
     membershipStatus: u.membership?.membershipStatus || "PENDING_PAYMENT",
     membershipTier: u.membershipTier || null,

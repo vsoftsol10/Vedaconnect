@@ -16,6 +16,7 @@ const FinanceHistoryTable = ({ hubId = "", showHubFilter = false, defaultPeriod 
   const changeScope = (next) => { next(); setPage(1); };
   const pagination = data.pagination || {}; const totals = data.totals || {}; const categories = useMemo(() => data.categoryTotals || [], [data.categoryTotals]);
   const visibleCategories = usePagination(categories, categoryPage, categoryRowsPerPage);
+  const showBusinessColumn = type !== "expense";
   useEffect(() => setCategoryPage(1), [month, selectedHub, type]);
   return (
     <section className="mt-6 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -41,17 +42,17 @@ const FinanceHistoryTable = ({ hubId = "", showHubFilter = false, defaultPeriod 
       ) : (
         <>
           <Table minWidth="min-w-[900px]">
-            <thead><tr><HeaderCell>Date</HeaderCell><HeaderCell>Type</HeaderCell><HeaderCell>Member</HeaderCell><HeaderCell>Category / Description</HeaderCell><HeaderCell align="right">Amount</HeaderCell><HeaderCell align="right">Running Balance</HeaderCell></tr></thead>
+            <thead><tr><HeaderCell>Date</HeaderCell><HeaderCell>Type</HeaderCell>{showBusinessColumn && <HeaderCell>Business</HeaderCell>}<HeaderCell>Category / Description</HeaderCell><HeaderCell align="right">Amount</HeaderCell><HeaderCell align="right">Running Balance</HeaderCell></tr></thead>
             <tbody>
               {data.transactions.map((item) => <tr key={item.id}>
                 <Cell>{new Date(item.date).toLocaleDateString("en-IN")}</Cell>
                 <Cell><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.type === "income" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>{item.type === "income" ? "Income" : "Expense"}</span></Cell>
-                <Cell>{item.memberName || "-"}</Cell>
-                <Cell title={item.description || item.category}><p className="font-medium text-gray-900">{item.category}</p>{item.description && <p className="text-xs text-gray-400">{item.description}</p>}</Cell>
+                {showBusinessColumn && <Cell>{item.type === "income" ? item.description || "-" : "-"}</Cell>}
+                <Cell title={item.description || item.category}><p className="font-medium text-gray-900">{item.category}</p>{item.description && item.type !== "income" && <p className="text-xs text-gray-400">{item.description}</p>}</Cell>
                 <Cell align="right"><span className={item.type === "income" ? "font-semibold text-green-700" : "font-semibold text-red-600"}>{item.type === "income" ? "+" : "-"}{money(item.amount)}</span></Cell>
                 <Cell align="right"><span className={item.runningBalance < 0 ? "font-semibold text-red-600" : "font-semibold text-green-700"}>{money(item.runningBalance)}</span></Cell>
               </tr>)}
-              {!data.transactions.length && <tr><td colSpan={6} className="vc-cell text-center text-gray-500">No transactions found for this period.</td></tr>}
+              {!data.transactions.length && <tr><td colSpan={showBusinessColumn ? 6 : 5} className="vc-cell text-center text-gray-500">No transactions found for this period.</td></tr>}
             </tbody>
           </Table>
           <Pagination page={pagination.page || 1} onPageChange={setPage} rowsPerPage={limit} onRowsPerPageChange={(value) => { setLimit(value); setPage(1); }} total={pagination.total || 0} />

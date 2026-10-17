@@ -3,6 +3,7 @@ import api from "./api";
 export const getAdminDashboard = async () => (await api.get("/admin/dashboard")).data.data;
 export const getUpcomingBirthdays = async (days = 30) => (await api.get("/admin/birthdays/upcoming", { params: { days } })).data.data;
 export const getAdminLeaderboard = async (params = {}) => (await api.get("/admin/leaderboard", { params })).data.data;
+export const getManualWeeklyAwardActivity = async (params) => (await api.get("/admin/leaderboard/manual/activity", { params })).data.data;
 export const saveManualWeeklyAward = async (data) => (await api.put("/admin/leaderboard/manual", data)).data.data;
 export const updateManualWeeklyAward = async (id, data) => (await api.put(`/admin/leaderboard/manual/${id}`, data)).data.data;
 export const deleteManualWeeklyAward = async (id) => (await api.delete(`/admin/leaderboard/manual/${id}`)).data.data;

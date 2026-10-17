@@ -15,6 +15,7 @@ import {
   adminProfileSchema,
   changePasswordSchema,
   manualWeeklyAwardSchema,
+  manualWeeklyAwardActivityQuerySchema,
   manualWeeklyAwardIdSchema,
   manualAttendanceSchema,
 } from "../validations/adminValidation.js";
@@ -52,6 +53,7 @@ const uploadProfilePhoto = (req, res, next) => {
 router.get("/dashboard", requireAuth, requireAdmin, adminController.getDashboard);
 router.get("/birthdays/upcoming", requireAuth, requireAdmin, adminController.getUpcomingBirthdays);
 router.get("/leaderboard", requireAuth, requireAdmin, validateQuery(leaderboardQuerySchema), adminLeaderboard);
+router.get("/leaderboard/manual/activity", requireAuth, requireAdmin, validateQuery(manualWeeklyAwardActivityQuerySchema), manualEntriesController.getWeeklyAwardActivity);
 router.put("/leaderboard/manual", requireAuth, requireAdmin, validate(manualWeeklyAwardSchema), manualEntriesController.saveWeeklyAward);
 router.put("/leaderboard/manual/:id", requireAuth, requireAdmin, validate(manualWeeklyAwardSchema), manualEntriesController.updateWeeklyAward);
 router.delete("/leaderboard/manual/:id", requireAuth, requireAdmin, validateParams(manualWeeklyAwardIdSchema), manualEntriesController.deleteWeeklyAward);

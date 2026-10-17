@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Clock, History } from "lucide-react";
+import { Clock, History } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import EventCard from "../components/dashboard/EventCard";
-import { getUpcomingEvents, getPastEvents, getMyEvents } from "../services/eventService";
+import { getUpcomingEvents, getPastEvents } from "../services/eventService";
 import { useSearchParams } from "react-router-dom";
 
 const TABS = [
-  { key: "mine", label: "My Events", icon: Calendar },
   { key: "upcoming", label: "Upcoming", icon: Clock },
   { key: "past", label: "Past", icon: History },
 ];
@@ -22,18 +21,18 @@ const formatEvent = (e) => ({
   time: e.startTime,
   location: e.location,
   eventType: e.eventType,
+  attendanceStatus: e.registrations?.[0]?.attendanceStatus || "NOT_MARKED",
 });
 
 const Events = () => {
-  const navigate = useNavigate();  
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "upcoming");
-  const [events, setEvents] = useState({ mine: [], upcoming: [], past: [] });
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") === "past" ? "past" : "upcoming");
+  const [events, setEvents] = useState({ upcoming: [], past: [] });
 
   useEffect(() => {
     getUpcomingEvents().then((data) => setEvents((prev) => ({ ...prev, upcoming: data.map(formatEvent) })));
     getPastEvents().then((data) => setEvents((prev) => ({ ...prev, past: data.map(formatEvent) })));
-    getMyEvents().then((data) => setEvents((prev) => ({ ...prev, mine: data.map(formatEvent) })));
   }, []);
 
   const activeEvents = events[activeTab];

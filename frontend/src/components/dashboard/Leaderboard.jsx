@@ -7,13 +7,6 @@ const formatCurrency = (amount) =>
     Number(amount || 0)
   );
 
-const rankClass = (index) => {
-  if (index === 0) return "bg-amber-400 text-gray-900";
-  if (index === 1) return "bg-gray-200 text-gray-700";
-  if (index === 2) return "bg-green-100 text-green-700";
-  return "bg-gray-50 text-gray-500";
-};
-
 const isoDate = (date) => date.toISOString().slice(0, 10);
 const monthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
@@ -46,11 +39,8 @@ const RankedList = ({ title, rows }) => (
     <h3 className="font-bold text-gray-900 mb-4">{title}</h3>
     <div className="space-y-3">
       {rows.length ? (
-        rows.map((row, index) => (
+        rows.map((row) => (
           <div key={`${title}-${row.userId}`} className="flex items-center gap-3">
-            <span className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${rankClass(index)}`}>
-              {index + 1}
-            </span>
             {row.profilePhoto ? (
               <img src={row.profilePhoto} alt={row.fullName} className="h-10 w-10 rounded-full object-cover" />
             ) : (

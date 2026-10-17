@@ -24,7 +24,7 @@ const EventDetail = () => {
     setMessage("");
     try {
       await registerForEvent(eventId);
-      setMessage("You're registered! See it under 'My Events'.");
+      setMessage("You're registered! You can find this event under Upcoming events.");
     } catch (err) {
       setMessage(err.response?.data?.message || "Could not register.");
     } finally {
