@@ -7,14 +7,14 @@ const formatCurrency = (amount) =>
     Number(amount || 0)
   );
 
-const isoDate = (date) => date.toISOString().slice(0, 10);
+const isoDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const monthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const startOfWeek = (date = new Date()) => {
   const value = new Date(date);
   value.setHours(0, 0, 0, 0);
-  const daysSinceMonday = (value.getDay() + 6) % 7;
-  value.setDate(value.getDate() - daysSinceMonday);
+  const daysSinceSaturday = (value.getDay() + 1) % 7;
+  value.setDate(value.getDate() - daysSinceSaturday);
   return value;
 };
 

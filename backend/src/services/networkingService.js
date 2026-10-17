@@ -259,43 +259,124 @@ export const resolveLeaderboardRange = ({ period = "week", value } = {}) => {
 const hubUserWhere = (userField, hub) =>
   hub && hub !== "all" ? { [userField]: { memberProfile: { is: { hubId: hub } } } } : {};
 
+export const buildWeeklyAwardTotals = (manualEntries, referrals, business) => {
+  const weekKey = (date) => date.toISOString().slice(0, 10);
+  const totals = new Map();
+  const totalFor = (userId, weekStart) => {
+    const key = `${userId}:${weekKey(weekStart)}`;
+    if (!totals.has(key)) {
+      totals.set(key, {
+        userId,
+        weekStart: weekKey(weekStart),
+        referralAmount: 0,
+        referralCount: 0,
+        businessAmount: 0,
+        businessCount: 0,
+      });
+    }
+    return totals.get(key);
+  };
+  const amountOf = (row) => Number(row._sum?.amount ?? row.amount ?? 0);
+  const countOf = (row) => Number(row._count?._all ?? row.count ?? 1);
+
+  referrals.forEach((row) => {
+    if (row.receiverType && row.receiverType !== "MEMBER") return;
+    const total = totalFor(row.giverId, row.weekStart);
+    total.referralAmount += amountOf(row);
+    total.referralCount += countOf(row);
+  });
+  business.forEach((row) => {
+    if (row.referrerType && row.referrerType !== "MEMBER") return;
+    const total = totalFor(row.receiverId, row.weekStart);
+    total.businessAmount += amountOf(row);
+    total.businessCount += countOf(row);
+  });
+  manualEntries.forEach((entry) => {
+    const total = totalFor(entry.userId, entry.weekStart);
+    total.referralAmount = Number(entry.referralAmount || 0);
+    total.referralCount = Number(entry.referralCount || 0);
+    total.businessAmount = Number(entry.businessAmount || 0);
+    total.businessCount = Number(entry.businessCount || 0);
+  });
+
+  return [...totals.values()];
+};
+
 export const getLeaderboard = async ({ period = "week", value, hub = "all", limit = 10 } = {}) => {
   const range = resolveLeaderboardRange({ period, value });
-  const take = limit ? { take: limit } : {};
-  const [referrals, business] = await Promise.all([
+  const [manualEntries, referrals, business] = await Promise.all([
+    prisma.manualWeeklyAwardEntry.findMany({
+      where: {
+        weekStart: { gte: range.start, lt: range.end },
+        ...hubUserWhere("user", hub),
+      },
+      select: {
+        userId: true,
+        weekStart: true,
+        referralCount: true,
+        referralAmount: true,
+        businessCount: true,
+        businessAmount: true,
+      },
+    }),
     prisma.referralGiven.groupBy({
-      by: ["giverId"],
+      by: ["giverId", "weekStart"],
       where: {
         receiverType: "MEMBER",
-        createdAt: { gte: range.start, lt: range.end },
+        weekStart: { gte: range.start, lt: range.end },
         ...hubUserWhere("giver", hub),
       },
       _sum: { amount: true },
       _count: { _all: true },
-      orderBy: { _sum: { amount: "desc" } },
-      ...take,
     }),
     prisma.businessReceived.groupBy({
-      by: ["receiverId"],
+      by: ["receiverId", "weekStart"],
       where: {
         referrerType: "MEMBER",
-        createdAt: { gte: range.start, lt: range.end },
+        weekStart: { gte: range.start, lt: range.end },
         ...hubUserWhere("receiver", hub),
       },
       _sum: { amount: true },
       _count: { _all: true },
-      orderBy: { _sum: { amount: "desc" } },
-      ...take,
     }),
   ]);
+  const weeklyTotals = buildWeeklyAwardTotals(manualEntries, referrals, business);
+  const memberTotals = new Map();
+  weeklyTotals.forEach((week) => {
+    if (!memberTotals.has(week.userId)) {
+      memberTotals.set(week.userId, {
+        giverId: week.userId,
+        receiverId: week.userId,
+        referralAmount: 0,
+        referralCount: 0,
+        businessAmount: 0,
+        businessCount: 0,
+      });
+    }
+    const total = memberTotals.get(week.userId);
+    total.referralAmount += week.referralAmount;
+    total.referralCount += week.referralCount;
+    total.businessAmount += week.businessAmount;
+    total.businessCount += week.businessCount;
+  });
+  const referralRows = [...memberTotals.values()]
+    .filter((row) => row.referralAmount > 0)
+    .sort((a, b) => b.referralAmount - a.referralAmount)
+    .slice(0, limit || undefined)
+    .map((row) => ({ giverId: row.giverId, _sum: { amount: row.referralAmount }, _count: { _all: row.referralCount } }));
+  const businessRows = [...memberTotals.values()]
+    .filter((row) => row.businessAmount > 0)
+    .sort((a, b) => b.businessAmount - a.businessAmount)
+    .slice(0, limit || undefined)
+    .map((row) => ({ receiverId: row.receiverId, _sum: { amount: row.businessAmount }, _count: { _all: row.businessCount } }));
 
   return {
     period: range.period,
     value: range.value,
     start: range.start,
     end: range.end,
-    referralsGiven: await hydrateLeaderboard(referrals, "giverId"),
-    businessReceived: await hydrateLeaderboard(business, "receiverId"),
+    referralsGiven: await hydrateLeaderboard(referralRows, "giverId"),
+    businessReceived: await hydrateLeaderboard(businessRows, "receiverId"),
   };
 };
 
@@ -318,7 +399,9 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     id: true,
     userId: true,
     weekStart: true,
+    referralCount: true,
     referralAmount: true,
+    businessCount: true,
     businessAmount: true,
     createdAt: true,
     user: {
@@ -379,38 +462,7 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     }),
   ]);
 
-  const weekKey = (date) => date.toISOString().slice(0, 10);
-  const manualWeeks = new Set(periodManualEntries.map((entry) => `${entry.userId}:${weekKey(entry.weekStart)}`));
-  const weeklyTotals = new Map();
-  const weeklyTotalFor = (userId, weekStart) => {
-    const key = `${userId}:${weekKey(weekStart)}`;
-    if (!weeklyTotals.has(key)) {
-      weeklyTotals.set(key, {
-        userId,
-        weekStart: weekKey(weekStart),
-        referralAmount: 0,
-        businessAmount: 0,
-      });
-    }
-    return weeklyTotals.get(key);
-  };
-  referrals.forEach((row) => {
-    if (row.receiverType !== "MEMBER") return;
-    if (!manualWeeks.has(`${row.giverId}:${weekKey(row.weekStart)}`)) {
-      weeklyTotalFor(row.giverId, row.weekStart).referralAmount += Number(row.amount || 0);
-    }
-  });
-  business.forEach((row) => {
-    if (row.referrerType !== "MEMBER") return;
-    if (!manualWeeks.has(`${row.receiverId}:${weekKey(row.weekStart)}`)) {
-      weeklyTotalFor(row.receiverId, row.weekStart).businessAmount += Number(row.amount || 0);
-    }
-  });
-  periodManualEntries.forEach((entry) => {
-    const total = weeklyTotalFor(entry.userId, entry.weekStart);
-    total.referralAmount = Number(entry.referralAmount || 0);
-    total.businessAmount = Number(entry.businessAmount || 0);
-  });
+  const weeklyTotals = buildWeeklyAwardTotals(periodManualEntries, referrals, business);
 
   const winnerCandidates = [];
   for (const [activityType, amountKey] of [
@@ -418,7 +470,7 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     ["Business Achiever", "businessAmount"],
   ]) {
     const byWeek = new Map();
-    for (const total of weeklyTotals.values()) {
+    for (const total of weeklyTotals) {
       if (total[amountKey] <= 0) continue;
       const current = byWeek.get(total.weekStart) || [];
       current.push(total);
