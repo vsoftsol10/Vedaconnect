@@ -86,9 +86,9 @@ const ActivityEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
   return (
     <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="font-bold text-gray-900">Award Activity Details</h2>
-      <p className="mb-4 mt-1 text-sm text-gray-500">Member portal logs and admin weekly entries for the selected period. Admin entries replace portal totals for the same member and week in the winners calculation.</p>
-      <Table minWidth="min-w-[1220px]">
-        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell>Logged on</HeaderCell><HeaderCell>Activity / details</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell>Source</HeaderCell><HeaderCell align="right" className="w-20">Actions</HeaderCell></tr></thead>
+      <p className="mb-4 mt-1 text-sm text-gray-500">Portal rows show individual referral or business records; admin rows show weekly totals. Entry source identifies where the record was logged. Admin entries replace portal totals for the same member and week in the winners calculation.</p>
+      <Table minWidth="min-w-[1080px]">
+        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell>Logged on</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell>Entry source</HeaderCell><HeaderCell align="right" className="w-20">Actions</HeaderCell></tr></thead>
         <tbody>
           {rows.length ? visibleRows.map((row) => (
             <tr key={row.id}>
@@ -96,7 +96,6 @@ const ActivityEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
               <Cell>{row.hubName || "-"}</Cell>
               <Cell>{formatDate(row.weekStart)}</Cell>
               <Cell>{formatDate(row.createdAt)}</Cell>
-              <Cell title={row.details}><p className="font-medium text-gray-900">{row.activityType}</p><p className="max-w-64 truncate text-xs text-gray-400">{row.details || "-"}</p></Cell>
               <Cell align="right"><p className="font-bold text-gray-900">{row.isManual || row.referralAmount ? formatCurrency(row.referralAmount) : "-"}</p></Cell>
               <Cell align="right"><p className="font-bold text-gray-900">{row.isManual || row.businessAmount ? formatCurrency(row.businessAmount) : "-"}</p></Cell>
               <Cell><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.isManual ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{row.source}</span></Cell>
@@ -104,7 +103,7 @@ const ActivityEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
                 {row.isManual ? <ManualAwardActionsMenu row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} /> : "-"}
               </Cell>
             </tr>
-          )) : <tr><td colSpan={9} className="vc-cell text-center text-gray-400">No award activity found in this period.</td></tr>}
+          )) : <tr><td colSpan={8} className="vc-cell text-center text-gray-400">No award activity found in this period.</td></tr>}
         </tbody>
       </Table>
       <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(next) => { setRowsPerPage(next); setPage(1); }} total={rows.length} />
