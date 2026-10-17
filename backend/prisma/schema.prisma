@@ -335,6 +335,7 @@ model ReferralGiven {
 
   @@index([giverId, weekStart])
   @@index([receiverId, weekStart])
+  @@index([weekStart])
   @@index([receiverType, createdAt])
   @@map("referrals_given")
 }
@@ -357,6 +358,7 @@ model BusinessReceived {
 
   @@index([receiverId, weekStart])
   @@index([referrerId, weekStart])
+  @@index([weekStart])
   @@index([referrerType, createdAt])
   @@map("business_received")
 }

@@ -318,9 +318,7 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     id: true,
     userId: true,
     weekStart: true,
-    referralCount: true,
     referralAmount: true,
-    businessCount: true,
     businessAmount: true,
     createdAt: true,
     user: {
@@ -361,15 +359,10 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
         id: true,
         giverId: true,
         receiverType: true,
-        externalName: true,
-        externalBusiness: true,
-        externalContact: true,
         amount: true,
-        description: true,
         weekStart: true,
         createdAt: true,
         giver: activityMemberSelect,
-        receiver: { select: { ...activityMemberSelect.select } },
       },
     }),
     prisma.businessReceived.findMany({
@@ -378,15 +371,10 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
         id: true,
         receiverId: true,
         referrerType: true,
-        externalName: true,
-        externalBusiness: true,
-        externalContact: true,
         amount: true,
-        description: true,
         weekStart: true,
         createdAt: true,
         receiver: activityMemberSelect,
-        referrer: { select: { ...activityMemberSelect.select } },
       },
     }),
   ]);
@@ -424,7 +412,7 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     total.businessAmount = Number(entry.businessAmount || 0);
   });
 
-  const winners = [];
+  const winnerCandidates = [];
   for (const [activityType, amountKey] of [
     ["Business Giver", "referralAmount"],
     ["Business Achiever", "businessAmount"],
@@ -439,22 +427,47 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     for (const [weekStart, totals] of byWeek) {
       const highestAmount = Math.max(...totals.map((total) => total[amountKey]));
       const topMembers = totals.filter((total) => total[amountKey] === highestAmount);
-      const hydrated = await hydrateLeaderboard(
-        topMembers.map((total) => ({
-          [activityType === "Business Giver" ? "giverId" : "receiverId"]: total.userId,
-          _count: { _all: 1 },
-          _sum: { amount: total[amountKey] },
-        })),
-        activityType === "Business Giver" ? "giverId" : "receiverId",
-      );
-      winners.push(...hydrated.map((member) => ({
-        ...member,
+      winnerCandidates.push(...topMembers.map((total) => ({
+        userId: total.userId,
         weekStart,
         activityType,
-        amount: member.total,
+        amount: total[amountKey],
       })));
     }
   }
+
+  const winnerIds = [...new Set(winnerCandidates.map((winner) => winner.userId))];
+  const winnerUsers = winnerIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: winnerIds } },
+        select: {
+          ...memberSelect,
+          memberProfile: {
+            select: {
+              fullName: true,
+              profilePhoto: true,
+              businessName: true,
+              hub: { select: { id: true, name: true } },
+            },
+          },
+        },
+      })
+    : [];
+  const winnerUserMap = new Map(winnerUsers.map((user) => [user.id, user]));
+  const winners = winnerCandidates.map((winner) => {
+    const user = winnerUserMap.get(winner.userId);
+    return {
+      userId: winner.userId,
+      fullName: displayName(user),
+      profilePhoto: user?.memberProfile?.profilePhoto || null,
+      businessName: user?.memberProfile?.businessName || null,
+      hubId: user?.memberProfile?.hub?.id || null,
+      hubName: user?.memberProfile?.hub?.name || "-",
+      count: 1,
+      total: winner.amount,
+      ...winner,
+    };
+  });
 
   const mapMember = (user) => ({
     fullName: displayName(user),
@@ -467,8 +480,6 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     ...mapMember(entry.user),
     weekStart: entry.weekStart,
     createdAt: entry.createdAt,
-    activityType: "Admin weekly award",
-    details: `${entry.referralCount} Business Giver item(s) · ${entry.businessCount} Business Achiever item(s)`,
     source: "Admin",
     hubId: entry.user.memberProfile?.hubId || "",
     referralAmount: Number(entry.referralAmount),
@@ -481,15 +492,6 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     ...mapMember(entry.giver),
     weekStart: entry.weekStart,
     createdAt: entry.createdAt,
-    activityType: "Business Giver",
-    details: [
-      entry.receiverType === "MEMBER"
-        ? displayName(entry.receiver)
-        : entry.externalName || "External contact",
-      entry.receiverType === "EXTERNAL" ? entry.externalBusiness : entry.receiver?.memberProfile?.businessName,
-      entry.externalContact,
-      entry.description,
-    ].filter(Boolean).join(" · "),
     source: "Member portal",
     referralAmount: Number(entry.amount),
     businessAmount: 0,
@@ -501,15 +503,6 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
     ...mapMember(entry.receiver),
     weekStart: entry.weekStart,
     createdAt: entry.createdAt,
-    activityType: "Business Achiever",
-    details: [
-      entry.referrerType === "MEMBER"
-        ? displayName(entry.referrer)
-        : entry.externalName || "External contact",
-      entry.referrerType === "EXTERNAL" ? entry.externalBusiness : entry.referrer?.memberProfile?.businessName,
-      entry.externalContact,
-      entry.description,
-    ].filter(Boolean).join(" · "),
     source: "Member portal",
     referralAmount: 0,
     businessAmount: Number(entry.amount),

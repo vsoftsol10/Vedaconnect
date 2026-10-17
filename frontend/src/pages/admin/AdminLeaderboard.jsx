@@ -121,10 +121,14 @@ const getEntryWeekStart = (periodState) => {
 };
 
 const AdminLeaderboard = () => {
-  const periodState = usePeriodRange("year");
+  const periodState = usePeriodRange();
   const [hub, setHub] = useState("all");
   const [hubs, setHubs] = useState([]);
+  const [isLoadingHubs, setIsLoadingHubs] = useState(true);
+  const [hubError, setHubError] = useState("");
   const [members, setMembers] = useState([]);
+  const [membersLoaded, setMembersLoaded] = useState(false);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [leaderboard, setLeaderboard] = useState({ winners: [], activityEntries: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -136,14 +140,8 @@ const AdminLeaderboard = () => {
     setIsLoading(true);
     setError("");
     try {
-      const [leaderboardData, hubRows, memberRows] = await Promise.all([
-        getAdminLeaderboard({ period: periodState.period, value: periodState.range.value, hub }),
-        getHubs(),
-        listAdminMembers(),
-      ]);
+      const leaderboardData = await getAdminLeaderboard({ period: periodState.period, value: periodState.range.value, hub });
       setLeaderboard(leaderboardData);
-      setHubs(hubRows);
-      setMembers(memberRows);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -152,6 +150,29 @@ const AdminLeaderboard = () => {
   }, [periodState.period, periodState.range.value, hub]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    getHubs()
+      .then(setHubs)
+      .catch((err) => setHubError(err?.response?.data?.message || err.message || "Could not load hubs."))
+      .finally(() => setIsLoadingHubs(false));
+  }, []);
+
+  const openManualEntry = async (entry = null) => {
+    if (!membersLoaded) {
+      setIsLoadingMembers(true);
+      try {
+        setMembers(await listAdminMembers());
+        setMembersLoaded(true);
+      } catch (err) {
+        setError(err?.response?.data?.message || err.message || "Could not load members.");
+        return;
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    }
+    setEditingEntry(entry);
+    setManualEntryOpen(true);
+  };
 
   const saveEntry = (savedEntry) => {
     setManualEntryOpen(false);
@@ -188,18 +209,19 @@ const AdminLeaderboard = () => {
             </div>
             <div className="mt-5 flex flex-col gap-3">
               <PeriodHubFilter periodState={periodState} hub={hub} onHubChange={setHub} hubs={hubs} />
-              <button type="button" onClick={() => { setEditingEntry(null); setManualEntryOpen(true); }} className="inline-flex min-h-11 self-start items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-semibold text-gray-900 hover:bg-amber-300">
-                <Plus className="h-4 w-4" /> Manual weekly entry
+              <button type="button" onClick={() => openManualEntry()} disabled={isLoadingHubs || isLoadingMembers || Boolean(hubError)} className="inline-flex min-h-11 self-start items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-semibold text-gray-900 hover:bg-amber-300 disabled:cursor-wait disabled:opacity-60">
+                {isLoadingMembers || isLoadingHubs ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {isLoadingMembers ? "Loading members…" : isLoadingHubs ? "Loading hubs…" : "Manual weekly entry"}
               </button>
             </div>
           </div>
           {error && <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>}
+          {hubError && <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">{hubError}</div>}
           {isLoading ? <div className="flex items-center gap-2 text-gray-500"><Loader2 className="h-5 w-5 animate-spin" />Loading awards</div> : (
             <>
               <ActivityEntriesTable
                 rows={leaderboard.activityEntries || []}
                 onView={setViewingEntry}
-                onEdit={(entry) => { setEditingEntry(entry); setManualEntryOpen(true); }}
+                onEdit={(entry) => openManualEntry(entry)}
                 onDelete={removeEntry}
               />
               <WeeklyAwardWinnersTable rows={leaderboard.winners || []} />
