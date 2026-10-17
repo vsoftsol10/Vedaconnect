@@ -122,7 +122,7 @@ const getEntryWeekStart = (periodState) => {
 };
 
 const AdminLeaderboard = () => {
-  const periodState = usePeriodRange();
+  const periodState = usePeriodRange("year");
   const [hub, setHub] = useState("all");
   const [hubs, setHubs] = useState([]);
   const [members, setMembers] = useState([]);

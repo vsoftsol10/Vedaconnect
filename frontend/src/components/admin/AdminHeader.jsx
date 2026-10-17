@@ -25,9 +25,9 @@ const AdminHeader = ({ title = "Dashboard" }) => {
           value=""
           onChange={handleAccountAction}
           options={[{ value: "profile", label: "Profile" }, { value: "logout", label: "Logout" }]}
-          className="w-auto"
+          className="z-50 w-auto"
           triggerClassName="flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left outline-none transition hover:bg-gray-50 focus:bg-gray-50 focus:ring-2 focus:ring-green-100 sm:gap-3"
-          menuClassName="right-0 w-48"
+          menuClassName="right-0 z-50 w-48"
           trigger={({ open }) => <>
             {user?.profilePhoto ? (
               <img src={user.profilePhoto} alt={user.fullName || user.email} className="h-9 w-9 rounded-full object-cover" />
