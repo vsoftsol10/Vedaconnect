@@ -63,8 +63,7 @@ export const monthlyLeaderboard = async (req, res, next) => {
 export const leaderboard = async (req, res, next) => {
   try {
     const data = await networkingService.getLeaderboard(req.validatedQuery);
-    const years = await networkingService.getLeaderboardYears();
-    res.status(200).json({ success: true, data: { ...data, years } });
+    res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
   }
@@ -73,8 +72,7 @@ export const leaderboard = async (req, res, next) => {
 export const adminLeaderboard = async (req, res, next) => {
   try {
     const data = await networkingService.getAdminLeaderboard(req.validatedQuery);
-    const years = await networkingService.getLeaderboardYears();
-    res.status(200).json({ success: true, data: { ...data, years } });
+    res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
   }

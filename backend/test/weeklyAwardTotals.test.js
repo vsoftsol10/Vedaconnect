@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildWeeklyAwardTotals } from "../src/services/networkingService.js";
+import { buildWeeklyAwardTotals, selectLeaderboardRows } from "../src/services/networkingService.js";
+import { leaderboardQuerySchema } from "../src/validations/networkingValidation.js";
 
 test("weekly award totals combine portal activity by member and week", () => {
   const totals = buildWeeklyAwardTotals(
@@ -77,4 +78,25 @@ test("manual weekly award totals replace member portal amounts and counts", () =
     businessAmount: 0,
     businessCount: 0,
   }]);
+});
+
+test("leaderboard winner selection returns all top scorers and excludes lower totals", () => {
+  const totals = [
+    { userId: "leader-1", referralAmount: 900, referralCount: 2 },
+    { userId: "leader-2", referralAmount: 900, referralCount: 3 },
+    { userId: "member-3", referralAmount: 700, referralCount: 1 },
+  ];
+
+  assert.deepEqual(
+    selectLeaderboardRows(totals, "referralAmount", "referralCount", { winnersOnly: true }),
+    [
+      { giverId: "leader-1", _sum: { amount: 900 }, _count: { _all: 2 } },
+      { giverId: "leader-2", _sum: { amount: 900 }, _count: { _all: 3 } },
+    ],
+  );
+});
+
+test("leaderboard query accepts winner-only mode without changing the default", () => {
+  assert.equal(leaderboardQuerySchema.parse({ winnersOnly: "true" }).winnersOnly, true);
+  assert.equal(leaderboardQuerySchema.parse({}).winnersOnly, false);
 });

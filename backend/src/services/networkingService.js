@@ -302,7 +302,29 @@ export const buildWeeklyAwardTotals = (manualEntries, referrals, business) => {
   return [...totals.values()];
 };
 
-export const getLeaderboard = async ({ period = "week", value, hub = "all", limit = 10 } = {}) => {
+export const selectLeaderboardRows = (memberTotals, amountKey, countKey, { winnersOnly = false, limit = 10 } = {}) => {
+  const rows = memberTotals.filter((row) => row[amountKey] > 0);
+  if (winnersOnly && rows.length) {
+    const highestAmount = Math.max(...rows.map((row) => row[amountKey]));
+    return rows
+      .filter((row) => row[amountKey] === highestAmount)
+      .map((row) => ({
+        [amountKey === "referralAmount" ? "giverId" : "receiverId"]: row.userId,
+        _sum: { amount: row[amountKey] },
+        _count: { _all: row[countKey] },
+      }));
+  }
+  return rows
+    .sort((a, b) => b[amountKey] - a[amountKey])
+    .slice(0, limit || undefined)
+    .map((row) => ({
+      [amountKey === "referralAmount" ? "giverId" : "receiverId"]: row.userId,
+      _sum: { amount: row[amountKey] },
+      _count: { _all: row[countKey] },
+    }));
+};
+
+export const getLeaderboard = async ({ period = "week", value, hub = "all", limit = 10, winnersOnly = false } = {}) => {
   const range = resolveLeaderboardRange({ period, value });
   const [manualEntries, referrals, business] = await Promise.all([
     prisma.manualWeeklyAwardEntry.findMany({
@@ -359,16 +381,9 @@ export const getLeaderboard = async ({ period = "week", value, hub = "all", limi
     total.businessAmount += week.businessAmount;
     total.businessCount += week.businessCount;
   });
-  const referralRows = [...memberTotals.values()]
-    .filter((row) => row.referralAmount > 0)
-    .sort((a, b) => b.referralAmount - a.referralAmount)
-    .slice(0, limit || undefined)
-    .map((row) => ({ giverId: row.giverId, _sum: { amount: row.referralAmount }, _count: { _all: row.referralCount } }));
-  const businessRows = [...memberTotals.values()]
-    .filter((row) => row.businessAmount > 0)
-    .sort((a, b) => b.businessAmount - a.businessAmount)
-    .slice(0, limit || undefined)
-    .map((row) => ({ receiverId: row.receiverId, _sum: { amount: row.businessAmount }, _count: { _all: row.businessCount } }));
+  const options = { winnersOnly, limit };
+  const referralRows = selectLeaderboardRows([...memberTotals.values()], "referralAmount", "referralCount", options);
+  const businessRows = selectLeaderboardRows([...memberTotals.values()], "businessAmount", "businessCount", options);
 
   return {
     period: range.period,

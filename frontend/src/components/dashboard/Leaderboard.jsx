@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Trophy } from "lucide-react";
+import { Loader2, Trophy } from "lucide-react";
 import { getLeaderboard } from "../../services/networkingService";
 
 const formatCurrency = (amount) =>
@@ -8,7 +8,6 @@ const formatCurrency = (amount) =>
   );
 
 const isoDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-const monthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const startOfWeek = (date = new Date()) => {
   const value = new Date(date);
@@ -16,12 +15,6 @@ const startOfWeek = (date = new Date()) => {
   const daysSinceSaturday = (value.getDay() + 1) % 7;
   value.setDate(value.getDate() - daysSinceSaturday);
   return value;
-};
-
-const shiftWeek = (weekStart, days) => {
-  const next = new Date(`${weekStart}T00:00:00`);
-  next.setDate(next.getDate() + days);
-  return isoDate(next);
 };
 
 const weekLabel = (weekStart) => {
@@ -63,83 +56,34 @@ const RankedList = ({ title, rows }) => (
 );
 
 const Leaderboard = () => {
-  const [period, setPeriod] = useState("week");
-  const [value, setValue] = useState(isoDate(startOfWeek()));
-  const [years, setYears] = useState([new Date().getFullYear()]);
+  const [weekStart] = useState(() => isoDate(startOfWeek()));
   const [data, setData] = useState({ referralsGiven: [], businessReceived: [] });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      const result = await getLeaderboard({ period, value });
+      setError("");
+      const result = await getLeaderboard({ period: "week", value: weekStart, winnersOnly: true });
       setData(result);
-      if (result.years?.length) setYears(result.years);
       setIsLoading(false);
     };
-    load().catch(() => setIsLoading(false));
-  }, [period, value]);
-
-  const handlePeriodChange = (nextPeriod) => {
-    setPeriod(nextPeriod);
-    const now = new Date();
-    if (nextPeriod === "week") setValue(isoDate(startOfWeek(now)));
-    if (nextPeriod === "month") setValue(monthKey(now));
-    if (nextPeriod === "year") setValue(String(now.getFullYear()));
-  };
+    load().catch((err) => {
+      setError(err?.response?.data?.message || err.message || "Could not load this week's award leaders.");
+      setIsLoading(false);
+    });
+  }, [weekStart]);
 
   return (
     <section className="mb-10">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-amber-500" />
-          <h2 className="text-lg font-bold text-gray-900">Leaderboard</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <div className="flex w-full rounded-xl bg-white border border-gray-100 p-1 sm:w-auto">
-            {["week", "month", "year"].map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handlePeriodChange(key)}
-                className={`min-h-11 flex-1 px-3 py-2 rounded-lg text-sm font-semibold capitalize transition-colors sm:flex-none sm:px-4 ${
-                  period === key ? "bg-amber-400 text-gray-900" : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                {key}
-              </button>
-            ))}
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">This Week&apos;s Award Leaders</h2>
+            <p className="text-sm text-gray-500">Week of {weekLabel(weekStart)}</p>
           </div>
-          {period === "week" && (
-            <div className="flex w-full items-center justify-between rounded-xl bg-white border border-gray-100 p-1 sm:w-auto">
-              <button type="button" onClick={() => setValue((current) => shiftWeek(current, -7))} className="inline-flex h-11 w-11 items-center justify-center text-gray-500 hover:text-gray-900">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="px-2 text-center text-sm font-semibold text-gray-700">{weekLabel(value)}</span>
-              <button type="button" onClick={() => setValue((current) => shiftWeek(current, 7))} className="inline-flex h-11 w-11 items-center justify-center text-gray-500 hover:text-gray-900">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          {period === "month" && (
-            <input
-              type="month"
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              className="min-h-11 rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
-            />
-          )}
-          {period === "year" && (
-            <select
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              className="min-h-11 rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
-            >
-              {years.map((year) => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-          )}
         </div>
       </div>
       {isLoading ? (
@@ -147,10 +91,12 @@ const Leaderboard = () => {
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading leaderboard
         </div>
+      ) : error ? (
+        <p role="alert" className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error}</p>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <RankedList title="Top Referrals Given" rows={data.referralsGiven || []} />
-          <RankedList title="Top Business Received" rows={data.businessReceived || []} />
+          <RankedList title="Business Giver Award Leader" rows={data.referralsGiven || []} />
+          <RankedList title="Business Achiever Award Leader" rows={data.businessReceived || []} />
         </div>
       )}
     </section>

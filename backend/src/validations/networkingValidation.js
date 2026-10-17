@@ -44,6 +44,7 @@ export const leaderboardQuerySchema = z.object({
   value: z.string().trim().optional(),
   hub: z.string().trim().optional().default("all"),
   sort: z.enum(["referrals", "business"]).optional().default("business"),
+  winnersOnly: z.enum(["true", "false"]).optional().transform((value) => value === "true"),
 }).superRefine((data, ctx) => {
   if (!data.value) return;
   if (data.period === "week" && !/^\d{4}-\d{2}-\d{2}$/.test(data.value)) {
