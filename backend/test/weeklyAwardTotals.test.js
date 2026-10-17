@@ -95,6 +95,29 @@ test("leaderboard winner selection returns one deterministic top scorer", () => 
   );
 });
 
+test("aggregated member totals retain the ID used to hydrate the member name", () => {
+  const weeklyTotals = buildWeeklyAwardTotals(
+    [],
+    [{
+      giverId: "member-1",
+      weekStart: new Date("2026-10-10T00:00:00.000Z"),
+      receiverType: "MEMBER",
+      amount: 900,
+    }],
+    [],
+  );
+  const memberTotals = weeklyTotals.map((week) => ({
+    userId: week.userId,
+    referralAmount: week.referralAmount,
+    referralCount: week.referralCount,
+  }));
+
+  assert.deepEqual(
+    selectLeaderboardRows(memberTotals, "referralAmount", "referralCount", { winnersOnly: true }),
+    [{ giverId: "member-1", _sum: { amount: 900 }, _count: { _all: 1 } }],
+  );
+});
+
 test("leaderboard query accepts winner-only mode without changing the default", () => {
   assert.equal(leaderboardQuerySchema.parse({ winnersOnly: "true" }).winnersOnly, true);
   assert.equal(leaderboardQuerySchema.parse({}).winnersOnly, false);

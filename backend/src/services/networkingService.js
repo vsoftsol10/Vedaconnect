@@ -369,6 +369,7 @@ export const getLeaderboard = async ({ period = "week", value, hub = "all", limi
   weeklyTotals.forEach((week) => {
     if (!memberTotals.has(week.userId)) {
       memberTotals.set(week.userId, {
+        userId: week.userId,
         giverId: week.userId,
         receiverId: week.userId,
         referralAmount: 0,
