@@ -48,7 +48,7 @@ const ManualAwardActionsMenu = ({ row, onView, onEdit, onDelete }) => {
   );
 };
 
-const LeaderboardTable = ({ rows }) => {
+const WeeklyAwardWinnersTable = ({ rows }) => {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const visibleRows = usePagination(rows, page, rowsPerPage);
@@ -56,19 +56,20 @@ const LeaderboardTable = ({ rows }) => {
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
-      <h2 className="mb-4 font-bold text-gray-900">Member Leaderboard</h2>
-      <Table minWidth="min-w-[760px]">
-        <thead><tr><HeaderCell align="center">Rank</HeaderCell><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell></tr></thead>
+      <h2 className="font-bold text-gray-900">Weekly Award Winners</h2>
+      <p className="mb-4 mt-1 text-sm text-gray-500">Top Business Giver and Business Achiever for each week in the selected period.</p>
+      <Table minWidth="min-w-[720px]">
+        <thead><tr><HeaderCell>Week starts</HeaderCell><HeaderCell>Award</HeaderCell><HeaderCell>Winner</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell align="right">Winning value</HeaderCell></tr></thead>
         <tbody>
-          {rows.length ? visibleRows.map((row, index) => (
-            <tr key={row.userId}>
-              <Cell align="center"><span className="font-bold text-gray-900">{(page - 1) * rowsPerPage + index + 1}</span></Cell>
+          {rows.length ? visibleRows.map((row) => (
+            <tr key={`${row.weekStart}-${row.activityType}-${row.userId}`}>
+              <Cell>{formatDate(row.weekStart)}</Cell>
+              <Cell><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.activityType === "Business Giver" ? "bg-blue-50 text-blue-700" : "bg-green-50 text-green-700"}`}>{row.activityType}</span></Cell>
               <Cell title={`${row.fullName} ${row.businessName || ""}`}><p className="font-semibold text-gray-900">{row.fullName}</p><p className="text-xs text-gray-400">{row.businessName || "-"}</p></Cell>
               <Cell title={row.hubName}>{row.hubName || "-"}</Cell>
-              <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.referralAmount)}</p></Cell>
-              <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.businessAmount)}</p></Cell>
+              <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.amount)}</p></Cell>
             </tr>
-          )) : <tr><td colSpan={5} className="vc-cell text-center text-gray-400">No entries yet.</td></tr>}
+          )) : <tr><td colSpan={5} className="vc-cell text-center text-gray-400">No weekly award winners in this period.</td></tr>}
         </tbody>
       </Table>
       <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(next) => { setRowsPerPage(next); setPage(1); }} total={rows.length} />
@@ -76,7 +77,7 @@ const LeaderboardTable = ({ rows }) => {
   );
 };
 
-const ManualAwardEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
+const ActivityEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const visibleRows = usePagination(rows, page, rowsPerPage);
@@ -84,23 +85,26 @@ const ManualAwardEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
 
   return (
     <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
-      <h2 className="mb-4 font-bold text-gray-900">Manual Award Entries</h2>
-      <p className="mb-4 text-sm text-gray-500">All recorded weeks are shown. Use the hub filter to narrow the entries.</p>
-      <Table minWidth="min-w-[820px]">
-        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell align="right" className="w-20">Actions</HeaderCell></tr></thead>
+      <h2 className="font-bold text-gray-900">Award Activity Details</h2>
+      <p className="mb-4 mt-1 text-sm text-gray-500">Member portal logs and admin weekly entries for the selected period. Admin entries replace portal totals for the same member and week in the winners calculation.</p>
+      <Table minWidth="min-w-[1220px]">
+        <thead><tr><HeaderCell>Member</HeaderCell><HeaderCell>Hub</HeaderCell><HeaderCell>Week starts</HeaderCell><HeaderCell>Logged on</HeaderCell><HeaderCell>Activity / details</HeaderCell><HeaderCell align="right">Business Giver (₹)</HeaderCell><HeaderCell align="right">Business Achiever (₹)</HeaderCell><HeaderCell>Source</HeaderCell><HeaderCell align="right" className="w-20">Actions</HeaderCell></tr></thead>
         <tbody>
           {rows.length ? visibleRows.map((row) => (
             <tr key={row.id}>
               <Cell><p className="font-semibold text-gray-900">{row.fullName}</p><p className="text-xs text-gray-400">{row.businessName || "-"}</p></Cell>
               <Cell>{row.hubName || "-"}</Cell>
               <Cell>{formatDate(row.weekStart)}</Cell>
-              <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.referralAmount)}</p></Cell>
-              <Cell align="right"><p className="font-bold text-gray-900">{formatCurrency(row.businessAmount)}</p></Cell>
+              <Cell>{formatDate(row.createdAt)}</Cell>
+              <Cell title={row.details}><p className="font-medium text-gray-900">{row.activityType}</p><p className="max-w-64 truncate text-xs text-gray-400">{row.details || "-"}</p></Cell>
+              <Cell align="right"><p className="font-bold text-gray-900">{row.isManual || row.referralAmount ? formatCurrency(row.referralAmount) : "-"}</p></Cell>
+              <Cell align="right"><p className="font-bold text-gray-900">{row.isManual || row.businessAmount ? formatCurrency(row.businessAmount) : "-"}</p></Cell>
+              <Cell><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.isManual ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{row.source}</span></Cell>
               <Cell align="right" className="w-20">
-                <ManualAwardActionsMenu row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} />
+                {row.isManual ? <ManualAwardActionsMenu row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} /> : "-"}
               </Cell>
             </tr>
-          )) : <tr><td colSpan={6} className="vc-cell text-center text-gray-400">No manual award entries found for this hub.</td></tr>}
+          )) : <tr><td colSpan={9} className="vc-cell text-center text-gray-400">No award activity found in this period.</td></tr>}
         </tbody>
       </Table>
       <Pagination page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} onRowsPerPageChange={(next) => { setRowsPerPage(next); setPage(1); }} total={rows.length} />
@@ -120,10 +124,9 @@ const getEntryWeekStart = (periodState) => {
 const AdminLeaderboard = () => {
   const periodState = usePeriodRange();
   const [hub, setHub] = useState("all");
-  const [sort, setSort] = useState("business");
   const [hubs, setHubs] = useState([]);
   const [members, setMembers] = useState([]);
-  const [leaderboard, setLeaderboard] = useState({ rows: [], manualEntries: [] });
+  const [leaderboard, setLeaderboard] = useState({ winners: [], activityEntries: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
@@ -135,7 +138,7 @@ const AdminLeaderboard = () => {
     setError("");
     try {
       const [leaderboardData, hubRows, memberRows] = await Promise.all([
-        getAdminLeaderboard({ period: periodState.period, value: periodState.range.value, hub, sort }),
+        getAdminLeaderboard({ period: periodState.period, value: periodState.range.value, hub }),
         getHubs(),
         listAdminMembers(),
       ]);
@@ -147,7 +150,7 @@ const AdminLeaderboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [periodState.period, periodState.range.value, hub, sort]);
+  }, [periodState.period, periodState.range.value, hub]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -185,7 +188,7 @@ const AdminLeaderboard = () => {
               <p className="mt-1 text-gray-500">Recognize member achievement through referrals and business growth.</p>
             </div>
             <div className="mt-5 flex flex-col gap-3">
-              <PeriodHubFilter periodState={periodState} hub={hub} onHubChange={setHub} hubs={hubs} sort={sort} onSortChange={setSort} />
+              <PeriodHubFilter periodState={periodState} hub={hub} onHubChange={setHub} hubs={hubs} />
               <button type="button" onClick={() => { setEditingEntry(null); setManualEntryOpen(true); }} className="inline-flex min-h-11 self-start items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-semibold text-gray-900 hover:bg-amber-300">
                 <Plus className="h-4 w-4" /> Manual weekly entry
               </button>
@@ -194,13 +197,13 @@ const AdminLeaderboard = () => {
           {error && <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-600">{error}</div>}
           {isLoading ? <div className="flex items-center gap-2 text-gray-500"><Loader2 className="h-5 w-5 animate-spin" />Loading awards</div> : (
             <>
-              <ManualAwardEntriesTable
-                rows={leaderboard.manualEntries || []}
+              <ActivityEntriesTable
+                rows={leaderboard.activityEntries || []}
                 onView={setViewingEntry}
                 onEdit={(entry) => { setEditingEntry(entry); setManualEntryOpen(true); }}
                 onDelete={removeEntry}
               />
-              <LeaderboardTable rows={leaderboard.rows || []} />
+              <WeeklyAwardWinnersTable rows={leaderboard.winners || []} />
             </>
           )}
         </main>

@@ -304,53 +304,13 @@ export const getWeeklyLeaderboard = async (weekStart) =>
 
 export const getMonthlyLeaderboard = async (month) => getLeaderboard({ period: "month", value: month });
 
-const combineRows = (leaderboard, sort = "business") => {
-  const rows = new Map();
-  const ensure = (row) => {
-    if (!rows.has(row.userId)) {
-      rows.set(row.userId, {
-        userId: row.userId,
-        fullName: row.fullName,
-        businessName: row.businessName,
-        hubId: row.hubId,
-        hubName: row.hubName,
-        profilePhoto: row.profilePhoto,
-        referralCount: 0,
-        referralAmount: 0,
-        businessCount: 0,
-        businessAmount: 0,
-      });
-    }
-    return rows.get(row.userId);
-  };
-
-  leaderboard.referralsGiven.forEach((row) => {
-    const target = ensure(row);
-    target.referralCount = row.count;
-    target.referralAmount = row.total;
-  });
-  leaderboard.businessReceived.forEach((row) => {
-    const target = ensure(row);
-    target.businessCount = row.count;
-    target.businessAmount = row.total;
-  });
-
-  return [...rows.values()].sort((a, b) => {
-    if (sort === "referrals") {
-      return b.referralAmount - a.referralAmount || b.referralCount - a.referralCount || b.businessAmount - a.businessAmount;
-    }
-    return b.businessAmount - a.businessAmount || b.businessCount - a.businessCount || b.referralCount - a.referralCount;
-  });
-};
-
-export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => {
+export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
   const range = resolveLeaderboardRange({ period, value });
   const manualWhere = {
     weekStart: { gte: range.start, lt: range.end },
     ...hubUserWhere("user", hub),
   };
-  const activityWhere = (party, userField) => ({
-    [party === "referral" ? "receiverType" : "referrerType"]: "MEMBER",
+  const activityWhere = (userField) => ({
     weekStart: { gte: range.start, lt: range.end },
     ...hubUserWhere(userField, hub),
   });
@@ -362,6 +322,7 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
     referralAmount: true,
     businessCount: true,
     businessAmount: true,
+    createdAt: true,
     user: {
       select: {
         email: true,
@@ -376,81 +337,194 @@ export const getAdminLeaderboard = async ({ period, value, hub, sort } = {}) => 
       },
     },
   };
-  const [periodManualEntries, manualEntries, referrals, business] = await Promise.all([
+  const activityMemberSelect = {
+    select: {
+      email: true,
+      memberProfile: {
+        select: {
+          fullName: true,
+          businessName: true,
+          hubId: true,
+          hub: { select: { name: true } },
+        },
+      },
+    },
+  };
+  const [periodManualEntries, referrals, business] = await Promise.all([
     prisma.manualWeeklyAwardEntry.findMany({
       where: manualWhere,
       select: manualEntrySelect,
     }),
-    prisma.manualWeeklyAwardEntry.findMany({
-      where: hubUserWhere("user", hub),
-      orderBy: [{ weekStart: "desc" }, { createdAt: "desc" }],
-      select: manualEntrySelect,
-    }),
     prisma.referralGiven.findMany({
-      where: activityWhere("referral", "giver"),
-      select: { giverId: true, amount: true, weekStart: true },
+      where: activityWhere("giver"),
+      select: {
+        id: true,
+        giverId: true,
+        receiverType: true,
+        externalName: true,
+        externalBusiness: true,
+        externalContact: true,
+        amount: true,
+        description: true,
+        weekStart: true,
+        createdAt: true,
+        giver: activityMemberSelect,
+        receiver: { select: { ...activityMemberSelect.select } },
+      },
     }),
     prisma.businessReceived.findMany({
-      where: activityWhere("business", "receiver"),
-      select: { receiverId: true, amount: true, weekStart: true },
+      where: activityWhere("receiver"),
+      select: {
+        id: true,
+        receiverId: true,
+        referrerType: true,
+        externalName: true,
+        externalBusiness: true,
+        externalContact: true,
+        amount: true,
+        description: true,
+        weekStart: true,
+        createdAt: true,
+        receiver: activityMemberSelect,
+        referrer: { select: { ...activityMemberSelect.select } },
+      },
     }),
   ]);
 
   const weekKey = (date) => date.toISOString().slice(0, 10);
   const manualWeeks = new Set(periodManualEntries.map((entry) => `${entry.userId}:${weekKey(entry.weekStart)}`));
-  const totalsByUser = () => new Map();
-  const addTotal = (totals, userId, count, amount) => {
-    const current = totals.get(userId) || { count: 0, total: 0 };
-    current.count += count;
-    current.total += Number(amount || 0);
-    totals.set(userId, current);
+  const weeklyTotals = new Map();
+  const weeklyTotalFor = (userId, weekStart) => {
+    const key = `${userId}:${weekKey(weekStart)}`;
+    if (!weeklyTotals.has(key)) {
+      weeklyTotals.set(key, {
+        userId,
+        weekStart: weekKey(weekStart),
+        referralAmount: 0,
+        businessAmount: 0,
+      });
+    }
+    return weeklyTotals.get(key);
   };
-  const referralTotals = totalsByUser();
-  const businessTotals = totalsByUser();
-
   referrals.forEach((row) => {
+    if (row.receiverType !== "MEMBER") return;
     if (!manualWeeks.has(`${row.giverId}:${weekKey(row.weekStart)}`)) {
-      addTotal(referralTotals, row.giverId, 1, row.amount);
+      weeklyTotalFor(row.giverId, row.weekStart).referralAmount += Number(row.amount || 0);
     }
   });
   business.forEach((row) => {
+    if (row.referrerType !== "MEMBER") return;
     if (!manualWeeks.has(`${row.receiverId}:${weekKey(row.weekStart)}`)) {
-      addTotal(businessTotals, row.receiverId, 1, row.amount);
+      weeklyTotalFor(row.receiverId, row.weekStart).businessAmount += Number(row.amount || 0);
     }
   });
   periodManualEntries.forEach((entry) => {
-    addTotal(referralTotals, entry.userId, entry.referralCount, entry.referralAmount);
-    addTotal(businessTotals, entry.userId, entry.businessCount, entry.businessAmount);
+    const total = weeklyTotalFor(entry.userId, entry.weekStart);
+    total.referralAmount = Number(entry.referralAmount || 0);
+    total.businessAmount = Number(entry.businessAmount || 0);
   });
 
-  const leaderboard = {
+  const winners = [];
+  for (const [activityType, amountKey] of [
+    ["Business Giver", "referralAmount"],
+    ["Business Achiever", "businessAmount"],
+  ]) {
+    const byWeek = new Map();
+    for (const total of weeklyTotals.values()) {
+      if (total[amountKey] <= 0) continue;
+      const current = byWeek.get(total.weekStart) || [];
+      current.push(total);
+      byWeek.set(total.weekStart, current);
+    }
+    for (const [weekStart, totals] of byWeek) {
+      const highestAmount = Math.max(...totals.map((total) => total[amountKey]));
+      const topMembers = totals.filter((total) => total[amountKey] === highestAmount);
+      const hydrated = await hydrateLeaderboard(
+        topMembers.map((total) => ({
+          [activityType === "Business Giver" ? "giverId" : "receiverId"]: total.userId,
+          _count: { _all: 1 },
+          _sum: { amount: total[amountKey] },
+        })),
+        activityType === "Business Giver" ? "giverId" : "receiverId",
+      );
+      winners.push(...hydrated.map((member) => ({
+        ...member,
+        weekStart,
+        activityType,
+        amount: member.total,
+      })));
+    }
+  }
+
+  const mapMember = (user) => ({
+    fullName: displayName(user),
+    businessName: user?.memberProfile?.businessName || "",
+    hubName: user?.memberProfile?.hub?.name || "-",
+  });
+  const manualActivity = periodManualEntries.map((entry) => ({
+    id: entry.id,
+    userId: entry.userId,
+    ...mapMember(entry.user),
+    weekStart: entry.weekStart,
+    createdAt: entry.createdAt,
+    activityType: "Admin weekly award",
+    details: `${entry.referralCount} Business Giver item(s) · ${entry.businessCount} Business Achiever item(s)`,
+    source: "Admin",
+    hubId: entry.user.memberProfile?.hubId || "",
+    referralAmount: Number(entry.referralAmount),
+    businessAmount: Number(entry.businessAmount),
+    isManual: true,
+  }));
+  const referralActivity = referrals.map((entry) => ({
+    id: `referral-${entry.id}`,
+    userId: entry.giverId,
+    ...mapMember(entry.giver),
+    weekStart: entry.weekStart,
+    createdAt: entry.createdAt,
+    activityType: "Business Giver",
+    details: [
+      entry.receiverType === "MEMBER"
+        ? displayName(entry.receiver)
+        : entry.externalName || "External contact",
+      entry.receiverType === "EXTERNAL" ? entry.externalBusiness : entry.receiver?.memberProfile?.businessName,
+      entry.externalContact,
+      entry.description,
+    ].filter(Boolean).join(" · "),
+    source: "Member portal",
+    referralAmount: Number(entry.amount),
+    businessAmount: 0,
+    isManual: false,
+  }));
+  const businessActivity = business.map((entry) => ({
+    id: `business-${entry.id}`,
+    userId: entry.receiverId,
+    ...mapMember(entry.receiver),
+    weekStart: entry.weekStart,
+    createdAt: entry.createdAt,
+    activityType: "Business Achiever",
+    details: [
+      entry.referrerType === "MEMBER"
+        ? displayName(entry.referrer)
+        : entry.externalName || "External contact",
+      entry.referrerType === "EXTERNAL" ? entry.externalBusiness : entry.referrer?.memberProfile?.businessName,
+      entry.externalContact,
+      entry.description,
+    ].filter(Boolean).join(" · "),
+    source: "Member portal",
+    referralAmount: 0,
+    businessAmount: Number(entry.amount),
+    isManual: false,
+  }));
+  const activityEntries = [...manualActivity, ...referralActivity, ...businessActivity]
+    .sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart) || new Date(b.createdAt) - new Date(a.createdAt));
+
+  return {
     period: range.period,
     value: range.value,
     start: range.start,
     end: range.end,
-    referralsGiven: await hydrateLeaderboard(
-      [...referralTotals].map(([giverId, total]) => ({ giverId, _count: { _all: total.count }, _sum: { amount: total.total } })),
-      "giverId"
-    ),
-    businessReceived: await hydrateLeaderboard(
-      [...businessTotals].map(([receiverId, total]) => ({ receiverId, _count: { _all: total.count }, _sum: { amount: total.total } })),
-      "receiverId"
-    ),
-  };
-  return {
-    ...leaderboard,
-    rows: combineRows(leaderboard, sort),
-    manualEntries: manualEntries.map((entry) => ({
-      id: entry.id,
-      userId: entry.userId,
-      hubId: entry.user.memberProfile?.hubId || "",
-      fullName: entry.user.memberProfile?.fullName || entry.user.email || "Member",
-      businessName: entry.user.memberProfile?.businessName || "",
-      hubName: entry.user.memberProfile?.hub?.name || "",
-      weekStart: entry.weekStart,
-      referralAmount: Number(entry.referralAmount),
-      businessAmount: Number(entry.businessAmount),
-    })),
+    activityEntries,
+    winners: winners.sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart) || a.activityType.localeCompare(b.activityType)),
   };
 };
 
