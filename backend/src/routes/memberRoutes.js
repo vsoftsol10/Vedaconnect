@@ -20,6 +20,7 @@ const uploadDocument = (req, res, next) => documentUpload.single("file")(req, re
 });
 
 router.get("/me", requireAuth, memberController.getMe);
+router.get("/hubs", requireAuth, memberController.listAvailableHubs);
 router.get("/", requireAuth, memberController.listMembers);
 router.get("/me/full", requireAuth, memberController.getMyFullProfile);
 router.put("/me", requireAuth, validate(updateMyProfileSchema), memberController.updateMyProfile);

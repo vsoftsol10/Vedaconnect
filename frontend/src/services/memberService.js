@@ -18,6 +18,7 @@ export const listMembers = async (params = {}) => {
   const { data } = await api.get("/members", { params });
   return data.data;
 };
+export const listAvailableHubs = async () => (await api.get("/members/hubs")).data.data;
 
 export const getMemberDetail = async (userId) => {
   const { data } = await api.get(`/members/${userId}`);

@@ -87,6 +87,13 @@ export const getMyUpcomingEvents = async (userId) => {
     time: event.startTime || "Time to be announced",
   }));
 };
+
+export const listAvailableHubs = async () => prisma.hub.findMany({
+  where: { isActive: true },
+  select: { id: true, name: true },
+  orderBy: { name: "asc" },
+});
+
 export const listMembers = async ({ search, category, location, membershipStatus, membershipTier }) => {
   const where = {
     memberProfile: { isNot: null },

@@ -3,7 +3,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import MemberCard from "../components/members/MemberCard";
-import { getMyProfile, listMembers } from "../services/memberService";
+import { listAvailableHubs, listMembers } from "../services/memberService";
 import Dropdown from "../components/ui/Dropdown";
 
 const uniqueValues = (values) => [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -14,14 +14,14 @@ const Members = () => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef(null);
   const [filters, setFilters] = useState({ hub: "", location: "", category: "", status: "", tier: "", alphabetical: "" });
-  const [myHub, setMyHub] = useState(null);
+  const [hubs, setHubs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   useEffect(() => {
-    Promise.all([listMembers(), getMyProfile()])
-      .then(([memberRows, profile]) => {
+    Promise.all([listMembers(), listAvailableHubs()])
+      .then(([memberRows, hubRows]) => {
         setMembers(memberRows);
-        setMyHub(profile.hub);
+        setHubs(hubRows);
       })
       .catch((err) => setError(err.message || "Could not load members."))
       .finally(() => setIsLoading(false));
@@ -65,7 +65,7 @@ const Members = () => {
       {filtersOpen && <div className="z-10 w-full rounded-2xl border border-gray-100 bg-white p-4 shadow-lg sm:absolute sm:right-0 sm:top-14 sm:w-[34rem]"><div className="mb-4 flex items-center justify-between"><h2 className="font-bold text-gray-900">Filter members</h2><button type="button" onClick={clearFilters} disabled={!activeFilterCount} className="text-sm font-medium text-green-600 disabled:text-gray-400">Clear filters</button></div><div className="grid gap-3 sm:grid-cols-2"><FilterSelect label="Location" value={filters.location} onChange={setFilter("location")} options={locations} /><FilterSelect label="Category / Business type" value={filters.category} onChange={setFilter("category")} options={categories} /><FilterSelect label="Membership status" value={filters.status} onChange={setFilter("status")} options={["ACTIVE", "INACTIVE"]} labels={{ ACTIVE: "Active", INACTIVE: "Inactive" }} /><FilterSelect label="Sort" value={filters.alphabetical} onChange={setFilter("alphabetical")} options={["AZ"]} labels={{ AZ: "Alphabetical (A–Z)" }} /></div></div>}
     </div>
     <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-      <Dropdown value={filters.hub} onChange={(value) => setFilters((current) => ({ ...current, hub: value }))} className="w-full sm:w-64" options={[{ value: "", label: "All Hubs" }, ...(myHub ? [{ value: myHub.id, label: `My Hub${myHub.name ? ` - ${myHub.name}` : ""}` }] : [])]} />
+      <Dropdown value={filters.hub} onChange={(value) => setFilters((current) => ({ ...current, hub: value }))} className="w-full sm:w-64" options={[{ value: "", label: "All Hubs" }, ...hubs.map((hub) => ({ value: hub.id, label: hub.name }))]} />
       <Dropdown value={filters.tier} onChange={(value) => setFilters((current) => ({ ...current, tier: value }))} className="w-full sm:w-64" placeholder="All Membership Tiers" options={[{ value: "FOUNDING_MEMBER", label: "Founding Member" }, { value: "MEMBER", label: "Member" }]} />
     </div>
     <p className="mb-4 text-sm text-gray-500"><strong className="text-gray-900">{filteredMembers.length}</strong> members found</p>

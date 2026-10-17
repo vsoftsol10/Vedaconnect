@@ -36,6 +36,15 @@ export const listMembers = async (req, res, next) => {
   }
 };
 
+export const listAvailableHubs = async (req, res, next) => {
+  try {
+    const hubs = await memberService.listAvailableHubs();
+    res.status(200).json({ success: true, data: hubs });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getMemberDetail = async (req, res, next) => {
   try {
     const member = await memberService.getMemberDetail(req.params.userId);
