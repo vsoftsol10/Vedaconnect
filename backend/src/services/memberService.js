@@ -143,7 +143,7 @@ export const listMembers = async ({ search, category, location, membershipStatus
 export const getMemberDetail = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { memberProfile: true, membership: true },
+    include: { memberProfile: true, membership: true, businessCertificates: true },
   });
 
   if (!user || !user.memberProfile || user.status === "DELETED" || user.membership?.deletedAt) throw new AppError("Member not found.", 404);
