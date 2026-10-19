@@ -175,6 +175,8 @@ export const getMyMeetingFeeHistory = async (userId) => {
       amount: payment?.paymentStatus === "PAID"
         ? Number(payment.amount)
         : getMeetingFeeAmount(month),
+      saturdayCount: getSaturdaysInMonth(month),
+      perSaturdayAmount: MEETING_FEE_PER_SATURDAY,
       paymentStatus: payment?.paymentStatus || (cursor < currentMonth ? "OVERDUE" : "PENDING"),
       paidAt: payment?.paidAt || null,
       paymentSource: payment?.paymentSource || "ONLINE",

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, CreditCard, Loader2 } from "lucide-react";
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import {
@@ -53,6 +53,7 @@ const MeetingFeePayment = () => {
   const isRenewal = searchParams.get("renewal") === "1";
   const [status, setStatus] = useState(null);
   const [history, setHistory] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState("");
@@ -62,6 +63,7 @@ const MeetingFeePayment = () => {
     const [nextStatus, nextHistory] = await Promise.all([getMeetingFeeStatus(), getMeetingFeeHistory()]);
     setStatus(nextStatus);
     setHistory(nextHistory);
+    setSelectedMonth(nextStatus.month);
   };
 
   useEffect(() => {
@@ -127,8 +129,18 @@ const MeetingFeePayment = () => {
     }
   };
 
-  const isPaid = status?.paymentStatus === "PAID";
-  const paymentAmount = isRenewal ? status?.renewalAmount : status?.amount;
+  const selectedPayment = history.find((payment) => payment.month === selectedMonth)
+    || (selectedMonth === status?.month ? status : null);
+  const isCurrentMonth = selectedMonth === status?.month;
+  const isPaid = selectedPayment?.paymentStatus === "PAID";
+  const paymentAmount = isRenewal ? status?.renewalAmount : selectedPayment?.amount ?? status?.amount;
+  const selectedMonthIndex = history.findIndex((payment) => payment.month === selectedMonth);
+  const canGoToPreviousMonth = selectedMonthIndex >= 0 && selectedMonthIndex < history.length - 1;
+  const canGoToNextMonth = selectedMonthIndex > 0;
+  const selectAdjacentMonth = (offset) => {
+    const nextPayment = history[selectedMonthIndex + offset];
+    if (nextPayment) setSelectedMonth(nextPayment.month);
+  };
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar />
@@ -149,33 +161,49 @@ const MeetingFeePayment = () => {
               <>
                 <div className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:justify-between sm:gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">{isRenewal ? "Renewal" : "Current Month"}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{isRenewal ? "Membership renewal" : status?.month}</p>
+                    <p className="text-sm text-gray-500">{isRenewal ? "Renewal" : isCurrentMonth ? "Current Month" : "Selected Month"}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{isRenewal ? "Membership renewal" : selectedMonth || status?.month}</p>
                   </div>
-                  <span
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${
-                      isRenewal ? "bg-amber-50 text-amber-700" : isPaid ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
-                    }`}
-                  >
-                    {isRenewal ? <CreditCard className="h-4 w-4" /> : isPaid ? <CheckCircle2 className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
-                    {isRenewal ? "Ready to renew" : isPaid ? "Paid" : "Pending"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {!isRenewal && (
+                      <div className="flex items-center rounded-xl border border-gray-100 bg-white p-1">
+                        <button type="button" onClick={() => selectAdjacentMonth(1)} disabled={!canGoToPreviousMonth} aria-label="Previous month" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30">
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => selectAdjacentMonth(-1)} disabled={!canGoToNextMonth} aria-label="Next month" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30">
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${
+                        isRenewal ? "bg-amber-50 text-amber-700" : isPaid ? "bg-green-50 text-green-700" : selectedPayment?.paymentStatus === "OVERDUE" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {isRenewal ? <CreditCard className="h-4 w-4" /> : isPaid ? <CheckCircle2 className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                      {isRenewal ? "Ready to renew" : isPaid ? "Paid" : selectedPayment?.paymentStatus === "OVERDUE" ? "Overdue" : "Pending"}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="rounded-xl border border-gray-200 px-5 py-4 mb-6">
                   <p className="text-sm text-gray-500">Fee Amount</p>
                   <p className="text-3xl font-extrabold text-green-700 mt-1">{formatCurrency(paymentAmount)}</p>
-                  {!isRenewal && status?.saturdayCount != null && (
+                  {!isRenewal && selectedPayment && (
                     <p className="mt-1 text-sm text-gray-500">
-                      {status.saturdayCount} Saturdays × {formatCurrency(status.perSaturdayAmount || MEETING_FEE_PER_SATURDAY)} each
+                      {selectedPayment.saturdayCount ?? status?.saturdayCount} Saturdays × {formatCurrency(selectedPayment.perSaturdayAmount || status?.perSaturdayAmount || MEETING_FEE_PER_SATURDAY)} each
                     </p>
                   )}
                 </div>
 
                 {!isRenewal && isPaid ? (
                   <div className="rounded-xl border border-green-100 bg-green-50 px-5 py-4 text-green-700">
-                    <p className="font-semibold">Paid for {status?.month}</p>
-                    {status?.paidAt && <p className="mt-1 text-sm">Received {formatPaymentDate(status.paidAt)}{status.paymentSource === "MANUAL" && status.paymentMode ? ` · ${status.paymentMode.replace("_", " ")}` : ""}</p>}
+                    <p className="font-semibold">Paid for {selectedMonth}</p>
+                    {selectedPayment?.paidAt && <p className="mt-1 text-sm">Received {formatPaymentDate(selectedPayment.paidAt)}{selectedPayment.paymentSource === "MANUAL" && selectedPayment.paymentMode ? ` · ${selectedPayment.paymentMode.replace("_", " ")}` : ""}</p>}
+                  </div>
+                ) : !isRenewal && !isCurrentMonth ? (
+                  <div className="rounded-xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                    This past month is unpaid. Online payment is available for the current month only.
                   </div>
                 ) : (
                   <button
@@ -200,10 +228,10 @@ const MeetingFeePayment = () => {
                 {history.map((payment) => {
                   const paid = payment.paymentStatus === "PAID";
                   const overdue = payment.paymentStatus === "OVERDUE";
-                  return <div key={payment.month} className="flex items-center justify-between gap-3 py-3">
+                  return <button type="button" key={payment.month} onClick={() => setSelectedMonth(payment.month)} aria-current={selectedMonth === payment.month ? "true" : undefined} className={`flex w-full items-center justify-between gap-3 py-3 text-left ${selectedMonth === payment.month ? "bg-amber-50/60" : "hover:bg-gray-50"}`}>
                     <div><p className="font-semibold text-gray-900">{payment.month}</p><p className="text-xs text-gray-500">{paid && payment.paidAt ? `Paid ${formatPaymentDate(payment.paidAt)} · ${paymentMethodLabel(payment)}` : overdue ? "Payment overdue" : "Awaiting payment"}</p></div>
                     <div className="text-right"><p className="font-semibold text-gray-900">{formatCurrency(payment.amount)}</p><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${paid ? "bg-green-50 text-green-700" : overdue ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}`}>{paid ? "Paid" : overdue ? "Overdue" : "Pending"}</span></div>
-                  </div>;
+                  </button>;
                 })}
                 {!history.length && <p className="py-5 text-sm text-gray-500">No payment records yet.</p>}
               </div>
