@@ -1,8 +1,8 @@
 import { prisma } from "../config/prismaClient.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { getCurrentMonthKey, getMonthRange } from "../utils/weekUtils.js";
+import { getMeetingFeeAmount } from "../utils/meetingFee.js";
 
-const FEE = 1800;
 const pageResult = (rows, page, pageSize) => ({ rows: rows.slice((page - 1) * pageSize, page * pageSize), pagination: { page, pageSize, total: rows.length, totalPages: Math.max(1, Math.ceil(rows.length / pageSize)) } });
 const istDate = (value, end = false) => new Date(`${value}T${end ? "23:59:59.999" : "00:00:00.000"}+05:30`);
 const memberWhere = (query) => ({ role: "MEMBER", status: { not: "DELETED" }, memberProfile: { is: { ...(query.hub ? { hubId: query.hub } : {}), ...(query.search ? { OR: [{ fullName: { contains: query.search, mode: "insensitive" } }, { businessName: { contains: query.search, mode: "insensitive" } }] } : {}) } } });
@@ -11,11 +11,12 @@ export const listAdminMeetingFees = async (query) => {
   const month = query.month || getCurrentMonthKey();
   const members = await prisma.user.findMany({ where: memberWhere(query), include: { memberProfile: { include: { hub: true } }, meetingFeePayments: { where: { month } } }, orderBy: { createdAt: "asc" } });
   const allMembers = await prisma.user.findMany({ where: { role: "MEMBER", status: { not: "DELETED" }, memberProfile: { isNot: null } }, include: { meetingFeePayments: { where: { month } } } });
-  let rows = members.map((member) => { const payment = member.meetingFeePayments[0]; return { userId: member.id, fullName: member.memberProfile.fullName || member.email, businessName: member.memberProfile.businessName || "", hub: member.memberProfile.hub?.name || "Not assigned", hubId: member.memberProfile.hubId, month, amount: Number(payment?.amount || FEE), paymentStatus: payment?.paymentStatus === "PAID" ? "PAID" : "PENDING", paymentSource: payment?.paymentSource || "ONLINE", paidAt: payment?.paidAt || null }; });
+  let rows = members.map((member) => { const payment = member.meetingFeePayments[0]; return { userId: member.id, fullName: member.memberProfile.fullName || member.email, businessName: member.memberProfile.businessName || "", hub: member.memberProfile.hub?.name || "Not assigned", hubId: member.memberProfile.hubId, month, amount: payment?.paymentStatus === "PAID" ? Number(payment.amount) : getMeetingFeeAmount(month), paymentStatus: payment?.paymentStatus === "PAID" ? "PAID" : "PENDING", paymentSource: payment?.paymentSource || "ONLINE", paidAt: payment?.paidAt || null }; });
   rows = rows.filter((row) => (!query.status || row.paymentStatus === query.status) && (!query.source || (row.paymentStatus === "PAID" && row.paymentSource === query.source)) && (query.minAmount == null || row.amount >= query.minAmount) && (query.maxAmount == null || row.amount <= query.maxAmount) && (!query.paidFrom || (row.paidAt && row.paidAt >= istDate(query.paidFrom))) && (!query.paidTo || (row.paidAt && row.paidAt <= istDate(query.paidTo, true))));
   rows.sort((a, b) => query.sort === "name" ? a.fullName.localeCompare(b.fullName) : query.sort === "amount" ? b.amount - a.amount : Number(b.paidAt || 0) - Number(a.paidAt || 0));
   const filteredTotals = { count: rows.length, collected: rows.filter((r) => r.paymentStatus === "PAID").reduce((sum, r) => sum + r.amount, 0), pendingAmount: rows.filter((r) => r.paymentStatus !== "PAID").reduce((sum, r) => sum + r.amount, 0) };
-  const summary = { count: allMembers.length, collected: allMembers.reduce((sum, member) => sum + Number(member.meetingFeePayments[0]?.paymentStatus === "PAID" ? member.meetingFeePayments[0].amount : 0), 0), pendingAmount: allMembers.reduce((sum, member) => sum + (member.meetingFeePayments[0]?.paymentStatus === "PAID" ? 0 : FEE), 0) };
+  const monthlyFee = getMeetingFeeAmount(month);
+  const summary = { count: allMembers.length, collected: allMembers.reduce((sum, member) => sum + Number(member.meetingFeePayments[0]?.paymentStatus === "PAID" ? member.meetingFeePayments[0].amount : 0), 0), pendingAmount: allMembers.reduce((sum, member) => sum + (member.meetingFeePayments[0]?.paymentStatus === "PAID" ? 0 : monthlyFee), 0) };
   return { month, ...pageResult(rows, query.page, query.pageSize), summary, filteredTotals };
 };
 
@@ -24,7 +25,7 @@ export const getAdminMemberMeetingFees = async (userId, query) => {
   if (!member) throw new AppError("Member not found.", 404);
   const [membership, payments] = await Promise.all([prisma.membership.findUnique({ where: { userId }, select: { joinedAt: true, createdAt: true } }), prisma.meetingFeePayment.findMany({ where: { userId }, orderBy: { month: "desc" } })]);
   const byMonth = new Map(payments.map((item) => [item.month, item])); const start = membership?.joinedAt || membership?.createdAt || new Date(); const cursor = new Date(start.getFullYear(), start.getMonth(), 1); const now = new Date(); const rows = [];
-  while (cursor <= now) { const month = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`; const payment = byMonth.get(month); rows.unshift({ month, amount: Number(payment?.amount || FEE), paymentStatus: payment?.paymentStatus || "PENDING", paymentSource: payment?.paymentSource || "ONLINE", paidAt: payment?.paidAt || null }); cursor.setMonth(cursor.getMonth() + 1); }
+  while (cursor <= now) { const month = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`; const payment = byMonth.get(month); rows.unshift({ month, amount: payment?.paymentStatus === "PAID" ? Number(payment.amount) : getMeetingFeeAmount(month), paymentStatus: payment?.paymentStatus || "PENDING", paymentSource: payment?.paymentSource || "ONLINE", paidAt: payment?.paidAt || null }); cursor.setMonth(cursor.getMonth() + 1); }
   return pageResult(rows, query.page, query.pageSize);
 };
 

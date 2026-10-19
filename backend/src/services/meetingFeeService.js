@@ -2,12 +2,16 @@ import crypto from "crypto";
 import { prisma } from "../config/prismaClient.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { getCurrentMonthKey } from "../utils/weekUtils.js";
+import {
+  getMeetingFeeAmount,
+  getSaturdaysInMonth,
+  MEETING_FEE_PER_SATURDAY,
+} from "../utils/meetingFee.js";
 import { createRazorpayOrder as createRazorpayApiOrder } from "../utils/razorpayUtils.js";
 import { notifyAdmins } from "./notificationService.js";
 import { calculateExpiryDate } from "../utils/membershipDates.js";
 import { getPlanForMembershipTier } from "../utils/membershipTier.js";
 
-const MEETING_FEE_AMOUNT = 1800;
 const CURRENCY = "INR";
 
 const getUser = async (userId) => {
@@ -21,6 +25,7 @@ const getUser = async (userId) => {
 
 export const createMeetingFeeOrder = async (userId) => {
   const month = getCurrentMonthKey();
+  const amount = getMeetingFeeAmount(month);
   const [user, existingPayment] = await Promise.all([
     getUser(userId),
     prisma.meetingFeePayment.findUnique({ where: { userId_month: { userId, month } } }),
@@ -31,16 +36,16 @@ export const createMeetingFeeOrder = async (userId) => {
   }
 
   const order = await createRazorpayApiOrder({
-    amount: MEETING_FEE_AMOUNT * 100,
+    amount: amount * 100,
     currency: CURRENCY,
     receipt: `meeting_${month}_${Date.now()}`,
-    notes: { userId, month, amount: String(MEETING_FEE_AMOUNT) },
+    notes: { userId, month, amount: String(amount) },
   });
 
   await prisma.meetingFeePayment.upsert({
     where: { userId_month: { userId, month } },
     update: {
-      amount: MEETING_FEE_AMOUNT,
+      amount,
       paymentStatus: "PENDING",
       razorpayOrderId: order.id,
       razorpayPaymentId: null,
@@ -50,7 +55,7 @@ export const createMeetingFeeOrder = async (userId) => {
     create: {
       userId,
       month,
-      amount: MEETING_FEE_AMOUNT,
+      amount,
       paymentStatus: "PENDING",
       razorpayOrderId: order.id,
     },
@@ -130,6 +135,7 @@ export const verifyMeetingFeePayment = async ({
 
 export const getMyMeetingFeeStatus = async (userId) => {
   const month = getCurrentMonthKey();
+  const amount = getMeetingFeeAmount(month);
   const [payment, membership] = await Promise.all([
     prisma.meetingFeePayment.findUnique({ where: { userId_month: { userId, month } } }),
     prisma.membership.findUnique({ where: { userId }, include: { user: { select: { membershipTier: true } } } }),
@@ -138,7 +144,9 @@ export const getMyMeetingFeeStatus = async (userId) => {
 
   return {
     month,
-    amount: MEETING_FEE_AMOUNT,
+    amount,
+    saturdayCount: getSaturdaysInMonth(month),
+    perSaturdayAmount: MEETING_FEE_PER_SATURDAY,
     paymentStatus: payment?.paymentStatus || "PENDING",
     paidAt: payment?.paidAt || null,
     paymentSource: payment?.paymentSource || "ONLINE",
@@ -164,7 +172,9 @@ export const getMyMeetingFeeHistory = async (userId) => {
     const payment = byMonth.get(month);
     history.push({
       month,
-      amount: Number(payment?.amount || MEETING_FEE_AMOUNT),
+      amount: payment?.paymentStatus === "PAID"
+        ? Number(payment.amount)
+        : getMeetingFeeAmount(month),
       paymentStatus: payment?.paymentStatus || (cursor < currentMonth ? "OVERDUE" : "PENDING"),
       paidAt: payment?.paidAt || null,
       paymentSource: payment?.paymentSource || "ONLINE",
@@ -250,7 +260,9 @@ export const getMonthlyMeetingFeeList = async (month = getCurrentMonthKey()) => 
       profilePhoto: member.memberProfile?.profilePhoto,
       businessName: member.memberProfile?.businessName,
       month,
-      amount: MEETING_FEE_AMOUNT,
+      amount: payment?.paymentStatus === "PAID"
+        ? Number(payment.amount)
+        : getMeetingFeeAmount(month),
       paymentStatus: payment?.paymentStatus || "PENDING",
       paidAt: payment?.paidAt || null,
       paymentSource: payment?.paymentSource || "ONLINE",

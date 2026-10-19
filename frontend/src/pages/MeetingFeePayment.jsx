@@ -11,6 +11,7 @@ import {
   verifyMembershipRenewalPayment,
   verifyMeetingFeePayment,
 } from "../services/meetingFeeService";
+import { MEETING_FEE_PER_SATURDAY } from "../utils/meetingFee";
 
 const RAZORPAY_CHECKOUT_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 const formatCurrency = (amount) =>
@@ -164,6 +165,11 @@ const MeetingFeePayment = () => {
                 <div className="rounded-xl border border-gray-200 px-5 py-4 mb-6">
                   <p className="text-sm text-gray-500">Fee Amount</p>
                   <p className="text-3xl font-extrabold text-green-700 mt-1">{formatCurrency(paymentAmount)}</p>
+                  {!isRenewal && status?.saturdayCount != null && (
+                    <p className="mt-1 text-sm text-gray-500">
+                      {status.saturdayCount} Saturdays × {formatCurrency(status.perSaturdayAmount || MEETING_FEE_PER_SATURDAY)} each
+                    </p>
+                  )}
                 </div>
 
                 {!isRenewal && isPaid ? (

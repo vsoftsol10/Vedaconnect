@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { createManualFeeCollection } from "../../services/expenseService";
 import { listAdminMembers } from "../../services/adminService";
+import { getMeetingFeeAmount } from "../../utils/meetingFee";
 
 const firstSaturdayOfMonth = (month) => {
   const date = new Date(`${month}-01T12:00:00`);
@@ -15,7 +16,7 @@ const initialForm = (month) => ({
   memberId: "",
   date: `${month}-01`,
   meetingWeek: firstSaturdayOfMonth(month),
-  amount: "1800",
+  amount: String(getMeetingFeeAmount(month)),
   paymentMode: "CASH",
   note: "",
 });
