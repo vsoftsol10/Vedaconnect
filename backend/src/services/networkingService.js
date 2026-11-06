@@ -542,6 +542,7 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
   const mapMember = (user) => ({
     fullName: displayName(user),
     businessName: user?.memberProfile?.businessName || "",
+    hubId: user?.memberProfile?.hubId || "",
     hubName: user?.memberProfile?.hub?.name || "-",
   });
   const manualActivity = periodManualEntries.map((entry) => ({

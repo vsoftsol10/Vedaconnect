@@ -126,8 +126,12 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
       <form onSubmit={submit} className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{entry ? "Edit manual award entry" : "Manual weekly award entry"}</h2>
-            <p className="mt-1 text-sm text-gray-500">Enter the award amounts for one member and week.</p>
+            <h2 className="text-lg font-bold text-gray-900">{entry?.isMemberActivity ? "Edit weekly award totals" : entry ? "Edit manual award entry" : "Manual weekly award entry"}</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {entry?.isMemberActivity
+                ? "Amounts include all member-entered activity for this member and week. Saving replaces those totals on the leaderboard."
+                : "Enter the award amounts for one member and week."}
+            </p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"><X /></button>
         </div>
