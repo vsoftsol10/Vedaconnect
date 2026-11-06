@@ -257,12 +257,19 @@ const AdminLeaderboard = () => {
                 onEdit={(entry) => openManualEntry(entry)}
                 onEditMember={async (entry) => {
                   if (!await ensureMembersLoaded()) return;
+                  const identity = memberActivityIdentity(entry);
+                  if (!identity.type || !identity.id) {
+                    setError("Could not identify this member-entered activity. Refresh the page and try again.");
+                    return;
+                  }
                   setEditingEntry({
                     hubId: entry.hubId || "",
                     userId: entry.userId || "",
                     weekStart: entry.weekStart,
                     referralAmount: entry.referralAmount,
                     businessAmount: entry.businessAmount,
+                    activityType: identity.type,
+                    recordId: identity.id,
                     isMemberActivity: true,
                   });
                   setManualEntryOpen(true);
