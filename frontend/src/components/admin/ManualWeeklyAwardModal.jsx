@@ -53,11 +53,21 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
     }
     setActivityLoading(true);
     getManualWeeklyAwardActivity({ userId: form.userId, weekStart: form.weekStart })
-      .then((result) => { if (current) setActivity(result); })
+      .then((result) => {
+        if (!current) return;
+        setActivity(result);
+        if (entry?.isMemberActivity) {
+          setForm((currentForm) => ({
+            ...currentForm,
+            referralAmount: String(result.referrals.amount),
+            businessAmount: String(result.business.amount),
+          }));
+        }
+      })
       .catch((err) => { if (current) setActivityError(err?.response?.data?.message || err.message || "Could not check member-entered award activity."); })
       .finally(() => { if (current) setActivityLoading(false); });
     return () => { current = false; };
-  }, [isOpen, form.userId, form.weekStart, activityRetry]);
+  }, [isOpen, form.userId, form.weekStart, activityRetry, entry]);
 
   if (!isOpen) return null;
 
@@ -85,7 +95,7 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
         referralAmount: Number(form.referralAmount),
         businessAmount: Number(form.businessAmount),
       };
-      if (entry) await updateManualWeeklyAward(entry.id, payload);
+      if (entry && !entry.isMemberActivity) await updateManualWeeklyAward(entry.id, payload);
       else await saveManualWeeklyAward(payload);
       onSaved(payload);
     } catch (err) {

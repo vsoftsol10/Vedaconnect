@@ -5,7 +5,7 @@ import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import PeriodHubFilter from "../../components/admin/PeriodHubFilter";
 import ManualWeeklyAwardModal from "../../components/admin/ManualWeeklyAwardModal";
-import { deleteManualWeeklyAward, deleteMemberAwardActivity, getAdminLeaderboard, listAdminMembers, updateMemberAwardActivity } from "../../services/adminService";
+import { deleteManualWeeklyAward, deleteMemberAwardActivity, getAdminLeaderboard, listAdminMembers } from "../../services/adminService";
 import { getHubs } from "../../services/hubService";
 import { dateKey, startOfWeek, usePeriodRange } from "../../hooks/usePeriodRange";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
@@ -146,12 +146,7 @@ const AdminLeaderboard = () => {
   const [error, setError] = useState("");
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
-  const [memberEditingEntry, setMemberEditingEntry] = useState(null);
-  const [memberEntryForm, setMemberEntryForm] = useState({ hubId: "", userId: "", weekStart: "", amount: "" });
-  const [memberEntryError, setMemberEntryError] = useState("");
-  const [isSavingMemberEntry, setIsSavingMemberEntry] = useState(false);
   const [viewingEntry, setViewingEntry] = useState(null);
-  const memberEntryFormMembers = members.filter((member) => member.hubId === memberEntryForm.hubId);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -234,30 +229,6 @@ const AdminLeaderboard = () => {
     }
   };
 
-  const saveMemberEntry = async (event) => {
-    event.preventDefault();
-    setMemberEntryError("");
-    setIsSavingMemberEntry(true);
-    try {
-      const payload = {
-        ...memberEntryForm,
-        amount: Number(memberEntryForm.amount),
-      };
-      await updateMemberAwardActivity(memberEditingEntry.activityType, memberEditingEntry.recordId, payload);
-      setMemberEditingEntry(null);
-      const date = new Date(`${payload.weekStart}T00:00:00`);
-      const isVisibleInPeriod = date >= periodState.range.start && date < periodState.range.end;
-      const isVisibleInHub = hub === "all" || hub === payload.hubId;
-      if (!isVisibleInHub) setHub(payload.hubId);
-      if (!isVisibleInPeriod) periodState.goToDate(date);
-      if (isVisibleInHub && isVisibleInPeriod) await load();
-    } catch (err) {
-      setMemberEntryError(err?.response?.data?.message || err.message || "Could not update the member-entered award activity.");
-    } finally {
-      setIsSavingMemberEntry(false);
-    }
-  };
-
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
@@ -286,19 +257,15 @@ const AdminLeaderboard = () => {
                 onEdit={(entry) => openManualEntry(entry)}
                 onEditMember={async (entry) => {
                   if (!await ensureMembersLoaded()) return;
-                  const identity = memberActivityIdentity(entry);
-                  if (!identity.type || !identity.id) {
-                    setError("Could not identify this member-entered activity. Refresh the page and try again.");
-                    return;
-                  }
-                  setMemberEditingEntry({ ...entry, activityType: identity.type, recordId: identity.id });
-                  setMemberEntryForm({
+                  setEditingEntry({
                     hubId: entry.hubId || "",
                     userId: entry.userId || "",
-                    weekStart: new Date(entry.weekStart).toISOString().slice(0, 10),
-                    amount: String(identity.type === "referral" ? entry.referralAmount : entry.businessAmount),
+                    weekStart: entry.weekStart,
+                    referralAmount: entry.referralAmount,
+                    businessAmount: entry.businessAmount,
+                    isMemberActivity: true,
                   });
-                  setMemberEntryError("");
+                  setManualEntryOpen(true);
                 }}
                 onDelete={(entry) => entry.isManual ? removeEntry(entry) : removeMemberEntry(entry)}
               />
@@ -316,58 +283,6 @@ const AdminLeaderboard = () => {
         weekStart={getEntryWeekStart(periodState)}
         entry={editingEntry}
       />
-      {memberEditingEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={saveMemberEntry} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">Edit member award entry</h2>
-                <p className="mt-1 text-sm text-gray-500">{memberEditingEntry.fullName} · {memberEditingEntry.activityType === "referral" ? "Business Giver" : "Business Achiever"}</p>
-              </div>
-              <button type="button" onClick={() => setMemberEditingEntry(null)} aria-label="Close" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
-            </div>
-            {memberEntryError && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{memberEntryError}</p>}
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700">
-                Hub
-                <select required value={memberEntryForm.hubId} onChange={(event) => setMemberEntryForm((current) => ({ ...current, hubId: event.target.value, userId: "" }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100">
-                  <option value="">Select a hub</option>
-                  {hubs.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                </select>
-              </label>
-              <label className="block text-sm font-medium text-gray-700">
-                Member
-                <select required disabled={!memberEntryForm.hubId} value={memberEntryForm.userId} onChange={(event) => setMemberEntryForm((current) => ({ ...current, userId: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 font-normal disabled:bg-gray-50 disabled:text-gray-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100">
-                  <option value="">{memberEntryForm.hubId ? "Select a member" : "Select a hub first"}</option>
-                  {memberEntryFormMembers.map((member) => <option key={member.userId} value={member.userId}>{member.fullName || member.email}{member.businessName ? ` — ${member.businessName}` : ""}</option>)}
-                </select>
-              </label>
-              <label className="block text-sm font-medium text-gray-700">
-                Week starts (Saturday)
-                <input required type="date" value={memberEntryForm.weekStart} onChange={(event) => setMemberEntryForm((current) => ({ ...current, weekStart: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100" />
-              </label>
-              <label className="block text-sm font-medium text-gray-700">
-                {memberEditingEntry.activityType === "referral" ? "Business Giver amount (₹)" : "Business Achiever amount (₹)"}
-                <input
-                  autoFocus
-                  required
-                  type="number"
-                  min="0"
-                  max="99999999"
-                  step="0.01"
-                  value={memberEntryForm.amount}
-                  onChange={(event) => setMemberEntryForm((current) => ({ ...current, amount: event.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
-                />
-              </label>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button type="button" onClick={() => setMemberEditingEntry(null)} className="rounded-xl border border-gray-200 px-4 py-2.5 font-semibold text-gray-700">Cancel</button>
-              <button type="submit" disabled={isSavingMemberEntry} className="rounded-xl bg-amber-400 px-4 py-2.5 font-semibold text-gray-900 disabled:opacity-50">{isSavingMemberEntry ? "Saving…" : "Save changes"}</button>
-            </div>
-          </form>
-        </div>
-      )}
       {viewingEntry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setViewingEntry(null); }}>
           <section role="dialog" aria-modal="true" aria-labelledby="award-entry-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
