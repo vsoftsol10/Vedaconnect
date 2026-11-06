@@ -558,6 +558,8 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
   }));
   const referralActivity = referrals.map((entry) => ({
     id: `referral-${entry.id}`,
+    recordId: entry.id,
+    activityType: "referral",
     userId: entry.giverId,
     ...mapMember(entry.giver),
     weekStart: entry.weekStart,
@@ -569,6 +571,8 @@ export const getAdminLeaderboard = async ({ period, value, hub } = {}) => {
   }));
   const businessActivity = business.map((entry) => ({
     id: `business-${entry.id}`,
+    recordId: entry.id,
+    activityType: "business",
     userId: entry.receiverId,
     ...mapMember(entry.receiver),
     weekStart: entry.weekStart,
@@ -661,6 +665,21 @@ export const deleteManualWeeklyAward = async (id) => {
   const existing = await prisma.manualWeeklyAwardEntry.findUnique({ where: { id }, select: { id: true } });
   if (!existing) throw new AppError("Award entry not found.", 404);
   await prisma.manualWeeklyAwardEntry.delete({ where: { id } });
+  return { id };
+};
+
+export const updateMemberAwardActivity = async (type, id, amount) => {
+  const model = type === "referral" ? prisma.referralGiven : prisma.businessReceived;
+  const existing = await model.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) throw new AppError("Award activity entry not found.", 404);
+  return model.update({ where: { id }, data: { amount } });
+};
+
+export const deleteMemberAwardActivity = async (type, id) => {
+  const model = type === "referral" ? prisma.referralGiven : prisma.businessReceived;
+  const existing = await model.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) throw new AppError("Award activity entry not found.", 404);
+  await model.delete({ where: { id } });
   return { id };
 };
 

@@ -5,7 +5,7 @@ import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import PeriodHubFilter from "../../components/admin/PeriodHubFilter";
 import ManualWeeklyAwardModal from "../../components/admin/ManualWeeklyAwardModal";
-import { deleteManualWeeklyAward, getAdminLeaderboard, listAdminMembers } from "../../services/adminService";
+import { deleteManualWeeklyAward, deleteMemberAwardActivity, getAdminLeaderboard, listAdminMembers, updateMemberAwardActivity } from "../../services/adminService";
 import { getHubs } from "../../services/hubService";
 import { dateKey, startOfWeek, usePeriodRange } from "../../hooks/usePeriodRange";
 import Pagination, { usePagination } from "../../components/ui/Pagination";
@@ -13,8 +13,15 @@ import Table, { Cell, HeaderCell } from "../../components/ui/Table";
 
 const formatCurrency = (amount) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(amount || 0));
 const formatDate = (value) => new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(value));
+const memberActivityIdentity = (entry) => {
+  const [, typeFromId, idFromId] = /^(referral|business)-(.+)$/.exec(entry.id || "") || [];
+  return {
+    type: entry.activityType || typeFromId,
+    id: entry.recordId || idFromId,
+  };
+};
 
-const ManualAwardActionsMenu = ({ row, onView, onEdit, onDelete }) => {
+const AwardActivityActionsMenu = ({ row, onView, onEdit, onDelete }) => {
   const [position, setPosition] = useState(null);
   const openMenu = (event) => {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -77,7 +84,7 @@ const WeeklyAwardWinnersTable = ({ rows }) => {
   );
 };
 
-const ActivityEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
+const ActivityEntriesTable = ({ rows, onView, onEdit, onEditMember, onDelete }) => {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const visibleRows = usePagination(rows, page, rowsPerPage);
@@ -100,7 +107,12 @@ const ActivityEntriesTable = ({ rows, onView, onEdit, onDelete }) => {
               <Cell align="right"><p className="font-bold text-gray-900">{row.isManual || row.businessAmount ? formatCurrency(row.businessAmount) : "-"}</p></Cell>
               <Cell><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.isManual ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{row.source}</span></Cell>
               <Cell align="right" className="w-20">
-                {row.isManual ? <ManualAwardActionsMenu row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} /> : "-"}
+                <AwardActivityActionsMenu
+                  row={row}
+                  onView={onView}
+                  onEdit={row.isManual ? onEdit : onEditMember}
+                  onDelete={onDelete}
+                />
               </Cell>
             </tr>
           )) : <tr><td colSpan={8} className="vc-cell text-center text-gray-400">No award activity found in this period.</td></tr>}
@@ -134,6 +146,10 @@ const AdminLeaderboard = () => {
   const [error, setError] = useState("");
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [memberEditingEntry, setMemberEditingEntry] = useState(null);
+  const [memberEntryAmount, setMemberEntryAmount] = useState("");
+  const [memberEntryError, setMemberEntryError] = useState("");
+  const [isSavingMemberEntry, setIsSavingMemberEntry] = useState(false);
   const [viewingEntry, setViewingEntry] = useState(null);
 
   const load = useCallback(async () => {
@@ -196,6 +212,37 @@ const AdminLeaderboard = () => {
     }
   };
 
+  const removeMemberEntry = async (entry) => {
+    if (!window.confirm(`Delete this member-entered award activity for ${entry.fullName}?`)) return;
+    const identity = memberActivityIdentity(entry);
+    if (!identity.type || !identity.id) {
+      setError("Could not identify this member-entered activity. Refresh the page and try again.");
+      return;
+    }
+    setError("");
+    try {
+      await deleteMemberAwardActivity(identity.type, identity.id);
+      await load();
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || "Could not delete the member-entered award activity.");
+    }
+  };
+
+  const saveMemberEntry = async (event) => {
+    event.preventDefault();
+    setMemberEntryError("");
+    setIsSavingMemberEntry(true);
+    try {
+      await updateMemberAwardActivity(memberEditingEntry.activityType, memberEditingEntry.recordId, Number(memberEntryAmount));
+      setMemberEditingEntry(null);
+      await load();
+    } catch (err) {
+      setMemberEntryError(err?.response?.data?.message || err.message || "Could not update the member-entered award activity.");
+    } finally {
+      setIsSavingMemberEntry(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-stone-50">
       <AdminSidebar />
@@ -222,7 +269,17 @@ const AdminLeaderboard = () => {
                 rows={leaderboard.activityEntries || []}
                 onView={setViewingEntry}
                 onEdit={(entry) => openManualEntry(entry)}
-                onDelete={removeEntry}
+                onEditMember={(entry) => {
+                  const identity = memberActivityIdentity(entry);
+                  if (!identity.type || !identity.id) {
+                    setError("Could not identify this member-entered activity. Refresh the page and try again.");
+                    return;
+                  }
+                  setMemberEditingEntry({ ...entry, activityType: identity.type, recordId: identity.id });
+                  setMemberEntryAmount(String(identity.type === "referral" ? entry.referralAmount : entry.businessAmount));
+                  setMemberEntryError("");
+                }}
+                onDelete={(entry) => entry.isManual ? removeEntry(entry) : removeMemberEntry(entry)}
               />
               <WeeklyAwardWinnersTable rows={leaderboard.winners || []} />
             </>
@@ -238,19 +295,57 @@ const AdminLeaderboard = () => {
         weekStart={getEntryWeekStart(periodState)}
         entry={editingEntry}
       />
+      {memberEditingEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={saveMemberEntry} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Edit member award entry</h2>
+                <p className="mt-1 text-sm text-gray-500">{memberEditingEntry.fullName} · {memberEditingEntry.activityType === "referral" ? "Business Giver" : "Business Achiever"}</p>
+              </div>
+              <button type="button" onClick={() => setMemberEditingEntry(null)} aria-label="Close" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+            </div>
+            {memberEntryError && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{memberEntryError}</p>}
+            <label className="block text-sm font-medium text-gray-700">
+              Amount (₹)
+              <input
+                autoFocus
+                required
+                type="number"
+                min="0"
+                max="99999999"
+                step="0.01"
+                value={memberEntryAmount}
+                onChange={(event) => setMemberEntryAmount(event.target.value)}
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+              />
+            </label>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setMemberEditingEntry(null)} className="rounded-xl border border-gray-200 px-4 py-2.5 font-semibold text-gray-700">Cancel</button>
+              <button type="submit" disabled={isSavingMemberEntry} className="rounded-xl bg-amber-400 px-4 py-2.5 font-semibold text-gray-900 disabled:opacity-50">{isSavingMemberEntry ? "Saving…" : "Save changes"}</button>
+            </div>
+          </form>
+        </div>
+      )}
       {viewingEntry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setViewingEntry(null); }}>
           <section role="dialog" aria-modal="true" aria-labelledby="award-entry-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <div className="mb-5 flex items-start justify-between gap-4">
-              <div><h2 id="award-entry-title" className="text-lg font-bold text-gray-900">Manual award entry</h2><p className="mt-1 text-sm text-gray-500">{viewingEntry.fullName}</p></div>
+              <div><h2 id="award-entry-title" className="text-lg font-bold text-gray-900">{viewingEntry.isManual ? "Manual award entry" : "Member award activity"}</h2><p className="mt-1 text-sm text-gray-500">{viewingEntry.fullName}</p></div>
               <button type="button" onClick={() => setViewingEntry(null)} aria-label="Close" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
             </div>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between gap-4"><dt className="text-gray-500">Business</dt><dd className="text-right font-medium text-gray-900">{viewingEntry.businessName || "-"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-gray-500">Hub</dt><dd className="text-right font-medium text-gray-900">{viewingEntry.hubName || "-"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-gray-500">Week starts</dt><dd className="text-right font-medium text-gray-900">{formatDate(viewingEntry.weekStart)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-gray-500">Business Giver</dt><dd className="text-right font-medium text-gray-900">{formatCurrency(viewingEntry.referralAmount)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-gray-500">Business Achiever</dt><dd className="text-right font-medium text-gray-900">{formatCurrency(viewingEntry.businessAmount)}</dd></div>
+              {viewingEntry.isManual ? (
+                <>
+                  <div className="flex justify-between gap-4"><dt className="text-gray-500">Business Giver</dt><dd className="text-right font-medium text-gray-900">{formatCurrency(viewingEntry.referralAmount)}</dd></div>
+                  <div className="flex justify-between gap-4"><dt className="text-gray-500">Business Achiever</dt><dd className="text-right font-medium text-gray-900">{formatCurrency(viewingEntry.businessAmount)}</dd></div>
+                </>
+              ) : (
+                <div className="flex justify-between gap-4"><dt className="text-gray-500">{viewingEntry.activityType === "referral" ? "Business Giver" : "Business Achiever"}</dt><dd className="text-right font-medium text-gray-900">{formatCurrency(viewingEntry.activityType === "referral" ? viewingEntry.referralAmount : viewingEntry.businessAmount)}</dd></div>
+              )}
             </dl>
           </section>
         </div>

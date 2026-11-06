@@ -26,6 +26,15 @@ export const manualWeeklyAwardIdSchema = z.object({
   id: z.string().uuid("Select a valid award entry"),
 });
 
+export const memberAwardActivityParamsSchema = z.object({
+  type: z.enum(["referral", "business"]),
+  id: z.string().uuid("Select a valid award activity entry"),
+});
+
+export const memberAwardActivitySchema = z.object({
+  amount: z.coerce.number().min(0).max(99999999),
+});
+
 export const manualAttendanceSchema = z.object({
   userId: z.string().uuid("Select a valid member"),
   weekStart: saturdayWeekStart,

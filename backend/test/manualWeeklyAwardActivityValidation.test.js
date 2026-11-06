@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { manualWeeklyAwardActivityQuerySchema } from "../src/validations/adminValidation.js";
+import {
+  manualWeeklyAwardActivityQuerySchema,
+  memberAwardActivityParamsSchema,
+  memberAwardActivitySchema,
+} from "../src/validations/adminValidation.js";
 
 test("manual award activity query accepts a member and Saturday week start", () => {
   const result = manualWeeklyAwardActivityQuerySchema.safeParse({
@@ -21,4 +25,23 @@ test("manual award activity query rejects invalid members and non-Saturday dates
   });
   assert.equal(invalidUser.success, false);
   assert.equal(invalidWeek.success, false);
+});
+
+test("member award activity updates accept referral and business entries with non-negative amounts", () => {
+  const referralParams = memberAwardActivityParamsSchema.safeParse({
+    type: "referral",
+    id: "b1c46e1c-c08a-4c59-9158-c456ae6912b0",
+  });
+  const businessParams = memberAwardActivityParamsSchema.safeParse({
+    type: "business",
+    id: "b1c46e1c-c08a-4c59-9158-c456ae6912b0",
+  });
+  assert.equal(memberAwardActivityParamsSchema.safeParse({
+    type: "invalid",
+    id: "b1c46e1c-c08a-4c59-9158-c456ae6912b0",
+  }).success, false);
+  assert.equal(referralParams.success, true);
+  assert.equal(businessParams.success, true);
+  assert.equal(memberAwardActivitySchema.safeParse({ amount: "125.50" }).success, true);
+  assert.equal(memberAwardActivitySchema.safeParse({ amount: "-1" }).success, false);
 });

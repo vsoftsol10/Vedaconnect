@@ -37,6 +37,31 @@ export const deleteWeeklyAward = async (req, res, next) => {
   }
 };
 
+export const updateMemberAwardActivity = async (req, res, next) => {
+  try {
+    const data = await networkingService.updateMemberAwardActivity(
+      req.validatedParams.type,
+      req.validatedParams.id,
+      req.validatedBody.amount,
+    );
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteMemberAwardActivity = async (req, res, next) => {
+  try {
+    const data = await networkingService.deleteMemberAwardActivity(
+      req.validatedParams.type,
+      req.validatedParams.id,
+    );
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const saveAttendance = async (req, res, next) => {
   try {
     const data = await attendanceService.saveManualAttendance(req.validatedBody);

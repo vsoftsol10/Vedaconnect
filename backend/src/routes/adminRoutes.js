@@ -17,6 +17,8 @@ import {
   manualWeeklyAwardSchema,
   manualWeeklyAwardActivityQuerySchema,
   manualWeeklyAwardIdSchema,
+  memberAwardActivityParamsSchema,
+  memberAwardActivitySchema,
   manualAttendanceSchema,
 } from "../validations/adminValidation.js";
 import { leaderboardQuerySchema, validateQuery } from "../validations/networkingValidation.js";
@@ -57,6 +59,8 @@ router.get("/leaderboard/manual/activity", requireAuth, requireAdmin, validateQu
 router.put("/leaderboard/manual", requireAuth, requireAdmin, validate(manualWeeklyAwardSchema), manualEntriesController.saveWeeklyAward);
 router.put("/leaderboard/manual/:id", requireAuth, requireAdmin, validate(manualWeeklyAwardSchema), manualEntriesController.updateWeeklyAward);
 router.delete("/leaderboard/manual/:id", requireAuth, requireAdmin, validateParams(manualWeeklyAwardIdSchema), manualEntriesController.deleteWeeklyAward);
+router.patch("/leaderboard/activity/:type/:id", requireAuth, requireAdmin, validateParams(memberAwardActivityParamsSchema), validate(memberAwardActivitySchema), manualEntriesController.updateMemberAwardActivity);
+router.delete("/leaderboard/activity/:type/:id", requireAuth, requireAdmin, validateParams(memberAwardActivityParamsSchema), manualEntriesController.deleteMemberAwardActivity);
 router.put("/attendance/manual", requireAuth, requireAdmin, validate(manualAttendanceSchema), manualEntriesController.saveAttendance);
 router.get("/meeting-fees", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.listMeetingFees);
 router.get("/meeting-fees/export", requireAuth, requireAdmin, validateQuery(meetingFeeListQuerySchema), adminMeetingListsController.exportMeetingFees);
