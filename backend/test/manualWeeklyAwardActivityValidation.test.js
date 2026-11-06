@@ -42,6 +42,13 @@ test("member award activity updates accept referral and business entries with no
   }).success, false);
   assert.equal(referralParams.success, true);
   assert.equal(businessParams.success, true);
-  assert.equal(memberAwardActivitySchema.safeParse({ amount: "125.50" }).success, true);
-  assert.equal(memberAwardActivitySchema.safeParse({ amount: "-1" }).success, false);
+  const validEdit = {
+    hubId: "b1c46e1c-c08a-4c59-9158-c456ae6912b0",
+    userId: "b1c46e1c-c08a-4c59-9158-c456ae6912b0",
+    weekStart: "2026-10-17",
+    amount: "125.50",
+  };
+  assert.equal(memberAwardActivitySchema.safeParse(validEdit).success, true);
+  assert.equal(memberAwardActivitySchema.safeParse({ ...validEdit, amount: "-1" }).success, false);
+  assert.equal(memberAwardActivitySchema.safeParse({ ...validEdit, weekStart: "2026-10-18" }).success, false);
 });

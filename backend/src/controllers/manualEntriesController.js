@@ -42,7 +42,7 @@ export const updateMemberAwardActivity = async (req, res, next) => {
     const data = await networkingService.updateMemberAwardActivity(
       req.validatedParams.type,
       req.validatedParams.id,
-      req.validatedBody.amount,
+      req.validatedBody,
     );
     res.status(200).json({ success: true, data });
   } catch (error) {

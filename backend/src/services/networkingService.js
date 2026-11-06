@@ -668,11 +668,29 @@ export const deleteManualWeeklyAward = async (id) => {
   return { id };
 };
 
-export const updateMemberAwardActivity = async (type, id, amount) => {
+export const updateMemberAwardActivity = async (type, id, { hubId, userId, weekStart, amount }) => {
   const model = type === "referral" ? prisma.referralGiven : prisma.businessReceived;
   const existing = await model.findUnique({ where: { id }, select: { id: true } });
   if (!existing) throw new AppError("Award activity entry not found.", 404);
-  return model.update({ where: { id }, data: { amount } });
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      role: "MEMBER",
+      status: { not: "DELETED" },
+      memberProfile: { is: { hubId } },
+    },
+    select: { id: true },
+  });
+  if (!user) throw new AppError("Selected member does not belong to the selected hub.", 400);
+
+  return model.update({
+    where: { id },
+    data: {
+      [type === "referral" ? "giverId" : "receiverId"]: userId,
+      weekStart: new Date(`${weekStart}T00:00:00.000Z`),
+      amount,
+    },
+  });
 };
 
 export const deleteMemberAwardActivity = async (type, id) => {

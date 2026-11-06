@@ -32,6 +32,9 @@ export const memberAwardActivityParamsSchema = z.object({
 });
 
 export const memberAwardActivitySchema = z.object({
+  hubId: z.string().uuid("Select a valid hub"),
+  userId: z.string().uuid("Select a valid member"),
+  weekStart: saturdayWeekStart,
   amount: z.coerce.number().min(0).max(99999999),
 });
 

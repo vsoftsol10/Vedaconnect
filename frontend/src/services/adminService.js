@@ -7,7 +7,7 @@ export const getManualWeeklyAwardActivity = async (params) => (await api.get("/a
 export const saveManualWeeklyAward = async (data) => (await api.put("/admin/leaderboard/manual", data)).data.data;
 export const updateManualWeeklyAward = async (id, data) => (await api.put(`/admin/leaderboard/manual/${id}`, data)).data.data;
 export const deleteManualWeeklyAward = async (id) => (await api.delete(`/admin/leaderboard/manual/${id}`)).data.data;
-export const updateMemberAwardActivity = async (type, id, amount) => (await api.patch(`/admin/leaderboard/activity/${type}/${id}`, { amount })).data.data;
+export const updateMemberAwardActivity = async (type, id, data) => (await api.patch(`/admin/leaderboard/activity/${type}/${id}`, data)).data.data;
 export const deleteMemberAwardActivity = async (type, id) => (await api.delete(`/admin/leaderboard/activity/${type}/${id}`)).data.data;
 export const listAdminMembers = async (params = {}) => (await api.get("/admin/members", { params })).data.data;
 export const getAdminMemberDetail = async (userId) => (await api.get(`/admin/members/${userId}`)).data.data;

@@ -147,10 +147,11 @@ const AdminLeaderboard = () => {
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [memberEditingEntry, setMemberEditingEntry] = useState(null);
-  const [memberEntryAmount, setMemberEntryAmount] = useState("");
+  const [memberEntryForm, setMemberEntryForm] = useState({ hubId: "", userId: "", weekStart: "", amount: "" });
   const [memberEntryError, setMemberEntryError] = useState("");
   const [isSavingMemberEntry, setIsSavingMemberEntry] = useState(false);
   const [viewingEntry, setViewingEntry] = useState(null);
+  const memberEntryFormMembers = members.filter((member) => member.hubId === memberEntryForm.hubId);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -173,7 +174,7 @@ const AdminLeaderboard = () => {
       .finally(() => setIsLoadingHubs(false));
   }, []);
 
-  const openManualEntry = async (entry = null) => {
+  const ensureMembersLoaded = async () => {
     if (!membersLoaded) {
       setIsLoadingMembers(true);
       try {
@@ -181,11 +182,16 @@ const AdminLeaderboard = () => {
         setMembersLoaded(true);
       } catch (err) {
         setError(err?.response?.data?.message || err.message || "Could not load members.");
-        return;
+        return false;
       } finally {
         setIsLoadingMembers(false);
       }
     }
+    return true;
+  };
+
+  const openManualEntry = async (entry = null) => {
+    if (!await ensureMembersLoaded()) return;
     setEditingEntry(entry);
     setManualEntryOpen(true);
   };
@@ -233,9 +239,18 @@ const AdminLeaderboard = () => {
     setMemberEntryError("");
     setIsSavingMemberEntry(true);
     try {
-      await updateMemberAwardActivity(memberEditingEntry.activityType, memberEditingEntry.recordId, Number(memberEntryAmount));
+      const payload = {
+        ...memberEntryForm,
+        amount: Number(memberEntryForm.amount),
+      };
+      await updateMemberAwardActivity(memberEditingEntry.activityType, memberEditingEntry.recordId, payload);
       setMemberEditingEntry(null);
-      await load();
+      const date = new Date(`${payload.weekStart}T00:00:00`);
+      const isVisibleInPeriod = date >= periodState.range.start && date < periodState.range.end;
+      const isVisibleInHub = hub === "all" || hub === payload.hubId;
+      if (!isVisibleInHub) setHub(payload.hubId);
+      if (!isVisibleInPeriod) periodState.goToDate(date);
+      if (isVisibleInHub && isVisibleInPeriod) await load();
     } catch (err) {
       setMemberEntryError(err?.response?.data?.message || err.message || "Could not update the member-entered award activity.");
     } finally {
@@ -269,14 +284,20 @@ const AdminLeaderboard = () => {
                 rows={leaderboard.activityEntries || []}
                 onView={setViewingEntry}
                 onEdit={(entry) => openManualEntry(entry)}
-                onEditMember={(entry) => {
+                onEditMember={async (entry) => {
+                  if (!await ensureMembersLoaded()) return;
                   const identity = memberActivityIdentity(entry);
                   if (!identity.type || !identity.id) {
                     setError("Could not identify this member-entered activity. Refresh the page and try again.");
                     return;
                   }
                   setMemberEditingEntry({ ...entry, activityType: identity.type, recordId: identity.id });
-                  setMemberEntryAmount(String(identity.type === "referral" ? entry.referralAmount : entry.businessAmount));
+                  setMemberEntryForm({
+                    hubId: entry.hubId || "",
+                    userId: entry.userId || "",
+                    weekStart: new Date(entry.weekStart).toISOString().slice(0, 10),
+                    amount: String(identity.type === "referral" ? entry.referralAmount : entry.businessAmount),
+                  });
                   setMemberEntryError("");
                 }}
                 onDelete={(entry) => entry.isManual ? removeEntry(entry) : removeMemberEntry(entry)}
@@ -306,20 +327,40 @@ const AdminLeaderboard = () => {
               <button type="button" onClick={() => setMemberEditingEntry(null)} aria-label="Close" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"><X className="h-5 w-5" /></button>
             </div>
             {memberEntryError && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{memberEntryError}</p>}
-            <label className="block text-sm font-medium text-gray-700">
-              Amount (₹)
-              <input
-                autoFocus
-                required
-                type="number"
-                min="0"
-                max="99999999"
-                step="0.01"
-                value={memberEntryAmount}
-                onChange={(event) => setMemberEntryAmount(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
-              />
-            </label>
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Hub
+                <select required value={memberEntryForm.hubId} onChange={(event) => setMemberEntryForm((current) => ({ ...current, hubId: event.target.value, userId: "" }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100">
+                  <option value="">Select a hub</option>
+                  {hubs.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-gray-700">
+                Member
+                <select required disabled={!memberEntryForm.hubId} value={memberEntryForm.userId} onChange={(event) => setMemberEntryForm((current) => ({ ...current, userId: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 font-normal disabled:bg-gray-50 disabled:text-gray-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100">
+                  <option value="">{memberEntryForm.hubId ? "Select a member" : "Select a hub first"}</option>
+                  {memberEntryFormMembers.map((member) => <option key={member.userId} value={member.userId}>{member.fullName || member.email}{member.businessName ? ` — ${member.businessName}` : ""}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-gray-700">
+                Week starts (Saturday)
+                <input required type="date" value={memberEntryForm.weekStart} onChange={(event) => setMemberEntryForm((current) => ({ ...current, weekStart: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100" />
+              </label>
+              <label className="block text-sm font-medium text-gray-700">
+                {memberEditingEntry.activityType === "referral" ? "Business Giver amount (₹)" : "Business Achiever amount (₹)"}
+                <input
+                  autoFocus
+                  required
+                  type="number"
+                  min="0"
+                  max="99999999"
+                  step="0.01"
+                  value={memberEntryForm.amount}
+                  onChange={(event) => setMemberEntryForm((current) => ({ ...current, amount: event.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+                />
+              </label>
+            </div>
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" onClick={() => setMemberEditingEntry(null)} className="rounded-xl border border-gray-200 px-4 py-2.5 font-semibold text-gray-700">Cancel</button>
               <button type="submit" disabled={isSavingMemberEntry} className="rounded-xl bg-amber-400 px-4 py-2.5 font-semibold text-gray-900 disabled:opacity-50">{isSavingMemberEntry ? "Saving…" : "Save changes"}</button>
