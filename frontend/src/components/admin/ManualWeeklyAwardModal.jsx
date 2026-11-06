@@ -1,24 +1,14 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { getManualWeeklyAwardActivity, saveManualWeeklyAward, updateManualWeeklyAward, updateMemberAwardActivity } from "../../services/adminService";
+import { getManualWeeklyAwardActivity, saveManualWeeklyAward, updateManualWeeklyAward } from "../../services/adminService";
 
 const emptyForm = (weekStart, entry) => ({
   hubId: entry?.hubId || "",
   userId: entry?.userId || "",
   weekStart: entry?.weekStart ? new Date(entry.weekStart).toISOString().slice(0, 10) : weekStart,
-  referralAmount: entry?.isMemberActivity
-    ? entry.activityType === "referral" ? String(entry.referralAmount ?? 0) : ""
-    : String(entry?.referralAmount ?? 0),
-  businessAmount: entry?.isMemberActivity
-    ? entry.activityType === "business" ? String(entry.businessAmount ?? 0) : ""
-    : String(entry?.businessAmount ?? 0),
+  referralAmount: entry?.isMemberActivity ? "" : String(entry?.referralAmount ?? 0),
+  businessAmount: entry?.isMemberActivity ? "" : String(entry?.businessAmount ?? 0),
 });
-
-const formatCurrency = (amount) => new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-}).format(Number(amount || 0));
 
 export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, members, hubs, weekStart, entry = null }) {
   const [form, setForm] = useState(emptyForm(weekStart));
@@ -70,7 +60,8 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
 
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const hasMemberActivity = (activity?.referrals.count || 0) > 0 || (activity?.business.count || 0) > 0;
-  const requiresAcknowledgement = entry?.isMemberActivity || hasMemberActivity;
+  const amountsUnavailable = entry?.isMemberActivity && (activityLoading || !activity || Boolean(activityError));
+  const requiresAcknowledgement = hasMemberActivity;
   const submit = async (event) => {
     event.preventDefault();
     setError("");
@@ -90,23 +81,11 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
     try {
       const payload = {
         ...form,
+        referralAmount: Number(form.referralAmount),
+        businessAmount: Number(form.businessAmount),
       };
-      if (entry?.isMemberActivity) {
-        const amountKey = entry.activityType === "referral" ? "referralAmount" : "businessAmount";
-        const amount = Number(form[amountKey]);
-        await updateMemberAwardActivity(entry.activityType, entry.recordId, {
-          hubId: form.hubId,
-          userId: form.userId,
-          weekStart: form.weekStart,
-          amount,
-        });
-        payload[amountKey] = amount;
-      } else {
-        payload.referralAmount = Number(form.referralAmount);
-        payload.businessAmount = Number(form.businessAmount);
-        if (entry) await updateManualWeeklyAward(entry.id, payload);
-        else await saveManualWeeklyAward(payload);
-      }
+      if (entry && !entry.isMemberActivity) await updateManualWeeklyAward(entry.id, payload);
+      else await saveManualWeeklyAward(payload);
       onSaved(payload);
     } catch (err) {
       setError(err?.response?.data?.message || "Could not save the weekly award details.");
@@ -123,10 +102,11 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
         type="number"
         min="0"
         step="0.01"
+        disabled={amountsUnavailable}
         value={form[key]}
         onChange={(event) => update(key, event.target.value)}
         placeholder="Enter amount"
-        className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+        className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:cursor-wait disabled:bg-gray-50 disabled:text-gray-400"
       />
     </label>
   );
@@ -136,10 +116,10 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
       <form onSubmit={submit} className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{entry?.isMemberActivity ? "Edit member award entry" : entry ? "Edit manual award entry" : "Manual weekly award entry"}</h2>
+            <h2 className="text-lg font-bold text-gray-900">{entry?.isMemberActivity ? "Correct weekly award totals" : entry ? "Edit manual award entry" : "Manual weekly award entry"}</h2>
             <p className="mt-1 text-sm text-gray-500">
               {entry?.isMemberActivity
-                ? "Edit the amount entered for this member activity."
+                ? "Correct both award totals for this member and week. These totals will be used for the leaderboard instead of the member-entered activity."
                 : "Enter the award amounts for one member and week."}
             </p>
           </div>
@@ -173,43 +153,27 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
                 <p>{activityError}</p>
                 <button type="button" onClick={() => setActivityRetry((value) => value + 1)} className="mt-2 font-semibold underline">Retry check</button>
               </div>
-            ) : entry?.isMemberActivity ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
-                <p className="font-semibold">This member has already logged this activity.</p>
-                <label className="mt-3 flex items-start gap-2 font-medium">
-                  <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} className="mt-1 accent-amber-500" />
-                  <span>I understand and want to continue editing this entry.</span>
-                </label>
-              </div>
             ) : activity && hasMemberActivity ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
                 <p className="font-semibold">This member has already logged activity for this week.</p>
                 <p className="mt-1">
-                  {activity.referrals.count > 0 && `${activity.referrals.count} referral(s), ${formatCurrency(activity.referrals.amount)}`}
-                  {activity.referrals.count > 0 && activity.business.count > 0 && " · "}
-                  {activity.business.count > 0 && `${activity.business.count} business transaction(s), ${formatCurrency(activity.business.amount)}`}
+                  {entry?.isMemberActivity
+                    ? "The amounts below are from the selected entry. Saving will use these corrected amounts as the member’s weekly leaderboard totals."
+                    : "Saving these manual amounts will replace the member-entered totals in the leaderboard for this week."}
                 </p>
-                <p className="mt-1">Saving these manual amounts will replace the member-entered totals in the leaderboard for this week.</p>
                 <label className="mt-3 flex items-start gap-2 font-medium">
                   <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} className="mt-1 accent-amber-500" />
-                  <span>I understand and want to continue with the manual amounts.</span>
+                  <span>I understand and want to continue with these amounts.</span>
                 </label>
               </div>
             ) : activity ? (
               <p className="rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700">No member-entered referral or business activity was found for this week.</p>
             ) : null
           )}
-          {entry?.isMemberActivity ? (
-            amountField(
-              entry.activityType === "referral" ? "Business Giver amount (₹)" : "Business Achiever amount (₹)",
-              entry.activityType === "referral" ? "referralAmount" : "businessAmount",
-            )
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {amountField("Business Giver amount (₹)", "referralAmount")}
-              {amountField("Business Achiever amount (₹)", "businessAmount")}
-            </div>
-          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {amountField("Business Giver amount (₹)", "referralAmount")}
+            {amountField("Business Achiever amount (₹)", "businessAmount")}
+          </div>
         </div>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onClose} className="rounded-xl border border-gray-200 px-4 py-2.5 font-semibold text-gray-700">Cancel</button>
