@@ -6,8 +6,8 @@ const emptyForm = (weekStart, entry) => ({
   hubId: entry?.hubId || "",
   userId: entry?.userId || "",
   weekStart: entry?.weekStart ? new Date(entry.weekStart).toISOString().slice(0, 10) : weekStart,
-  referralAmount: String(entry?.referralAmount ?? 0),
-  businessAmount: String(entry?.businessAmount ?? 0),
+  referralAmount: entry?.isMemberActivity ? "" : String(entry?.referralAmount ?? 0),
+  businessAmount: entry?.isMemberActivity ? "" : String(entry?.businessAmount ?? 0),
 });
 
 const formatCurrency = (amount) => new Intl.NumberFormat("en-IN", {
@@ -46,6 +46,9 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
       setActivityLoading(false);
       return () => { current = false; };
     }
+    if (entry?.isMemberActivity) {
+      setForm((currentForm) => ({ ...currentForm, referralAmount: "", businessAmount: "" }));
+    }
     const selectedWeek = new Date(`${form.weekStart}T00:00:00.000Z`);
     if (Number.isNaN(selectedWeek.getTime()) || selectedWeek.getUTCDay() !== 6) {
       setActivityLoading(false);
@@ -73,6 +76,7 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
 
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const hasMemberActivity = (activity?.referrals.count || 0) > 0 || (activity?.business.count || 0) > 0;
+  const amountsUnavailable = entry?.isMemberActivity && (activityLoading || !activity || Boolean(activityError));
   const submit = async (event) => {
     event.preventDefault();
     setError("");
@@ -113,10 +117,11 @@ export default function ManualWeeklyAwardModal({ isOpen, onClose, onSaved, membe
         type="number"
         min="0"
         step="0.01"
+        disabled={amountsUnavailable}
         value={form[key]}
         onChange={(event) => update(key, event.target.value)}
         placeholder="Enter amount"
-        className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+        className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-normal focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:cursor-wait disabled:bg-gray-50 disabled:text-gray-400"
       />
     </label>
   );
